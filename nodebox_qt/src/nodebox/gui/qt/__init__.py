@@ -40,6 +40,7 @@ class OutputFile(object):
 class NodeBoxGraphicsView(QGraphicsWidget):
     zoomLevels = [0.1, 0.25, 0.5, 0.75]
     zoom = 1.0
+    zoom = .5
     while zoom <= 20.0:
         zoomLevels.append(zoom)
         zoom += 1.0
