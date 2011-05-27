@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Classes</key>
+	<dict>
+		<key>NodeBoxDocument</key>
+		<dict>
+			<key>Attributes</key>
+			<dict>
+				<key>source</key>
+				<dict>
+					<key>Description</key>
+					<string>The source file for this script.</string>
+					<key>Name</key>
+					<string>source</string>
+				</dict>
+			</dict>
+			<key>Description</key>
+			<string>A NodeBox document</string>
+			<key>Name</key>
+			<string>document</string>
+			<key>PluralName</key>
+			<string>documents</string>
+		</dict>
+	</dict>
+	<key>Commands</key>
+	<dict>
+		<key>Export</key>
+		<dict>
+			<key>Arguments</key>
+			<dict>
+				<key>fname</key>
+				<dict>
+					<key>Description</key>
+					<string>The file in which to save the document</string>
+					<key>Name</key>
+					<string>in</string>
+				</dict>
+				<key>framerate</key>
+				<dict>
+					<key>Description</key>
+					<string>The framerate for QuickTime movies</string>
+					<key>Name</key>
+					<string>framerate</string>
+				</dict>
+				<key>frames</key>
+				<dict>
+					<key>Description</key>
+					<string>The amount of frames to export for QuickTime movies</string>
+					<key>Name</key>
+					<string>frames</string>
+				</dict>
+				<key>ftype</key>
+				<dict>
+					<key>Description</key>
+					<string>The type of file to export</string>
+					<key>Name</key>
+					<string>as</string>
+				</dict>
+				<key>pages</key>
+				<dict>
+					<key>Description</key>
+					<string>The amount of pages to export for PDF documents</string>
+					<key>Name</key>
+					<string>pages</string>
+				</dict>
+			</dict>
+			<key>Description</key>
+			<string>Export a document.</string>
+			<key>Name</key>
+			<string>export</string>
+			<key>UnnamedArgument</key>
+			<dict>
+				<key>Description</key>
+				<string>The document(s) or window(s) to export.</string>
+			</dict>
+		</dict>
+		<key>Run</key>
+		<dict>
+			<key>Description</key>
+			<string>Run a document.</string>
+			<key>Name</key>
+			<string>run</string>
+			<key>UnnamedArgument</key>
+			<dict>
+				<key>Description</key>
+				<string>The document(s) or window(s) to run.</string>
+			</dict>
+		</dict>
+	</dict>
+	<key>Description</key>
+	<string>NodeBox Script Suite</string>
+	<key>Enumerations</key>
+	<dict>
+		<key>ExportTypes</key>
+		<dict>
+			<key>pdf</key>
+			<dict>
+				<key>Description</key>
+				<string>Export as PDF.</string>
+				<key>Name</key>
+				<string>PDF</string>
+			</dict>
+			<key>quicktime</key>
+			<dict>
+				<key>Description</key>
+				<string>Export as QuickTime.</string>
+				<key>Name</key>
+				<string>QuickTime</string>
+			</dict>
+		</dict>
+	</dict>
+	<key>Name</key>
+	<string>NodeBox</string>
+</dict>
+</plist>

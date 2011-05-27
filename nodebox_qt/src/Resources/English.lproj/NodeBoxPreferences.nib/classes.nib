@@ -1,0 +1,19 @@
+{
+    IBClasses = (
+        {CLASS = FirstResponder; LANGUAGE = ObjC; SUPERCLASS = NSObject; }, 
+        {
+            ACTIONS = {chooseFont = id; updateColors = id; }; 
+            CLASS = NodeBoxPreferencesController; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {
+                commentsColorWell = id; 
+                fontPreview = id; 
+                funcClassColorWell = id; 
+                keywordsColorWell = id; 
+                stringsColorWell = id; 
+            }; 
+            SUPERCLASS = NSWindowController; 
+        }
+    ); 
+    IBVersion = 1; 
+}

@@ -1,0 +1,13 @@
+{
+    IBClasses = (
+        {
+            ACTIONS = {cancel = id; ok = id; }; 
+            CLASS = AskStringWindowController; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {questionLabel = id; textField = id; }; 
+            SUPERCLASS = NSWindowController; 
+        }, 
+        {CLASS = FirstResponder; LANGUAGE = ObjC; SUPERCLASS = NSObject; }
+    ); 
+    IBVersion = 1; 
+}

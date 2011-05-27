@@ -1,0 +1,60 @@
+{
+    IBClasses = (
+        {
+            CLASS = DashboardController; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {document = id; documentWindow = id; panel = id; }; 
+            SUPERCLASS = NSObject; 
+        }, 
+        {
+            ACTIONS = {
+                cancelDialog = id; 
+                confirmDialog = id; 
+                orientationChanged = id; 
+                sizeChanged = id; 
+                widthHeightChanged = id; 
+            }; 
+            CLASS = DocumentPropertiesController; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {
+                document = id; 
+                height = id; 
+                landscape = id; 
+                portrait = id; 
+                sheet = id; 
+                size = id; 
+                width = id; 
+            }; 
+            SUPERCLASS = NSObject; 
+        }, 
+        {CLASS = FirstResponder; LANGUAGE = ObjC; SUPERCLASS = NSObject; }, 
+        {CLASS = FullscreenView; LANGUAGE = ObjC; SUPERCLASS = NSView; }, 
+        {CLASS = FullscreenWindow; LANGUAGE = ObjC; SUPERCLASS = NSWindow; }, 
+        {
+            CLASS = NodeBoxDocument; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {dashboardController = id; graphicsView = id; outputView = id; textView = id; }; 
+            SUPERCLASS = NSDocument; 
+        }, 
+        {
+            CLASS = NodeBoxGraphicsView; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {document = id; }; 
+            SUPERCLASS = NSView; 
+        }, 
+        {
+            CLASS = PyDETextView; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {document = id; }; 
+            SUPERCLASS = NSTextView; 
+        }, 
+        {
+            ACTIONS = {addRow = id; cancelDialog = id; confirmDialog = id; removeSelectedRow = id; }; 
+            CLASS = VariablesController; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {document = id; sheet = id; table = id; }; 
+            SUPERCLASS = NSObject; 
+        }
+    ); 
+    IBVersion = 1; 
+}

@@ -1,0 +1,16 @@
+<package>
+  <description brief="rcommander">
+
+     rcommander
+
+  </description>
+  <author>Hai Nguyen</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/rcommander</url>
+  <depend package="rospy"/>
+  <depend package="nodebox_qt"/>
+
+</package>
+
+

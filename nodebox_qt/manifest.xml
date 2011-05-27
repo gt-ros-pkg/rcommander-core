@@ -1,0 +1,14 @@
+<package>
+  <description brief="nodebox_qt">
+
+     nodebox_qt
+
+  </description>
+  <author>Hai Nguyen</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/nodebox_qt</url>
+
+</package>
+
+

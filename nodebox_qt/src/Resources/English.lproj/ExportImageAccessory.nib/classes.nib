@@ -1,0 +1,17 @@
+{
+    IBClasses = (
+        {CLASS = FirstResponder; LANGUAGE = ObjC; SUPERCLASS = NSObject; }, 
+        {
+            ACTIONS = {exportImageFormatChanged = id; }; 
+            CLASS = NodeBoxDocument; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {
+                exportImageAccessory = id; 
+                exportImageFormat = id; 
+                exportImagePageCount = id; 
+            }; 
+            SUPERCLASS = NSDocument; 
+        }
+    ); 
+    IBVersion = 1; 
+}

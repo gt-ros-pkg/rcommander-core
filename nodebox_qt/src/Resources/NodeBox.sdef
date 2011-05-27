@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE dictionary SYSTEM "file://localhost/System/Library/DTDs/sdef.dtd">
+<dictionary title="Dictionary">
+	<suite name="NodeBox" code="ndbx" description="NodeBox Script Suite">
+		<cocoa name="NodeBox"/>
+		<enumeration name="export types" code="extp">
+			<cocoa name="ExportTypes"/>
+			<enumerator name="QuickTime" code="qtxx" description="Export as QuickTime.">
+				<cocoa name="quicktime"/>
+			</enumerator>
+			<enumerator name="PDF" code="pdfx" description="Export as PDF.">
+				<cocoa name="pdf"/>
+			</enumerator>
+		</enumeration>
+		<class name="document" code="docu" description="A NodeBox document" inherits="document">
+			<cocoa class="NodeBoxDocument"/>
+			<property name="source" code="psrc" description="The source file for this script." type="text"/>
+			<responds-to name="run">
+				<cocoa method="handleRunScriptCommand:"/>
+			</responds-to>
+			<responds-to name="export">
+				<cocoa method="handleExportScriptCommand:"/>
+			</responds-to>
+		</class>
+		<command name="run" code="ndbxruns" description="Run a document.">
+			<cocoa class="NSScriptCommand"/>
+			<direct-parameter description="The document(s) or window(s) to run." type="document"/>
+		</command>
+		<command name="export" code="ndbxexpt" description="Export a document.">
+			<cocoa class="NSScriptCommand"/>
+			<direct-parameter description="The document(s) or window(s) to export." type="document"/>
+			<parameter name="in" code="kfil" description="The file in which to save the document" type="file">
+				<cocoa key="fname"/>
+			</parameter>
+			<parameter name="as" code="extp" description="The type of file to export" type="export types">
+				<cocoa key="ftype"/>
+			</parameter>
+			<parameter name="pages" code="expg" description="The amount of pages to export for PDF documents" type="integer">
+				<cocoa key="pages"/>
+			</parameter>
+			<parameter name="frames" code="exfs" description="The amount of frames to export for QuickTime movies" type="integer">
+				<cocoa key="frames"/>
+			</parameter>
+			<parameter name="framerate" code="exfr" description="The framerate for QuickTime movies" type="integer">
+				<cocoa key="framerate"/>
+			</parameter>
+		</command>
+	</suite>
+</dictionary>
