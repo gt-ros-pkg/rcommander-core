@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'RCommander.ui'
 #
-# Created: Thu May 26 16:58:34 2011
+# Created: Fri May 27 11:05:39 2011
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -137,23 +137,109 @@ class Ui_RCommanderWindow(object):
         sizePolicy.setHeightForWidth(self.widget.sizePolicy().hasHeightForWidth())
         self.widget.setSizePolicy(sizePolicy)
         self.widget.setObjectName("widget")
-        self.verticalLayout_2 = QtGui.QVBoxLayout(self.widget)
-        self.verticalLayout_2.setObjectName("verticalLayout_2")
+        self.horizontalLayout = QtGui.QHBoxLayout(self.widget)
+        self.horizontalLayout.setObjectName("horizontalLayout")
         self.splitter = QtGui.QSplitter(self.widget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Ignored, QtGui.QSizePolicy.Ignored)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.splitter.sizePolicy().hasHeightForWidth())
-        self.splitter.setSizePolicy(sizePolicy)
         self.splitter.setOrientation(QtCore.Qt.Horizontal)
         self.splitter.setObjectName("splitter")
-        self.graphicsView = QtGui.QGraphicsView(self.splitter)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+        self.layoutWidget = QtGui.QWidget(self.splitter)
+        self.layoutWidget.setObjectName("layoutWidget")
+        self.verticalLayout_2 = QtGui.QVBoxLayout(self.layoutWidget)
+        self.verticalLayout_2.setSpacing(0)
+        self.verticalLayout_2.setSizeConstraint(QtGui.QLayout.SetDefaultConstraint)
+        self.verticalLayout_2.setMargin(0)
+        self.verticalLayout_2.setObjectName("verticalLayout_2")
+        self.graphicsSuperView = QtGui.QGraphicsView(self.layoutWidget)
+        self.graphicsSuperView.setStyleSheet("QTextEdit { background: palette(base); } \n"
+"#main QAbstractScrollArea[style=\"mac\"] { border-color: #8e8e8e #bebebe #bebebe #bebebe; }\n"
+"#main QAbstractScrollArea[style=\"cde\"] { border-color: #7c7c8d #9a9ab0 #9a9ab0 #8f8fa4; }\n"
+"#main QAbstractScrollArea[style=\"motif\"] { border-color: #a6a6a6 #efefef #efefef #a6a6a6; }\n"
+"#main QAbstractScrollArea[style=\"windows\"] { border-color: #8b8b8b transparent transparent #a7a49f; }\n"
+"#main QAbstractScrollArea[style=\"plastique\"] { border-color: #8e8e8e #d5d5d5 #d5d5d5 #bebebe; }\n"
+"#main QAbstractScrollArea[style=\"cleanlooks\"] { border-color: #a8a099 #dedad6 #dedad6 #c4bcb4; }\n"
+"#main QAbstractScrollArea[style=\"windowsvista\"] { border-color: #abadb3 #dbdfe6 #e3e9ef #e2e3ea; }\n"
+"#main QAbstractScrollArea:focus[style=\"windowsvista\"] { border-color: #3d7bad #a4c9e3 #b7d9ed #b5cfe7; }\n"
+"\n"
+"#main #graphicsSuperView { background-color: #f2f2f2; }\n"
+"#main #graphicsSuperView[style=\"cde\"] { background-color: #aaaac2; }\n"
+"#main #graphicsSuperView[style=\"motif\"] { background-color: #e5e5e5; }\n"
+"#main #graphicsSuperView[style=\"windows\"] { background-color: #fafafa; }\n"
+"")
+        self.graphicsSuperView.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+        self.graphicsSuperView.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+        self.graphicsSuperView.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignTop)
+        self.graphicsSuperView.setRenderHints(QtGui.QPainter.Antialiasing|QtGui.QPainter.HighQualityAntialiasing|QtGui.QPainter.SmoothPixmapTransform|QtGui.QPainter.TextAntialiasing)
+        self.graphicsSuperView.setOptimizationFlags(QtGui.QGraphicsView.DontAdjustForAntialiasing|QtGui.QGraphicsView.DontClipPainter|QtGui.QGraphicsView.DontSavePainterState)
+        self.graphicsSuperView.setObjectName("graphicsSuperView")
+        self.verticalLayout_2.addWidget(self.graphicsSuperView)
+        self.zoomPanel = QtGui.QWidget(self.layoutWidget)
+        self.zoomPanel.setMinimumSize(QtCore.QSize(1, 22))
+        self.zoomPanel.setStyleSheet("#main[style=\"cde\"] #zoomPanel, #main[style=\"motif\"] #zoomPanel, #main[style=\"plastique\"] #zoomPanel, #main[style=\"windows\"] #zoomPanel, #main[style=\"cde\"] #zoomWidget, #main[style=\"motif\"] #zoomWidget, #main[style=\"plastique\"] #zoomWidget, #main[style=\"windows\"] #zoomWidget, #main[style=\"gtk\"] #zoomWidget, #main[style=\"gtk\"] #zoomWidget { min-height: 27px; max-height: 27px; }\n"
+"#main[style=\"windowsvista\"] #zoomWidget, #main[style=\"windowsvista\"] #zoomWidget { min-height: 26px; max-height: 26px; }")
+        self.zoomPanel.setObjectName("zoomPanel")
+        self.horizontalLayout_5 = QtGui.QHBoxLayout(self.zoomPanel)
+        self.horizontalLayout_5.setSpacing(0)
+        self.horizontalLayout_5.setMargin(0)
+        self.horizontalLayout_5.setObjectName("horizontalLayout_5")
+        self.widget_2 = QtGui.QWidget(self.zoomPanel)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.graphicsView.sizePolicy().hasHeightForWidth())
-        self.graphicsView.setSizePolicy(sizePolicy)
-        self.graphicsView.setObjectName("graphicsView")
+        sizePolicy.setHeightForWidth(self.widget_2.sizePolicy().hasHeightForWidth())
+        self.widget_2.setSizePolicy(sizePolicy)
+        self.widget_2.setMinimumSize(QtCore.QSize(16, 22))
+        self.widget_2.setMaximumSize(QtCore.QSize(16, 22))
+        self.widget_2.setObjectName("widget_2")
+        self.animationSpinner = AnimationSpinner(self.widget_2)
+        self.animationSpinner.setGeometry(QtCore.QRect(0, 5, 16, 16))
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.animationSpinner.sizePolicy().hasHeightForWidth())
+        self.animationSpinner.setSizePolicy(sizePolicy)
+        self.animationSpinner.setMinimumSize(QtCore.QSize(16, 16))
+        self.animationSpinner.setMaximumSize(QtCore.QSize(16, 16))
+        self.animationSpinner.setText("")
+        self.animationSpinner.setPixmap(QtGui.QPixmap(":/animationspinner"))
+        self.animationSpinner.setObjectName("animationSpinner")
+        self.horizontalLayout_5.addWidget(self.widget_2)
+        spacerItem = QtGui.QSpacerItem(1, 1, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
+        self.horizontalLayout_5.addItem(spacerItem)
+        self.zoomWidget = QtGui.QWidget(self.zoomPanel)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.zoomWidget.sizePolicy().hasHeightForWidth())
+        self.zoomWidget.setSizePolicy(sizePolicy)
+        self.zoomWidget.setMinimumSize(QtCore.QSize(220, 22))
+        self.zoomWidget.setMaximumSize(QtCore.QSize(220, 22))
+        self.zoomWidget.setObjectName("zoomWidget")
+        self.zoomInButton = QtGui.QToolButton(self.zoomWidget)
+        self.zoomInButton.setGeometry(QtCore.QRect(204, 9, 16, 13))
+        self.zoomInButton.setStyleSheet("#zoomInButton { image: url(\':/zoombig\'); border: 0; margin: 0; padding: 0; }\n"
+"#zoomInButton:pressed { image: url(\':/zoombig_pressed\'); }")
+        self.zoomInButton.setObjectName("zoomInButton")
+        self.zoomSlider = QtGui.QSlider(self.zoomWidget)
+        self.zoomSlider.setGeometry(QtCore.QRect(72, 5, 124, 22))
+        self.zoomSlider.setStyleSheet("border: 0;")
+        self.zoomSlider.setMinimum(1)
+        self.zoomSlider.setMaximum(1000)
+        self.zoomSlider.setProperty("value", 100)
+        self.zoomSlider.setOrientation(QtCore.Qt.Horizontal)
+        self.zoomSlider.setObjectName("zoomSlider")
+        self.zoomOutButton = QtGui.QToolButton(self.zoomWidget)
+        self.zoomOutButton.setGeometry(QtCore.QRect(51, 11, 10, 9))
+        self.zoomOutButton.setStyleSheet("#zoomOutButton { image: url(\':/zoomsmall\'); border: 0; margin: 0; padding: 0; }\n"
+"#zoomOutButton:pressed { image: url(\':/zoomsmall_pressed\'); }")
+        self.zoomOutButton.setText("")
+        self.zoomOutButton.setObjectName("zoomOutButton")
+        self.zoomLevel = QtGui.QLabel(self.zoomWidget)
+        self.zoomLevel.setGeometry(QtCore.QRect(1, 7, 42, 14))
+        self.zoomLevel.setStyleSheet("font-size: 9px;")
+        self.zoomLevel.setAlignment(QtCore.Qt.AlignBottom|QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing)
+        self.zoomLevel.setObjectName("zoomLevel")
+        self.horizontalLayout_5.addWidget(self.zoomWidget)
+        self.verticalLayout_2.addWidget(self.zoomPanel)
         self.properties_box = QtGui.QGroupBox(self.splitter)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
@@ -195,7 +281,7 @@ class Ui_RCommanderWindow(object):
         sizePolicy.setHeightForWidth(self.lineEdit_2.sizePolicy().hasHeightForWidth())
         self.lineEdit_2.setSizePolicy(sizePolicy)
         self.lineEdit_2.setObjectName("lineEdit_2")
-        self.verticalLayout_2.addWidget(self.splitter)
+        self.horizontalLayout.addWidget(self.splitter)
         self.verticalLayout.addWidget(self.widget)
         RCommanderWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar(RCommanderWindow)
@@ -269,6 +355,12 @@ class Ui_RCommanderWindow(object):
         self.gopen_button.setText(QtGui.QApplication.translate("RCommanderWindow", "Gripper Open", None, QtGui.QApplication.UnicodeUTF8))
         self.reset_pressure_button.setText(QtGui.QApplication.translate("RCommanderWindow", "Reset Pressure", None, QtGui.QApplication.UnicodeUTF8))
         self.tools_box.setTabText(self.tools_box.indexOf(self.tab_3), QtGui.QApplication.translate("RCommanderWindow", "Manipulation", None, QtGui.QApplication.UnicodeUTF8))
+        self.animationSpinner.setToolTip(QtGui.QApplication.translate("RCommanderWindow", "The script is running.", None, QtGui.QApplication.UnicodeUTF8))
+        self.zoomInButton.setToolTip(QtGui.QApplication.translate("RCommanderWindow", "Zooms in.", None, QtGui.QApplication.UnicodeUTF8))
+        self.zoomSlider.setToolTip(QtGui.QApplication.translate("RCommanderWindow", "Sets the zoom level.", None, QtGui.QApplication.UnicodeUTF8))
+        self.zoomOutButton.setToolTip(QtGui.QApplication.translate("RCommanderWindow", "Zooms out.", None, QtGui.QApplication.UnicodeUTF8))
+        self.zoomLevel.setToolTip(QtGui.QApplication.translate("RCommanderWindow", "Zoom to actual size.", None, QtGui.QApplication.UnicodeUTF8))
+        self.zoomLevel.setText(QtGui.QApplication.translate("RCommanderWindow", "100%", None, QtGui.QApplication.UnicodeUTF8))
         self.properties_box.setTitle(QtGui.QApplication.translate("RCommanderWindow", "Properties", None, QtGui.QApplication.UnicodeUTF8))
         self.label.setText(QtGui.QApplication.translate("RCommanderWindow", "TextLabel", None, QtGui.QApplication.UnicodeUTF8))
         self.label_2.setText(QtGui.QApplication.translate("RCommanderWindow", "TextLabel", None, QtGui.QApplication.UnicodeUTF8))
@@ -288,3 +380,6 @@ class Ui_RCommanderWindow(object):
         self.actionCopy.setText(QtGui.QApplication.translate("RCommanderWindow", "Copy", None, QtGui.QApplication.UnicodeUTF8))
         self.actionPaste0.setText(QtGui.QApplication.translate("RCommanderWindow", "Paste", None, QtGui.QApplication.UnicodeUTF8))
 
+from nodebox.gui.qt.widgets.animationspinner import AnimationSpinner
+import resources_rc
+import resources_rc
