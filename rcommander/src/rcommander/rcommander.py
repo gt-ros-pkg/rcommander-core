@@ -279,6 +279,7 @@ class wordnetgraph(graph.graph):
         
         """ If the node is indeed clickable, load it.
         """
+        print 'clicked'
         
         if self.is_clickable(node):
             p = self.root.id
@@ -327,7 +328,7 @@ class wordnetgraph(graph.graph):
         """
         
         graph.graph.draw(self, *args, **kwargs)
-        self.senses.draw()
+        #self.senses.draw()
 
 class senses:
     
@@ -413,10 +414,10 @@ class RCommanderWindow(RNodeBoxBaseClass):
         RNodeBoxBaseClass.__init__(self)
 
     def setup(self):
-        self.setup4()
+        self.setup1()
 
     def draw(self):
-        self.draw4()
+        self.draw1()
 
     def setup4(self):
         query = "bird"
@@ -461,8 +462,8 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.context.save('test.png')
         self.g = g
 
-    def draw(self):
-        self.g.draw(directed=True, traffic=1)
+    def draw1(self):
+        self.g.draw(directed=True, traffic=True)
 
 
 app = QtGui.QApplication(sys.argv)
