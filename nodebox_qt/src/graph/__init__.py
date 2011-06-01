@@ -23,6 +23,7 @@ import event
 import layout
 import proximity
 import style
+import numpy as np
 
 #### GRAPH NODE ######################################################################################
 
@@ -169,13 +170,14 @@ class links(list):
 
 class edge(object):
     
-    def __init__(self, node1, node2, weight=0.0, length=1.0, label="", properties={}):
+    def __init__(self, graph, node1, node2, weight=0.0, length=1.0, label="", properties={}):
 
         self.node1  = node1
         self.node2  = node2
         self.weight = weight
         self.length = length
         self.label  = label
+        self.graph  = graph
         
         for k, v in properties.items():
             if not k in self.__dict__:
@@ -183,8 +185,28 @@ class edge(object):
     
     def _get_length(self): 
         return self._length
+
     def _set_length(self, v): 
         self._length = max(0.1, v)
+
+    def __contains__(self, pt):
+        """ 
+            True if pt.x, pt.y is inside the edge's line (doesn't work for arbitary curves)
+        """
+
+        p0 = np.matrix([self.node1.x, self.node1.y]).T
+        p1 = np.matrix([self.node2.x, self.node2.y]).T
+        gp = np.matrix([self.graph.x, self.graph.y]).T
+        p  = np.matrix([pt.x, pt.y]).T - gp
+        A  = p1 - p0
+        x_hat = np.linalg.inv(A.T * A) * A.T * (p - p0)
+        projected = p0 + (A * x_hat)
+        distance = np.linalg.norm(projected - p)
+        if distance < 5 and x_hat > 0. and x_hat < 1.0:
+            return True
+        else:
+            return False
+
     length = property(_get_length, _set_length)
 
 #### GRAPH ###########################################################################################
@@ -277,6 +299,9 @@ class graph(dict):
     def new_edge(self, *args, **kwargs):
         """ Returns an edge object; can be overloaded when the edge class is subclassed.
         """
+        args = list(args)
+        args.insert(0, self)
+        args = tuple(args)
         return edge(*args, **kwargs)
     
     def add_node(self, id, radius=8, style=style.DEFAULT, category="", label=None, root=False,
