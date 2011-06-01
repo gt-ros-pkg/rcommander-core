@@ -31,6 +31,7 @@ class events:
         self.clicked = None
         self.pressed_edge = None
         self.clicked_edge = None
+        self.pressed_nothing = None
         
         # Displays when hovering over a node.
         self.popup = False
@@ -84,6 +85,9 @@ class events:
                             self.pressed_edge = edge
                             break
 
+                if not self.pressed_edge and not self.pressed:
+                    self.pressed_nothing = self.mouse
+
             # If a node is pressed, check if a drag is started.
             elif self.pressed and not self.mouse in self.pressed:
                 self.dragged = self.pressed
@@ -93,26 +97,34 @@ class events:
             elif self.dragged and self.graph.layout.type == "spring":
                 self.drag(self.dragged)
                 self.graph.layout.i = min(100, max(2, self.graph.layout.n-100))
+
         
-        # Mouse is clicked on a node, fire callback.
+        # Mouse up and we clicked on a node
         elif self.pressed and self.mouse in self.pressed:
             self.clicked = self.pressed
             self.pressed = None
             self.graph.layout.i = 2
             self.click(self.clicked)
 
+        # Mouse up and we clicked on an edge
         elif self.pressed_edge and self.mouse in self.pressed_edge:
             self.clicked_edge = self.pressed_edge
             self.pressed_edge = None
             self.graph.layout.i = 2
             self.click_edge(self.clicked_edge)
+
+        elif self.pressed_nothing:
+            self.clicked_nothing = self.pressed_nothing
+            self.pressed_nothing = None
+            self.click_nothing(self.clicked_nothing)
     
-        # Mouse up.
+        # Mouse up but nothing clicked on
         else:
             self.hovered = None
             self.pressed = None
             self.dragged = None
             self.pressed_edge = None
+            self.pressed_nothing = None
         
             # Hovering over a node?
             for n in self.graph.nodes:
@@ -171,6 +183,10 @@ class events:
         pass
 
     def click_edge(self, edge):
+
+        pass
+
+    def click_nothing(self, pt):
 
         pass
 

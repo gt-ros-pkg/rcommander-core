@@ -141,6 +141,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
         g.draw(directed=True, traffic=1)
         g.events.click = self.node_cb
         g.events.click_edge = self.edge_cb
+        g.events.click_nothing = self.nothing_cb
         self.nb_graph = g
 
         #create temp variables
@@ -208,6 +209,9 @@ class RCommanderWindow(RNodeBoxBaseClass):
             self.delete_node(self.selected_node)
         else:
             print 'Can\'t delete start node!'
+
+    def nothing_cb(self, pt):
+        print 'clicked nothing'
 
     def node_cb(self, node):
         self.set_selected_node(node.id)
