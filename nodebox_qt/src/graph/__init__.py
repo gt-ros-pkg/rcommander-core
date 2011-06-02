@@ -202,7 +202,7 @@ class edge(object):
         x_hat = np.linalg.inv(A.T * A) * A.T * (p - p0)
         projected = p0 + (A * x_hat)
         distance = np.linalg.norm(projected - p)
-        if distance < 5 and x_hat > 0. and x_hat < 1.0:
+        if distance < 10 and x_hat > 0. and x_hat < 1.0:
             return True
         else:
             return False
@@ -463,7 +463,7 @@ class graph(dict):
         y = self.y + node.y - _ctx.HEIGHT/2
         return x, y
     
-    def draw(self, dx=0, dy=0, weighted=False, directed=False, highlight=[], traffic=None):
+    def draw(self, dx=0, dy=0, weighted=False, directed=False, highlight=[], traffic=None, user_draw=None):
         
         """ Layout the graph incrementally.
         
@@ -520,6 +520,9 @@ class graph(dict):
             except: s = self.styles.default
             if s.node_label:
                 s.node_label(s, n, self.alpha)
+
+        if user_draw != None:
+            user_draw()
         
         # Events for clicked and dragged nodes.
         # Nodes will resist being dragged by attraction and repulsion,

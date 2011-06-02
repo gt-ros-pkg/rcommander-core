@@ -10,6 +10,8 @@ from nodebox.gui.qt import NodeBoxGraphicsView
 from nodebox import graphics
 from nodebox.graphics.qt import *
 import graph
+import graph.style as gs
+import math
 
 from rcommander_auto import Ui_RCommanderWindow
 
@@ -130,9 +132,16 @@ class RCommanderWindow(RNodeBoxBaseClass):
 
         #set looks
         selected_style = g.styles.create('selected')
-        normal_style = g.styles.create('normal')
+        normal_style   = g.styles.create('normal')
+        normal_edge_style   = g.styles.create('normal_edge')
+        selected_edge_style = g.styles.create('selected_edge')
+
         copy_style(g.styles.important, selected_style)
         copy_style(g.styles.default, normal_style)
+        copy_style(g.styles.default, normal_edge_style)
+        copy_style(g.styles.default, selected_edge_style)
+        selected_edge_style.stroke = self.context.color(0.80, 0.00, 0.00, 0.75)
+        selected_edge_style.strokewidth = 1.0
 
         #Create initial graph
         g.add_node('start')
@@ -145,7 +154,8 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.nb_graph = g
 
         #create temp variables
-        self.selected_node = 'start'
+        self.selected_node = None
+        self.selected_edge = None
         self.set_selected_node('start')
 
     def delete_node(self, node_name):
@@ -189,20 +199,34 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.nb_graph.layout.refresh()
 
     def add_node(self, name):
-        self.nb_graph.add_edge(self.selected_node, name)
-        self.set_style(name, 'normal')
-        self.nb_graph.layout.refresh()
-        self.set_selected_node(name)
+        if self.selected_node != None:
+            self.nb_graph.add_edge(self.selected_node, name)
+            self.set_node_style(name, 'normal')
+            self.nb_graph.layout.refresh()
+            self.set_selected_node(name)
+            return True
+        else:
+            return False
 
-    def set_style(self, node_name, style):
+    def set_node_style(self, node_name, style):
         self.nb_graph.node(node_name).style = style
         self.nb_graph.layout.refresh()
 
     def set_selected_node(self, name):
-        self.set_style(self.selected_node, 'normal')
+        if self.selected_node != None:
+            self.set_node_style(self.selected_node, 'normal')
+
         self.selected_node = name
-        self.set_style(self.selected_node, 'selected')
+        if name != None:
+            self.set_node_style(self.selected_node, 'selected')
+
         self.nb_graph.layout.refresh()
+
+    def set_selected_edge(self, n1, n2):
+        if n1 == None:
+            self.selected_edge = None
+        else:
+            self.selected_edge = self.nb_graph.edge(n1, n2)
 
     def delete_cb(self):
         if self.selected_node != 'start':
@@ -211,13 +235,15 @@ class RCommanderWindow(RNodeBoxBaseClass):
             print 'Can\'t delete start node!'
 
     def nothing_cb(self, pt):
-        print 'clicked nothing'
+        self.set_selected_node(None)
 
     def node_cb(self, node):
         self.set_selected_node(node.id)
+        self.set_selected_edge(None, None)
 
     def edge_cb(self, edge):
-        print 'selected', edge.node1.id, edge.node2.id
+        self.set_selected_edge(edge.node1.id, edge.node2.id)
+        self.set_selected_node(None)
 
     def tuck_cb(self):
         self.add_node('tuck')
@@ -226,7 +252,45 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.add_node('navigate')
 
     def draw(self):
-        self.nb_graph.draw(directed=True, traffic=False)
+        cx = self.context
+        g  = self.nb_graph
+
+        if self.selected_edge != None:
+            def draw_selected():
+                cx = self.context
+                g  = self.nb_graph
+                edge = self.selected_edge 
+
+                x0, y0 = edge.node1.x, edge.node1.y
+                x1, y1 = edge.node2.x, edge.node2.y
+
+                coordinates = lambda x, y, d, a: (x+math.cos(math.radians(a))*d, y+math.sin(math.radians(a))*d)
+
+                # Find the edge's angle based on node1 and node2 position.
+                a = math.degrees(math.atan2(y1-y0, x1-x0))
+                
+                # The arrow points to node2's rim instead of it's center.
+                r = edge.node2.r
+                d = math.sqrt(pow(x1-x0, 2) + pow(y1-y0, 2))
+                x00, y00 = coordinates(x0, y0, r+1, a)
+                x01, y01 = coordinates(x0, y0, d-r-1, a)
+                p1 = [x00, y00]
+                p2 = [x01, y01]
+                #cx.push()
+                #cx.translate(g.x, g.y)
+                cx.fill()
+                cx.strokewidth(1.0)
+                cx.stroke(1., 153./255., 0, .75)
+                cx.beginpath(p1[0], p1[1])
+                cx.lineto(p2[0], p2[1])
+                path = cx.endpath(False)
+                gs.edge_arrow(g.styles[edge.node1.style], path, edge, radius=10)
+                cx.drawpath(path)
+                #cx.pop()
+
+            g.draw(directed=True, traffic=False, user_draw=draw_selected)
+        else:
+            g.draw(directed=True, traffic=False)
 
 
 app = QtGui.QApplication(sys.argv)

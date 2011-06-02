@@ -316,7 +316,11 @@ def edges(s, edges, alpha=1.0, weighted=False, directed=False):
     # depending on their weight rounded between 0 and 10.
     if len(edges) == 0: return
     for e in edges:
-        try:  s2 = e.node1.graph.styles[e.node1.style]
+        try:  
+            #if e.style != None:
+            #    s2 = e.node1.graph.styles[e.style]
+            #else:
+            s2 = e.node1.graph.styles[e.node1.style]
         except: s2 = s
         if s2.edge:
             s2.edge(s2, p, e, alpha)
