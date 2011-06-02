@@ -122,41 +122,9 @@ class RCommanderWindow(RNodeBoxBaseClass):
         RNodeBoxBaseClass.__init__(self)
         self.connect(self.ui.tuck_button, SIGNAL('clicked()'), self.tuck_cb)
         self.connect(self.ui.navigate_button, SIGNAL('clicked()'), self.navigate_cb)
+
         self.connect(self.ui.aseg_button, SIGNAL('clicked()'), self.delete_cb)
-
-    def setup(self):
-        self.context.speed(30.)
-        self.context.size(500, 500)
-        graph._ctx = self.context
-        g = graph.create(depth=True)
-
-        #set looks
-        selected_style = g.styles.create('selected')
-        normal_style   = g.styles.create('normal')
-        normal_edge_style   = g.styles.create('normal_edge')
-        selected_edge_style = g.styles.create('selected_edge')
-
-        copy_style(g.styles.important, selected_style)
-        copy_style(g.styles.default, normal_style)
-        copy_style(g.styles.default, normal_edge_style)
-        copy_style(g.styles.default, selected_edge_style)
-        selected_edge_style.stroke = self.context.color(0.80, 0.00, 0.00, 0.75)
-        selected_edge_style.strokewidth = 1.0
-
-        #Create initial graph
-        g.add_node('start')
-        g.node('start').style = 'marked'
-        g.solve()
-        g.draw(directed=True, traffic=1)
-        g.events.click = self.node_cb
-        g.events.click_edge = self.edge_cb
-        g.events.click_nothing = self.nothing_cb
-        self.nb_graph = g
-
-        #create temp variables
-        self.selected_node = None
-        self.selected_edge = None
-        self.set_selected_node('start')
+        self.connect(self.ui.oselect_button, SIGNAL('clicked()'), self.add_edge_cb)
 
     def delete_node(self, node_name):
         #find parents and children
@@ -189,13 +157,17 @@ class RCommanderWindow(RNodeBoxBaseClass):
                 self.nb_graph.remove_edge(node_name, e.node2.id)
             if node_name == self.selected_node:
                 if len(children_edges) > 1:
-                    self.set_selected(children_edges[0].node2.id)
+                    self.set_selected_node(children_edges[0].node2.id)
                 else:
                     if len(self.nb_graph.nodes) > 0:
-                        self.set_selected(self.nb_graph.nodes[0].id)
+                        self.set_selected_node(self.nb_graph.nodes[0].id)
                     else:
-                        self.set_selected('start')
+                        self.set_selected_node('start')
         self.nb_graph.remove_node(node_name)
+        self.nb_graph.layout.refresh()
+
+    def delete_edge(self, edge):
+        self.nb_graph.remove_edge(edge.node1.id, edge.node2.id)
         self.nb_graph.layout.refresh()
 
     def add_node(self, name):
@@ -207,10 +179,6 @@ class RCommanderWindow(RNodeBoxBaseClass):
             return True
         else:
             return False
-
-    def set_node_style(self, node_name, style):
-        self.nb_graph.node(node_name).style = style
-        self.nb_graph.layout.refresh()
 
     def set_selected_node(self, name):
         if self.selected_node != None:
@@ -228,18 +196,43 @@ class RCommanderWindow(RNodeBoxBaseClass):
         else:
             self.selected_edge = self.nb_graph.edge(n1, n2)
 
+    #####################################################################
+    # Callbacks
+    #####################################################################
     def delete_cb(self):
-        if self.selected_node != 'start':
-            self.delete_node(self.selected_node)
-        else:
-            print 'Can\'t delete start node!'
+        if self.selected_node != None:
+            if self.selected_node != 'start':
+                self.delete_node(self.selected_node)
+            else:
+                print 'Can\'t delete start node!'
+
+        if self.selected_edge != None:
+            se = self.selected_edge
+            self.set_selected_edge(None, None)
+            self.delete_edge(se)
+
 
     def nothing_cb(self, pt):
         self.set_selected_node(None)
+        self.set_selected_edge(None, None)
 
     def node_cb(self, node):
-        self.set_selected_node(node.id)
-        self.set_selected_edge(None, None)
+        if self.selected_tool == 'add_edge':
+            td = self.tool_dict['add_edge']
+            if td.has_key('n1'):
+                print td['n1'].id, node.id
+                self.nb_graph.add_edge(td['n1'].id, node.id)
+                self.tool_dict['add_edge'] = {}
+                self.set_selected_node(None)
+                self.set_selected_edge(td['n1'].id, node.id)
+            else:
+                td['n1'] = node
+                self.set_selected_node(node.id)
+                self.set_selected_edge(None, None)
+        else:
+            self.set_selected_node(node.id)
+            self.set_selected_edge(None, None)
+                    
 
     def edge_cb(self, edge):
         self.set_selected_edge(edge.node1.id, edge.node2.id)
@@ -251,6 +244,61 @@ class RCommanderWindow(RNodeBoxBaseClass):
     def navigate_cb(self):
         self.add_node('navigate')
 
+    def add_edge_cb(self):
+        if self.selected_tool == 'add_edge':
+            self.selected_tool = None
+        else:
+            self.selected_tool = 'add_edge'
+            if self.selected_node != None:
+                self.set_selected_node(None)
+                #self.tool_dict['add_edge']['n1'] = self.nb_graph.node[self.selected_node]
+
+        print 'Tool selected:', self.selected_tool
+
+    #####################################################################
+    # Drawing
+    #####################################################################
+    def setup(self):
+        self.context.speed(30.)
+        self.context.size(500, 500)
+        graph._ctx = self.context
+        g = graph.create(depth=True)
+
+        #set looks
+        selected_style = g.styles.create('selected')
+        normal_style   = g.styles.create('normal')
+        normal_edge_style   = g.styles.create('normal_edge')
+        selected_edge_style = g.styles.create('selected_edge')
+
+        copy_style(g.styles.important, selected_style)
+        copy_style(g.styles.default, normal_style)
+        copy_style(g.styles.default, normal_edge_style)
+        copy_style(g.styles.default, selected_edge_style)
+        selected_edge_style.stroke = self.context.color(0.80, 0.00, 0.00, 0.75)
+        selected_edge_style.strokewidth = 1.0
+
+        #Create initial graph
+        g.add_node('start')
+        g.node('start').style = 'marked'
+        g.solve()
+        g.draw(directed=True, traffic=1)
+        g.events.click = self.node_cb
+        g.events.click_edge = self.edge_cb
+        g.events.click_nothing = self.nothing_cb
+        self.nb_graph = g
+
+        #create instance variables
+        self.tool_dict = {}
+        self.selected_tool = None
+        self.selected_node = None
+        self.selected_edge = None
+        self.set_selected_node('start')
+        self.tool_dict['add_edge'] = {}
+
+    def set_node_style(self, node_name, style):
+        self.nb_graph.node(node_name).style = style
+        self.nb_graph.layout.refresh()
+
     def draw(self):
         cx = self.context
         g  = self.nb_graph
@@ -260,24 +308,21 @@ class RCommanderWindow(RNodeBoxBaseClass):
                 cx = self.context
                 g  = self.nb_graph
                 edge = self.selected_edge 
-
                 x0, y0 = edge.node1.x, edge.node1.y
                 x1, y1 = edge.node2.x, edge.node2.y
-
                 coordinates = lambda x, y, d, a: (x+math.cos(math.radians(a))*d, y+math.sin(math.radians(a))*d)
 
                 # Find the edge's angle based on node1 and node2 position.
                 a = math.degrees(math.atan2(y1-y0, x1-x0))
-                
-                # The arrow points to node2's rim instead of it's center.
+                # draw line from node's edge instead of it's center.
                 r = edge.node2.r
                 d = math.sqrt(pow(x1-x0, 2) + pow(y1-y0, 2))
                 x00, y00 = coordinates(x0, y0, r+1, a)
                 x01, y01 = coordinates(x0, y0, d-r-1, a)
+
+                # draw
                 p1 = [x00, y00]
                 p2 = [x01, y01]
-                #cx.push()
-                #cx.translate(g.x, g.y)
                 cx.fill()
                 cx.strokewidth(1.0)
                 cx.stroke(1., 153./255., 0, .75)
@@ -286,7 +331,6 @@ class RCommanderWindow(RNodeBoxBaseClass):
                 path = cx.endpath(False)
                 gs.edge_arrow(g.styles[edge.node1.style], path, edge, radius=10)
                 cx.drawpath(path)
-                #cx.pop()
 
             g.draw(directed=True, traffic=False, user_draw=draw_selected)
         else:

@@ -179,6 +179,7 @@ class spring_layout(layout):
         self.w = 15   # edge weight multiplier
         self.d = 0.5  # maximum vertex movement
         self.r = 15   # maximum repulsive force radius
+        self.r0 = 1  # repulsive force radius for nodes without edges
     
     def tweak(self, k=2, m=0.01, w=15, d=0.5, r=15):
         self.k = k
@@ -241,10 +242,15 @@ class spring_layout(layout):
         return dx, dy, d
     
     def _repulse(self, n1, n2):
-        
+
+        if len(n1.edges) < 1 or len(n2.edges) < 1:
+            r = self.r0
+        else:
+            r = self.r
+
         dx, dy, d = self._distance(n1, n2)
         
-        if d < self.r:
+        if d < r:
             f = self.k**2 / d**2
             n2.force.x += f * dx
             n2.force.y += f * dy
