@@ -10,7 +10,11 @@
   <url>http://ros.org/wiki/rcommander</url>
   <depend package="rospy"/>
   <depend package="nodebox_qt"/>
-
+  <depend package="smach"/>
+  <depend package="smach_ros"/>
+  <depend package="tf"/>
+  <depend package="hrl_lib"/>
+  <depend package="move_base_msgs"/>
 </package>
 
 

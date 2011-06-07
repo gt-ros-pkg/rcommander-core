@@ -12,8 +12,14 @@ from nodebox.graphics.qt import *
 import graph
 import graph.style as gs
 import math
+import pdb
+import tf
 
 from rcommander_auto import Ui_RCommanderWindow
+
+#Import tools
+import navigate_tool as nt
+import tuck_tool as tt
 
 
 class RNodeBoxBaseClass(QtGui.QMainWindow):
@@ -37,7 +43,6 @@ class RNodeBoxBaseClass(QtGui.QMainWindow):
         self.graphicsView.document = self
         self.currentView = self.graphicsView
 
-
         #Setup NB classes
         #from NodeBoxDocument
         self.namespace = {}
@@ -45,7 +50,6 @@ class RNodeBoxBaseClass(QtGui.QMainWindow):
         self.canvas = graphics.Canvas()
         self.canvas._setTextScaleFactor(textScaleFactor)
         self.context = graphics.Context(self.canvas, self.namespace)
-
 
         #from NodeBoxDocument
         # _initNamespace
@@ -115,16 +119,30 @@ def copy_style(astyle, bstyle):
     bstyle.align       = astyle.align      
     bstyle.depth       = astyle.depth      
 
-
+##
+# keeps track of smach state machine, makes sure it is consistent with (G,V) representation
+# model at this level has (V,E) reprentation
 class RCommanderWindow(RNodeBoxBaseClass):
 
     def __init__(self):
         RNodeBoxBaseClass.__init__(self)
-        self.connect(self.ui.tuck_button, SIGNAL('clicked()'), self.tuck_cb)
-        self.connect(self.ui.navigate_button, SIGNAL('clicked()'), self.navigate_cb)
+        self.connect(self.ui.run_button,   SIGNAL('clicked()'), self.run_cb)
+        self.connect(self.ui.add_button,   SIGNAL('clicked()'), self.add_cb)
+        self.connect(self.ui.reset_button, SIGNAL('clicked()'), self.reset_cb)
 
-        self.connect(self.ui.aseg_button, SIGNAL('clicked()'), self.delete_cb)
-        self.connect(self.ui.oselect_button, SIGNAL('clicked()'), self.add_edge_cb)
+        self.connect(self.ui.delete_button, SIGNAL('clicked()'), self.delete_cb)
+        self.connect(self.ui.add_edge_button, SIGNAL('clicked()'), self.add_edge_cb)
+        self.empty_container(self.ui.properties_tab)
+        self.empty_container(self.ui.connections_tab)
+
+
+    def add_tools(self, tools_list):
+        # In the future add tools according to which tab they want to be in
+        self.button_group_tab = QButtonGroup()
+        for tool in tools_list:
+            self.button_group_tab.addButton(tool.create_button(self.ui.tab))
+            self.tool_dict[tool.get_name()] = {'tool_obj': tool}
+        self.ui.tab.update()
 
     def delete_node(self, node_name):
         #find parents and children
@@ -196,9 +214,47 @@ class RCommanderWindow(RNodeBoxBaseClass):
         else:
             self.selected_edge = self.nb_graph.edge(n1, n2)
 
+    def empty_container(self, pbox): 
+        #pbox = self.ui.properties_tab
+        formlayout = pbox.layout()
+        for i in range(formlayout.count()):
+            item = formlayout.itemAt(0)
+            formlayout.removeItem(item)
+        children = pbox.children()
+        for c in children[1:]:
+            formlayout.removeWidget(c)
+            c.setParent(None)
+        formlayout.invalidate()
+        pbox.update()
+
+    def set_selected_tool(self, tool):
+        self.selected_tool = tool
+        if tool == None:
+            pass
+            #TODO: disable buttons
+
     #####################################################################
     # Callbacks
     #####################################################################
+    def run_cb(self):
+        if self.selected_tool == None:
+            return
+        tool_instance = self.tool_dict[self.selected_tool]['tool_obj']
+        tool_instance.run()
+
+    def add_cb(self):
+        if self.selected_tool == None:
+            return
+        tool_instance = self.tool_dict[self.selected_tool]['tool_obj']
+        smach_node = tool_instance.create_node()
+        self.add_node(smach_node.name)
+
+    def reset_cb(self):
+        if self.selected_tool == None:
+            return
+        tool_instance = self.tool_dict[self.selected_tool]['tool_obj']
+        tool_instance.reset()
+
     def delete_cb(self):
         if self.selected_node != None:
             if self.selected_node != 'start':
@@ -211,16 +267,15 @@ class RCommanderWindow(RNodeBoxBaseClass):
             self.set_selected_edge(None, None)
             self.delete_edge(se)
 
-
     def nothing_cb(self, pt):
         self.set_selected_node(None)
         self.set_selected_edge(None, None)
 
     def node_cb(self, node):
-        if self.selected_tool == 'add_edge':
+        if self.selected_graph_tool == 'add_edge':
             td = self.tool_dict['add_edge']
-            if td.has_key('n1'):
-                print td['n1'].id, node.id
+            #Make sure we have another node already and that node is in the graph
+            if td.has_key('n1') and self.nb_graph.node(td['n1'].id) != None:
                 self.nb_graph.add_edge(td['n1'].id, node.id)
                 self.tool_dict['add_edge'] = {}
                 self.set_selected_node(None)
@@ -232,68 +287,98 @@ class RCommanderWindow(RNodeBoxBaseClass):
         else:
             self.set_selected_node(node.id)
             self.set_selected_edge(None, None)
-                    
 
     def edge_cb(self, edge):
         self.set_selected_edge(edge.node1.id, edge.node2.id)
         self.set_selected_node(None)
 
-    def tuck_cb(self):
-        self.add_node('tuck')
-
-    def navigate_cb(self):
-        self.add_node('navigate')
-
     def add_edge_cb(self):
-        if self.selected_tool == 'add_edge':
-            self.selected_tool = None
+        if self.ui.add_edge_button.isChecked():
+            self.selected_graph_tool = 'add_edge'
+            #if self.selected_node != None:
+            self.set_selected_node(None)
         else:
-            self.selected_tool = 'add_edge'
-            if self.selected_node != None:
-                self.set_selected_node(None)
-                #self.tool_dict['add_edge']['n1'] = self.nb_graph.node[self.selected_node]
+            self.selected_graph_tool = None
+            #self.tool_dict['add_edge']['n1'] = self.nb_graph.node[self.selected_node]
+        print 'Tool selected:', self.selected_graph_tool
 
-        print 'Tool selected:', self.selected_tool
+    #def tuck_cb(self):
+    #    #Load properties into properties box.
+    #    self.add_node('tuck')
+    #def navigate_cb(self):
+    #    #Load properties into properties box.
+    #    self.empty_properties_box()
+    #    pbox = self.ui.behavior_properties_box
+    #    formlayout = pbox.layout()
+
+    #    xline = QLineEdit(pbox)
+    #    formlayout.addRow("&x", xline)
+    #    yline = QLineEdit(pbox)
+    #    formlayout.addRow("&y", yline)
+    #    tline = QLineEdit(pbox)
+    #    formlayout.addRow("&theta", tline)
+    #    pbox.update()
+
+    #    # goal x
+    #    # goal y
+    #    # goal theta
+    #    # frame
+
+    #    # turn on markers
+    #    # locat current location button
+    #    #
+
+    #    self.add_node('navigate')
 
     #####################################################################
     # Drawing
     #####################################################################
     def setup(self):
         self.context.speed(30.)
-        self.context.size(500, 500)
+        self.context.size(700, 700)
         graph._ctx = self.context
-        g = graph.create(depth=True)
+        #g = graph.create(depth=True) # 
 
         #set looks
-        selected_style = g.styles.create('selected')
-        normal_style   = g.styles.create('normal')
-        normal_edge_style   = g.styles.create('normal_edge')
-        selected_edge_style = g.styles.create('selected_edge')
+        #selected_style = g.styles.create('selected')
+        #normal_style   = g.styles.create('normal')
+        #normal_edge_style   = g.styles.create('normal_edge')
+        #selected_edge_style = g.styles.create('selected_edge')
 
-        copy_style(g.styles.important, selected_style)
-        copy_style(g.styles.default, normal_style)
-        copy_style(g.styles.default, normal_edge_style)
-        copy_style(g.styles.default, selected_edge_style)
-        selected_edge_style.stroke = self.context.color(0.80, 0.00, 0.00, 0.75)
-        selected_edge_style.strokewidth = 1.0
+        #copy_style(g.styles.important, selected_style)
+        #copy_style(g.styles.default, normal_style)
+        #copy_style(g.styles.default, normal_edge_style)
+        #copy_style(g.styles.default, selected_edge_style)
+        #selected_edge_style.stroke = self.context.color(0.80, 0.00, 0.00, 0.75)
+        #selected_edge_style.strokewidth = 1.0
 
         #Create initial graph
-        g.add_node('start')
-        g.node('start').style = 'marked'
-        g.solve()
-        g.draw(directed=True, traffic=1)
-        g.events.click = self.node_cb
-        g.events.click_edge = self.edge_cb
-        g.events.click_nothing = self.nothing_cb
-        self.nb_graph = g
+        #g.add_node('start')
+        #g.node('start').style = 'marked'
+
+        #g.solve()
+        #g.draw(directed=True, traffic=1)
+        self.graph_model = GraphModel()
+        self.graph_view = GraphView(self.graph_model)
+
+        self.graph_model.gve.events.click = self.node_cb
+        self.graph_model.gve.events.click_edge = self.edge_cb
+        self.graph_model.gve.events.click_nothing = self.nothing_cb
+        #self.nb_graph = g
 
         #create instance variables
         self.tool_dict = {}
         self.selected_tool = None
+        self.selected_graph_tool = None
         self.selected_node = None
         self.selected_edge = None
         self.set_selected_node('start')
         self.tool_dict['add_edge'] = {}
+
+        #ros things
+        rospy.init_node('rcommander', anonymous=True)
+        self.tf_listener = tf.TransformListener()
+
 
     def set_node_style(self, node_name, style):
         self.nb_graph.node(node_name).style = style
@@ -336,9 +421,40 @@ class RCommanderWindow(RNodeBoxBaseClass):
         else:
             g.draw(directed=True, traffic=False)
 
+class GraphView:
+    def __init__(self, graph_model):
+        self.graph_model = graph_model
+        g = self.graph_model.gve
+        self.gve = g
+
+        selected_style = g.styles.create('selected')
+        normal_style   = g.styles.create('normal')
+        normal_edge_style   = g.styles.create('normal_edge')
+        selected_edge_style = g.styles.create('selected_edge')
+
+        copy_style(g.styles.important, selected_style)
+        copy_style(g.styles.default, normal_style)
+        copy_style(g.styles.default, normal_edge_style)
+        copy_style(g.styles.default, selected_edge_style)
+        selected_edge_style.stroke = self.context.color(0.80, 0.00, 0.00, 0.75)
+        selected_edge_style.strokewidth = 1.0
+
+        g.node('start').style = 'marked'
+
+    def draw(self):
+        g.solve()
+        g.draw(directed=True, traffic=1)
+
+class GraphModel:
+
+    def __init__(self):
+        self.gve = graph.create(depth=True)
+        self.gve.add_node('start')
+
 
 app = QtGui.QApplication(sys.argv)
 rc = RCommanderWindow()
+rc.add_tools([nt.NavigateTool(rc), tt.TuckTool(rc)])
 rc.show()
 sys.exit(app.exec_())
 
