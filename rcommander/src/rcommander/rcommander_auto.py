@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'RCommander.ui'
 #
-# Created: Wed Jun  8 16:56:34 2011
+# Created: Thu Jun  9 12:00:38 2011
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,11 +12,11 @@ from PyQt4 import QtCore, QtGui
 class Ui_RCommanderWindow(object):
     def setupUi(self, RCommanderWindow):
         RCommanderWindow.setObjectName("RCommanderWindow")
-        RCommanderWindow.resize(1047, 875)
+        RCommanderWindow.resize(1046, 875)
         self.centralwidget = QtGui.QWidget(RCommanderWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.verticalLayout = QtGui.QVBoxLayout(self.centralwidget)
-        self.verticalLayout.setMargin(0)
+        self.verticalLayout.setContentsMargins(9, 9, 9, 0)
         self.verticalLayout.setObjectName("verticalLayout")
         self.tools_box = QtGui.QTabWidget(self.centralwidget)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed)
@@ -290,6 +290,19 @@ class Ui_RCommanderWindow(object):
         self.run_button.setFont(font)
         self.run_button.setObjectName("run_button")
         self.horizontalLayout_6.addWidget(self.run_button)
+        self.save_button = QtGui.QPushButton(self.behavior_properties_buttons_box)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.save_button.sizePolicy().hasHeightForWidth())
+        self.save_button.setSizePolicy(sizePolicy)
+        font = QtGui.QFont()
+        font.setPointSize(18)
+        font.setWeight(50)
+        font.setBold(False)
+        self.save_button.setFont(font)
+        self.save_button.setObjectName("save_button")
+        self.horizontalLayout_6.addWidget(self.save_button)
         self.add_button = QtGui.QPushButton(self.behavior_properties_buttons_box)
         font = QtGui.QFont()
         font.setPointSize(18)
@@ -307,7 +320,7 @@ class Ui_RCommanderWindow(object):
         self.verticalLayout.addWidget(self.frame)
         RCommanderWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar(RCommanderWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1047, 23))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1046, 23))
         self.menubar.setObjectName("menubar")
         self.menuFile = QtGui.QMenu(self.menubar)
         self.menuFile.setObjectName("menuFile")
@@ -394,6 +407,7 @@ class Ui_RCommanderWindow(object):
         self.comboBox.setItemText(2, QtGui.QApplication.translate("RCommanderWindow", "succeeded", None, QtGui.QApplication.UnicodeUTF8))
         self.node_settings_tabs.setTabText(self.node_settings_tabs.indexOf(self.connections_tab), QtGui.QApplication.translate("RCommanderWindow", "Connections", None, QtGui.QApplication.UnicodeUTF8))
         self.run_button.setText(QtGui.QApplication.translate("RCommanderWindow", "Run", None, QtGui.QApplication.UnicodeUTF8))
+        self.save_button.setText(QtGui.QApplication.translate("RCommanderWindow", "Save", None, QtGui.QApplication.UnicodeUTF8))
         self.add_button.setText(QtGui.QApplication.translate("RCommanderWindow", "Add", None, QtGui.QApplication.UnicodeUTF8))
         self.reset_button.setText(QtGui.QApplication.translate("RCommanderWindow", "Reset", None, QtGui.QApplication.UnicodeUTF8))
         self.menuFile.setTitle(QtGui.QApplication.translate("RCommanderWindow", "File", None, QtGui.QApplication.UnicodeUTF8))

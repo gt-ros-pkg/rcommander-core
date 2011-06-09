@@ -129,6 +129,8 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.connect(self.ui.run_button,   SIGNAL('clicked()'), self.run_cb)
         self.connect(self.ui.add_button,   SIGNAL('clicked()'), self.add_cb)
         self.connect(self.ui.reset_button, SIGNAL('clicked()'), self.reset_cb)
+        self.connect(self.ui.save_button, SIGNAL('clicked()'), self.save_cb)
+        self.add_mode()
 
         self.connect(self.ui.delete_button, SIGNAL('clicked()'), self.delete_cb)
         #self.connect(self.ui.add_edge_button, SIGNAL('clicked()'), self.add_edge_cb)
@@ -144,6 +146,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.selected_edge = None
         self.set_selected_node('start')
         self.tool_dict['add_edge'] = {}
+        self.node_cb(self.graph_model.node('start'))
         
         #ros things
         rospy.init_node('rcommander', anonymous=True)
@@ -174,6 +177,17 @@ class RCommanderWindow(RNodeBoxBaseClass):
     def set_selected_node(self, name):
         self.selected_node = name
 
+        #Unselect any tool from nongraph toolbar
+
+        ##Load the state in
+        #if self.graph_view.is_modifiable(name):
+        #    smach_state = self.graph_model.get_smach_state(name)
+        #    tool_obj = self.tool_dict[smach_state.tool_name()]['tool_obj']
+        #    tool_obj.load_state(smach_state)
+
+        #    #change add button to save
+
+
     def set_selected_edge(self, n1, n2):
         if n1 == None:
             self.selected_edge = None
@@ -195,9 +209,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
 
     def set_selected_tool(self, tool):
         self.selected_tool = tool
-        if tool == None:
-            pass
-            #TODO: disable buttons
+        #TODO: disable buttons
 
     #####################################################################
     # Callbacks
@@ -230,9 +242,56 @@ class RCommanderWindow(RNodeBoxBaseClass):
         tool_instance = self.tool_dict[self.selected_tool]['tool_obj']
         tool_instance.reset()
 
+    def save_cb(self):
+        tool_instance = self.tool_dict[self.selected_tool]['tool_obj']
+        #old_smach_node = self.graph_model.get_smach_state()
+        old_node_name = tool_instance.get_current_node_name()
+        # create a node with new settings
+        smach_node = tool_instance.create_node()
+        # 'delete' old smach node
+        self.graph_model.replace_node(smach_node, old_node_name)
+        #self.graph_model.set_smach_state(old_smach_node.get_name(), smach_node)
+
+        # connection changes are made instantly (so don't worry about them)
+        # only saving of internal node parameters must be implemented by client tools
+
+    def connection_update(self):
+        # what do we have to do for connection updating?
+        # for each outcome,
+        #   if it no longer connects to a temporary node, delete its default temporary node if they exist (just the outcome name)
+        #   if existing edge is not the same as new edge
+        #       delete edges to old connection
+        #       add edges to new connections
+        pass
+
     ##################
     # Graph tools
     ##################
+    def disable_buttons(self):
+        self.ui.run_button.setDisabled(True)
+        self.ui.reset_button.setDisabled(True)
+        self.ui.add_button.setDisabled(True)
+        self.ui.save_button.setDisabled(True)
+
+    def enable_buttons(self):
+        self.ui.run_button.setDisabled(False)
+        self.ui.reset_button.setDisabled(False)
+        self.ui.add_button.setDisabled(False)
+        self.ui.save_button.setDisabled(False)
+
+    def edit_mode(self):
+        self.ui.add_button.hide()
+        self.ui.save_button.show()
+
+    def add_mode(self):
+        self.ui.add_button.show()
+        self.ui.save_button.hide()
+
+    def empty_properties_box(self):
+        self.empty_container(self.ui.properties_tab)
+        self.empty_container(self.ui.connections_tab)
+
+
     def delete_cb(self):
         if self.selected_node != None:
             if self.selected_node != 'start':
@@ -250,27 +309,30 @@ class RCommanderWindow(RNodeBoxBaseClass):
     def nothing_cb(self, pt):
         self.set_selected_node(None)
         self.set_selected_edge(None, None)
+        self.empty_properties_box()
+        self.add_mode()
+
 
     def node_cb(self, node):
-        if self.selected_graph_tool == 'add_edge':
-            td = self.tool_dict['add_edge']
-            #Make sure we have another node already and that node is in the graph
-            if td.has_key('n1') and self.graph_model.node(td['n1'].id) != None:
-                self.graph_model.add_edge(td['n1'].id, node.id)
-                self.tool_dict['add_edge'] = {}
-                self.set_selected_node(None)
-                self.set_selected_edge(td['n1'].id, node.id)
-            else:
-                td['n1'] = node
-                self.set_selected_node(node.id)
-                self.set_selected_edge(None, None)
+        self.set_selected_node(node.id)
+        self.set_selected_edge(None, None)
+
+        if self.graph_model.get_smach_state(node.id).__class__ != EmptyState:
+            smach_state = self.graph_model.get_smach_state(node.id)
+            tool = self.tool_dict[smach_state.tool_name]['tool_obj']
+            tool.activate_cb()
+            self.edit_mode()
+            tool.node_selected(smach_state)
+            self.set_selected_tool(smach_state.tool_name)
+            self.enable_buttons()
         else:
-            self.set_selected_node(node.id)
-            self.set_selected_edge(None, None)
+            self.empty_properties_box()
+            self.disable_buttons()
 
     def edge_cb(self, edge):
         self.set_selected_edge(edge.node1.id, edge.node2.id)
         self.set_selected_node(None)
+        self.disable_buttons()
 
     #def add_edge_cb(self):
     #    print 'IGNORED. remove/rethink this tool.'
@@ -392,6 +454,32 @@ class GraphModel:
 
         self.node = self.gve.node
         self.edge = self.gve.edge
+
+    def pop_smach_state(self, node_name):
+        return self.smach_states.pop(node_name)
+
+    def get_smach_state(self, node_name):
+        return self.smach_states[node_name]
+
+    def set_smach_state(self, node_name, state):
+        self.smach_states[node_name] = state
+
+    def replace_node(self, new_node, old_node_name):
+        self.smach_states.pop(old_node_name)
+        self.smach_states[new_node.get_name()] = new_node
+        new_node_name = new_node.get_name()
+
+        if new_node_name != old_node_name:
+            self.gve.add_node(new_node_name)
+            for e in self.gve.node(old_node_name).edges:
+                self.gve.remove_edge(e.node1.id, e.node2.id)
+                if e.node1.id == old_node_name:
+                    self.gve.add_edge(new_node_name, e.node2.id)
+                    #edges.append([new_node_name, e.node2.id])
+                else:
+                    self.gve.add_edge(e.node1.id, new_node_name)
+                    #edges.append([e.node1.id, new_node_name])
+            self.gve.remove_node(old_node_name)
 
     def connectable_nodes(self):
         return self.smach_states.keys()
