@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'RCommander.ui'
 #
-# Created: Mon Jun  6 17:34:08 2011
+# Created: Wed Jun  8 16:56:34 2011
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -146,6 +146,10 @@ class Ui_RCommanderWindow(object):
         self.add_edge_button.setArrowType(QtCore.Qt.NoArrow)
         self.add_edge_button.setObjectName("add_edge_button")
         self.horizontalLayout.addWidget(self.add_edge_button)
+        self.add_state_button = QtGui.QToolButton(self.widget_3)
+        self.add_state_button.setAutoRaise(True)
+        self.add_state_button.setObjectName("add_state_button")
+        self.horizontalLayout.addWidget(self.add_state_button)
         self.delete_button = QtGui.QToolButton(self.widget_3)
         icon1 = QtGui.QIcon()
         icon1.addPixmap(QtGui.QPixmap("../../../../../../u/hnguyen/svn/wg/rcommander/qt/images/delete.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
@@ -258,16 +262,14 @@ class Ui_RCommanderWindow(object):
         self.label_2.setSizePolicy(sizePolicy)
         self.label_2.setObjectName("label_2")
         self.formLayout_4.setWidget(0, QtGui.QFormLayout.LabelRole, self.label_2)
-        self.lineEdit_2 = QtGui.QLineEdit(self.connections_tab)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.lineEdit_2.sizePolicy().hasHeightForWidth())
-        self.lineEdit_2.setSizePolicy(sizePolicy)
-        self.lineEdit_2.setObjectName("lineEdit_2")
-        self.formLayout_4.setWidget(0, QtGui.QFormLayout.FieldRole, self.lineEdit_2)
         spacerItem3 = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
         self.formLayout_4.setItem(1, QtGui.QFormLayout.LabelRole, spacerItem3)
+        self.comboBox = QtGui.QComboBox(self.connections_tab)
+        self.comboBox.setObjectName("comboBox")
+        self.comboBox.addItem("")
+        self.comboBox.addItem("")
+        self.comboBox.addItem("")
+        self.formLayout_4.setWidget(0, QtGui.QFormLayout.FieldRole, self.comboBox)
         self.node_settings_tabs.addTab(self.connections_tab, "")
         self.verticalLayout_3.addWidget(self.node_settings_tabs)
         self.behavior_properties_buttons_box = QtGui.QWidget(self.node_edit_area)
@@ -357,8 +359,8 @@ class Ui_RCommanderWindow(object):
         self.menubar.addAction(self.menuActions.menuAction())
 
         self.retranslateUi(RCommanderWindow)
-        self.tools_box.setCurrentIndex(1)
-        self.node_settings_tabs.setCurrentIndex(0)
+        self.tools_box.setCurrentIndex(0)
+        self.node_settings_tabs.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(RCommanderWindow)
 
     def retranslateUi(self, RCommanderWindow):
@@ -376,6 +378,7 @@ class Ui_RCommanderWindow(object):
         self.tools_box.setTabText(self.tools_box.indexOf(self.tab_3), QtGui.QApplication.translate("RCommanderWindow", "Manipulation", None, QtGui.QApplication.UnicodeUTF8))
         self.add_edge_button.setToolTip(QtGui.QApplication.translate("RCommanderWindow", "Add Edge Tool", None, QtGui.QApplication.UnicodeUTF8))
         self.add_edge_button.setText(QtGui.QApplication.translate("RCommanderWindow", "Add Edge", None, QtGui.QApplication.UnicodeUTF8))
+        self.add_state_button.setText(QtGui.QApplication.translate("RCommanderWindow", "Add State", None, QtGui.QApplication.UnicodeUTF8))
         self.delete_button.setToolTip(QtGui.QApplication.translate("RCommanderWindow", "Delete Tool", None, QtGui.QApplication.UnicodeUTF8))
         self.delete_button.setText(QtGui.QApplication.translate("RCommanderWindow", "Delete", None, QtGui.QApplication.UnicodeUTF8))
         self.zoomLevel.setToolTip(QtGui.QApplication.translate("RCommanderWindow", "Zoom to actual size.", None, QtGui.QApplication.UnicodeUTF8))
@@ -386,6 +389,9 @@ class Ui_RCommanderWindow(object):
         self.label.setText(QtGui.QApplication.translate("RCommanderWindow", "TextLabel", None, QtGui.QApplication.UnicodeUTF8))
         self.node_settings_tabs.setTabText(self.node_settings_tabs.indexOf(self.properties_tab), QtGui.QApplication.translate("RCommanderWindow", "Properties", None, QtGui.QApplication.UnicodeUTF8))
         self.label_2.setText(QtGui.QApplication.translate("RCommanderWindow", "TextLabel", None, QtGui.QApplication.UnicodeUTF8))
+        self.comboBox.setItemText(0, QtGui.QApplication.translate("RCommanderWindow", "preempted", None, QtGui.QApplication.UnicodeUTF8))
+        self.comboBox.setItemText(1, QtGui.QApplication.translate("RCommanderWindow", "aborted", None, QtGui.QApplication.UnicodeUTF8))
+        self.comboBox.setItemText(2, QtGui.QApplication.translate("RCommanderWindow", "succeeded", None, QtGui.QApplication.UnicodeUTF8))
         self.node_settings_tabs.setTabText(self.node_settings_tabs.indexOf(self.connections_tab), QtGui.QApplication.translate("RCommanderWindow", "Connections", None, QtGui.QApplication.UnicodeUTF8))
         self.run_button.setText(QtGui.QApplication.translate("RCommanderWindow", "Run", None, QtGui.QApplication.UnicodeUTF8))
         self.add_button.setText(QtGui.QApplication.translate("RCommanderWindow", "Add", None, QtGui.QApplication.UnicodeUTF8))
