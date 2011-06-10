@@ -161,8 +161,8 @@ class RCommanderWindow(RNodeBoxBaseClass):
             self.tool_dict[tool.get_name()] = {'tool_obj': tool}
         self.ui.tab.update()
 
-    def connectable_nodes(self):
-        return self.graph_model.connectable_nodes()
+    def connectable_nodes(self, node_name, outcome):
+        return self.graph_model.connectable_nodes(node_name, outcome)
 
     #def set_selected_node(self, name):
     #    if self.selected_node != None:
@@ -255,14 +255,8 @@ class RCommanderWindow(RNodeBoxBaseClass):
         # connection changes are made instantly (so don't worry about them)
         # only saving of internal node parameters must be implemented by client tools
 
-    def connection_update(self):
-        # what do we have to do for connection updating?
-        # for each outcome,
-        #   if it no longer connects to a temporary node, delete its default temporary node if they exist (just the outcome name)
-        #   if existing edge is not the same as new edge
-        #       delete edges to old connection
-        #       add edges to new connections
-        pass
+    def connection_changed(self, node_name, outcome_name, new_outcome):
+        self.graph_model.connection_changed(node_name, outcome_name, new_outcome)
 
     ##################
     # Graph tools
@@ -311,6 +305,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.set_selected_edge(None, None)
         self.empty_properties_box()
         self.add_mode()
+        self.disable_buttons()
 
 
     def node_cb(self, node):
@@ -320,9 +315,10 @@ class RCommanderWindow(RNodeBoxBaseClass):
         if self.graph_model.get_smach_state(node.id).__class__ != EmptyState:
             smach_state = self.graph_model.get_smach_state(node.id)
             tool = self.tool_dict[smach_state.tool_name]['tool_obj']
-            tool.activate_cb()
-            self.edit_mode()
+            tool.activate_cb(smach_state.get_name())
             tool.node_selected(smach_state)
+
+            self.edit_mode()
             self.set_selected_tool(smach_state.tool_name)
             self.enable_buttons()
         else:
@@ -481,8 +477,23 @@ class GraphModel:
                     #edges.append([e.node1.id, new_node_name])
             self.gve.remove_node(old_node_name)
 
-    def connectable_nodes(self):
-        return self.smach_states.keys()
+    def connectable_nodes(self, node_name, outcome):
+        #can't connect to
+        #  temporary nodes already connected whose name is not current outcome
+        allowed_nodes = []
+
+        for k in self.smach_states.keys():
+            if not self.is_modifiable(k) and k != outcome:
+                continue
+            if node_name == k:
+                continue
+            allowed_nodes.append(k)
+
+        if node_name == None:
+            allowed_nodes.append(outcome)
+            allowed_nodes = list(set(allowed_nodes))
+
+        return allowed_nodes
 
     def add_node(self, smach_node, connect_to=None):
         if self.smach_states.has_key(smach_node.name):
@@ -494,8 +505,9 @@ class GraphModel:
         for outcome in smach_node.get_registered_outcomes():
             if not self.smach_states.has_key(outcome):
                 self.smach_states[outcome] = EmptyState(outcome, temporary=True)
+                self.gve.add_node(outcome)
             #self.gve.add_edge(smach_node.name, outcome)
-            self._add_edge(smach_node.name, outcome, None)
+            self._add_edge(smach_node.name, outcome, outcome)
 
         #TODO figure out sensible way
         #Connect node to its parent
@@ -530,7 +542,7 @@ class GraphModel:
         #Remove added orphan children edges
         filtered_children_edges = []
         for e in children_edges:
-            if not self.is_modifiable(e.node2.id):
+            if not self.is_modifiable(e.node2.id) and len(e.node2.edges) <= 1:
                 self.gve.remove_edge(node_name, e.node2.id)
                 self.gve.remove_node(e.node2.id)
                 self.smach_states.pop(e.node2.id)
@@ -599,6 +611,36 @@ class GraphModel:
             self.gve.remove_edge(edge.node1.id, edge.node2.id)
             return True
 
+    def connection_changed(self, node_name, outcome_name, new_outcome):
+        #node is not valid or hasn't been created yet
+        print 'connection_changed', node_name, outcome_name, new_outcome
+        if node_name == None:
+            return
+        if not self.smach_states.has_key(new_outcome):
+            raise RuntimeException('Doesn\'t have state: %s' % new_outcome)
+        self.get_smach_state(node_name).outcome_choices[outcome_name] = new_outcome
+
+        #find the old edge
+        old_edge = None
+        for edge in self.gve.node(node_name).edges:
+            if edge.outcome == outcome_name:
+                if old_edge != None:
+                    raise RuntimeException('Two edges detected for one outcome named %s' % outcome_name)
+                old_edge = edge
+
+        #remove the old connection
+        self.gve.remove_edge(node_name, old_edge.node2.id)
+        #remove the old node if it's temporary 
+        if not self.is_modifiable(old_edge.node2.id) and old_edge.node2.id != 'start':
+            #and not connected
+            if len(self.gve.node(old_edge.node2.id).edges) <= 0:
+                self.gve.remove_node(old_edge.node2.id)
+
+        #add new connection
+        if self.gve.node(new_outcome) == None:
+            self.smach_states[new_outcome] = EmptyState(new_outcome, temporary=True)
+            self.gve.add_node(new_outcome)
+        self._add_edge(node_name, new_outcome, outcome_name)
 
 
 app = QtGui.QApplication(sys.argv)
