@@ -15,13 +15,13 @@ import math
 import pdb
 import tf
 import smach
-
+import smach_ros
+import threading
 from rcommander_auto import Ui_RCommanderWindow
 
 #Import tools
 import navigate_tool as nt
 import tuck_tool as tt
-
 
 class RNodeBoxBaseClass(QtGui.QMainWindow):
     def __init__(self):
@@ -120,6 +120,44 @@ def copy_style(astyle, bstyle):
     bstyle.align       = astyle.align      
     bstyle.depth       = astyle.depth      
 
+
+class ThreadRunSM(threading.Thread):
+
+    def __init__(self, sm_name, sm):
+        threading.Thread.__init__(self)    
+        self.sm = sm
+        self.sm_name = sm_name
+        self.outcome = None
+        self.intro_server = None
+        self.exception = None
+
+    def run(self):
+        print 'ThreadRunSM started with %s' % self.sm_name
+        try:
+            self.intro_server = smach_ros.IntrospectionServer(self.sm_name, self.sm, '/' + self.sm_name)
+            self.intro_server.start()
+            self.outcome = self.sm.execute()
+        except smach.InvalidTransitionError, e:
+            self.exception = e
+        print 'ThreadRunSM finished'
+
+
+##
+# Checks for errors and redraw status bar if needed
+##
+class ThreadRunSMMonitor(threading.Thread):
+
+    def __init__(self, sm_thread, parent_window):
+        threading.Thread.__init__(self)    
+        self.sm_thread = sm_thread
+        self.parent_window = parent_window
+
+    def run(self):
+        r = rospy.Rate(100)
+        while not rospy.is_shutdown():
+            r.sleep()
+
+
 ##
 # keeps track of smach state machine, makes sure it is consistent with (G,V) representation
 # model at this level has (V,E) reprentation
@@ -134,6 +172,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.add_mode()
 
         self.connect(self.ui.delete_button, SIGNAL('clicked()'), self.delete_cb)
+        self.connect(self.ui.action_Run, SIGNAL('triggered(bool)'), self.run_sm_cb)
         #self.connect(self.ui.add_edge_button, SIGNAL('clicked()'), self.add_edge_cb)
         self.empty_container(self.ui.properties_tab)
         self.empty_container(self.ui.connections_tab)
@@ -145,9 +184,10 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.selected_graph_tool = None 
         self.selected_node = None
         self.selected_edge = None
-        self.set_selected_node('start')
+        self.current_graph_name = 'untitled'
+        #self.set_selected_node('start')
         self.tool_dict['add_edge'] = {}
-        self.node_cb(self.graph_model.node('start'))
+        #self.node_cb(self.graph_model.node('start'))
         
         #ros things
         rospy.init_node('rcommander', anonymous=True)
@@ -217,11 +257,15 @@ class RCommanderWindow(RNodeBoxBaseClass):
         #write the line that would instantiate state
         pass
 
-    def run_sm_cb(self):
-        self.graph_model.create_state_machine()
-        #pass
-        #outcomes = self.graph_model.outcomes()
-        #sm = smach.StateMachine(outcomes=outcomes)
+    def run_sm_cb(self, checked):
+        #TODO Disable all buttons
+
+        #Create and run state machine
+        sm = self.graph_model.create_state_machine()
+        rthread = ThreadRunSM(self.current_graph_name, sm)
+        rthread.start()
+
+        #Create monitoring thread
 
 
     ##################
@@ -401,7 +445,7 @@ class GraphView:
         selected_edge_style.stroke = self.context.color(0.80, 0.00, 0.00, 0.75)
         selected_edge_style.strokewidth = 1.0
 
-        g.node('start').style = 'marked'
+        #g.node('start').style = 'marked'
 
     def set_node_style(self, node_name, style):
         self.gve.node(node_name).style = style
@@ -480,6 +524,7 @@ class GraphModel:
                 transitions = {}
                 for e in self.gve.node(node_name).edges:
                     transitions[e.outcome] = e.node2.id
+                print node_name, transitions
                 smach.StateMachine.add(node_name, node, transitions=transitions)
         return sm
 
@@ -496,6 +541,7 @@ class GraphModel:
         for node_name in self.smach_states.keys():
             if self.smach_states[node_name].__class__ == EmptyState:
                 oc.append(node_name)
+        print 'outcomes', oc
         return oc
 
 
