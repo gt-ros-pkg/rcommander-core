@@ -242,7 +242,7 @@
                 </property>
                 <property name="icon">
                  <iconset>
-                  <normaloff>../../../../../../u/hnguyen/svn/wg/rcommander/qt/images/arrow_right.png</normaloff>../../../../../../u/hnguyen/svn/wg/rcommander/qt/images/arrow_right.png</iconset>
+                  <normaloff>../../../../../../../../u/hnguyen/svn/wg/rcommander/qt/images/arrow_right.png</normaloff>../../../../../../../../u/hnguyen/svn/wg/rcommander/qt/images/arrow_right.png</iconset>
                 </property>
                 <property name="checkable">
                  <bool>true</bool>
@@ -278,7 +278,7 @@
                 </property>
                 <property name="icon">
                  <iconset>
-                  <normaloff>../../../../../../u/hnguyen/svn/wg/rcommander/qt/images/delete.png</normaloff>../../../../../../u/hnguyen/svn/wg/rcommander/qt/images/delete.png</iconset>
+                  <normaloff>../../../../../../../../u/hnguyen/svn/wg/rcommander/qt/images/delete.png</normaloff>../../../../../../../../u/hnguyen/svn/wg/rcommander/qt/images/delete.png</iconset>
                 </property>
                 <property name="toolButtonStyle">
                  <enum>Qt::ToolButtonTextBesideIcon</enum>
@@ -648,6 +648,7 @@
     <property name="title">
      <string>Actions</string>
     </property>
+    <addaction name="action_Run"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -666,37 +667,37 @@
   </action>
   <action name="actionNew">
    <property name="text">
-    <string>New</string>
+    <string>&amp;New</string>
    </property>
   </action>
   <action name="actionOpen0">
    <property name="text">
-    <string>Open</string>
+    <string>&amp;Open</string>
    </property>
   </action>
   <action name="actionSave0">
    <property name="text">
-    <string>Save</string>
+    <string>&amp;Save</string>
    </property>
   </action>
   <action name="actionSave_As">
    <property name="text">
-    <string>Save As</string>
+    <string>Save &amp;As</string>
    </property>
   </action>
   <action name="actionClose">
    <property name="text">
-    <string>Close</string>
+    <string>&amp;Close</string>
    </property>
   </action>
   <action name="actionExit">
    <property name="text">
-    <string>Exit</string>
+    <string>E&amp;xit</string>
    </property>
   </action>
   <action name="actionCut">
    <property name="text">
-    <string>Cut</string>
+    <string>Cu&amp;t</string>
    </property>
   </action>
   <action name="actionPaste">
@@ -706,12 +707,17 @@
   </action>
   <action name="actionCopy">
    <property name="text">
-    <string>Copy</string>
+    <string>&amp;Copy</string>
    </property>
   </action>
   <action name="actionPaste0">
    <property name="text">
-    <string>Paste</string>
+    <string>&amp;Paste</string>
+   </property>
+  </action>
+  <action name="action_Run">
+   <property name="text">
+    <string>&amp;Run</string>
    </property>
   </action>
  </widget>

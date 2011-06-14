@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'RCommander.ui'
 #
-# Created: Thu Jun  9 12:00:38 2011
+# Created: Tue Jun 14 01:12:14 2011
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -138,7 +138,7 @@ class Ui_RCommanderWindow(object):
         self.horizontalLayout.addItem(spacerItem)
         self.add_edge_button = QtGui.QToolButton(self.widget_3)
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("../../../../../../u/hnguyen/svn/wg/rcommander/qt/images/arrow_right.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap("../../../../../../../../u/hnguyen/svn/wg/rcommander/qt/images/arrow_right.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.add_edge_button.setIcon(icon)
         self.add_edge_button.setCheckable(True)
         self.add_edge_button.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
@@ -152,7 +152,7 @@ class Ui_RCommanderWindow(object):
         self.horizontalLayout.addWidget(self.add_state_button)
         self.delete_button = QtGui.QToolButton(self.widget_3)
         icon1 = QtGui.QIcon()
-        icon1.addPixmap(QtGui.QPixmap("../../../../../../u/hnguyen/svn/wg/rcommander/qt/images/delete.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon1.addPixmap(QtGui.QPixmap("../../../../../../../../u/hnguyen/svn/wg/rcommander/qt/images/delete.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.delete_button.setIcon(icon1)
         self.delete_button.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
         self.delete_button.setAutoRaise(True)
@@ -356,6 +356,8 @@ class Ui_RCommanderWindow(object):
         self.actionCopy.setObjectName("actionCopy")
         self.actionPaste0 = QtGui.QAction(RCommanderWindow)
         self.actionPaste0.setObjectName("actionPaste0")
+        self.action_Run = QtGui.QAction(RCommanderWindow)
+        self.action_Run.setObjectName("action_Run")
         self.menuFile.addAction(self.actionNew)
         self.menuFile.addAction(self.actionOpen0)
         self.menuFile.addSeparator()
@@ -367,6 +369,7 @@ class Ui_RCommanderWindow(object):
         self.menuEdit.addAction(self.actionCut)
         self.menuEdit.addAction(self.actionCopy)
         self.menuEdit.addAction(self.actionPaste0)
+        self.menuActions.addAction(self.action_Run)
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuEdit.menuAction())
         self.menubar.addAction(self.menuActions.menuAction())
@@ -415,16 +418,17 @@ class Ui_RCommanderWindow(object):
         self.menuActions.setTitle(QtGui.QApplication.translate("RCommanderWindow", "Actions", None, QtGui.QApplication.UnicodeUTF8))
         self.actionOpen.setText(QtGui.QApplication.translate("RCommanderWindow", "New", None, QtGui.QApplication.UnicodeUTF8))
         self.actionSave.setText(QtGui.QApplication.translate("RCommanderWindow", "Save", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionNew.setText(QtGui.QApplication.translate("RCommanderWindow", "New", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionOpen0.setText(QtGui.QApplication.translate("RCommanderWindow", "Open", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionSave0.setText(QtGui.QApplication.translate("RCommanderWindow", "Save", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionSave_As.setText(QtGui.QApplication.translate("RCommanderWindow", "Save As", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionClose.setText(QtGui.QApplication.translate("RCommanderWindow", "Close", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionExit.setText(QtGui.QApplication.translate("RCommanderWindow", "Exit", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionCut.setText(QtGui.QApplication.translate("RCommanderWindow", "Cut", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionNew.setText(QtGui.QApplication.translate("RCommanderWindow", "&New", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionOpen0.setText(QtGui.QApplication.translate("RCommanderWindow", "&Open", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionSave0.setText(QtGui.QApplication.translate("RCommanderWindow", "&Save", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionSave_As.setText(QtGui.QApplication.translate("RCommanderWindow", "Save &As", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionClose.setText(QtGui.QApplication.translate("RCommanderWindow", "&Close", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionExit.setText(QtGui.QApplication.translate("RCommanderWindow", "E&xit", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionCut.setText(QtGui.QApplication.translate("RCommanderWindow", "Cu&t", None, QtGui.QApplication.UnicodeUTF8))
         self.actionPaste.setText(QtGui.QApplication.translate("RCommanderWindow", "Paste", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionCopy.setText(QtGui.QApplication.translate("RCommanderWindow", "Copy", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionPaste0.setText(QtGui.QApplication.translate("RCommanderWindow", "Paste", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionCopy.setText(QtGui.QApplication.translate("RCommanderWindow", "&Copy", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionPaste0.setText(QtGui.QApplication.translate("RCommanderWindow", "&Paste", None, QtGui.QApplication.UnicodeUTF8))
+        self.action_Run.setText(QtGui.QApplication.translate("RCommanderWindow", "&Run", None, QtGui.QApplication.UnicodeUTF8))
 
 import resources_rc
 import resources_rc

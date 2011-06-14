@@ -14,6 +14,7 @@ import graph.style as gs
 import math
 import pdb
 import tf
+import smach
 
 from rcommander_auto import Ui_RCommanderWindow
 
@@ -152,7 +153,6 @@ class RCommanderWindow(RNodeBoxBaseClass):
         rospy.init_node('rcommander', anonymous=True)
         self.tf_listener = tf.TransformListener()
 
-
     def add_tools(self, tools_list):
         # In the future add tools according to which tab they want to be in
         self.button_group_tab = QButtonGroup()
@@ -187,7 +187,6 @@ class RCommanderWindow(RNodeBoxBaseClass):
 
         #    #change add button to save
 
-
     def set_selected_edge(self, n1, n2):
         if n1 == None:
             self.selected_edge = None
@@ -214,6 +213,17 @@ class RCommanderWindow(RNodeBoxBaseClass):
     #####################################################################
     # Callbacks
     #####################################################################
+    def save_sm_cb(self):
+        #write the line that would instantiate state
+        pass
+
+    def run_sm_cb(self):
+        self.graph_model.create_state_machine()
+        #pass
+        #outcomes = self.graph_model.outcomes()
+        #sm = smach.StateMachine(outcomes=outcomes)
+
+
     ##################
     # Behavior tools
     ##################
@@ -273,6 +283,17 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.ui.add_button.setDisabled(False)
         self.ui.save_button.setDisabled(False)
 
+    def deselect_tool_buttons(self):
+        self.button_group_tab.setExclusive(False)
+        button = self.button_group_tab.checkedButton()
+        print button
+        if button != None:
+            print 'checked', button.isChecked(), button.isDown(), button.isCheckable(), button.text()
+            button.setDown(False)
+            button.setChecked(False)
+            print 'checked2', button.isChecked(), button.isDown()
+        self.button_group_tab.setExclusive(True)
+
     def edit_mode(self):
         self.ui.add_button.hide()
         self.ui.save_button.show()
@@ -284,7 +305,6 @@ class RCommanderWindow(RNodeBoxBaseClass):
     def empty_properties_box(self):
         self.empty_container(self.ui.properties_tab)
         self.empty_container(self.ui.connections_tab)
-
 
     def delete_cb(self):
         if self.selected_node != None:
@@ -306,7 +326,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.empty_properties_box()
         self.add_mode()
         self.disable_buttons()
-
+        self.deselect_tool_buttons()
 
     def node_cb(self, node):
         self.set_selected_node(node.id)
@@ -315,6 +335,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
         if self.graph_model.get_smach_state(node.id).__class__ != EmptyState:
             smach_state = self.graph_model.get_smach_state(node.id)
             tool = self.tool_dict[smach_state.tool_name]['tool_obj']
+            tool.button.setChecked(True)
             tool.activate_cb(smach_state.get_name())
             tool.node_selected(smach_state)
 
@@ -446,10 +467,38 @@ class GraphModel:
     def __init__(self):
         self.gve = graph.create(depth=True)
         self.smach_states = {}
-        self.add_outcome('start')
+        #self.add_outcome('start')
 
         self.node = self.gve.node
         self.edge = self.gve.edge
+
+    def create_state_machine(self):
+        sm = smach.StateMachine(outcomes=self.outcomes())
+        with sm:
+            for node_name in self.nonoutcomes():
+                node = self.smach_states[node_name]
+                transitions = {}
+                for e in self.gve.node(node_name).edges:
+                    transitions[e.outcome] = e.node2.id
+                smach.StateMachine.add(node_name, node, transitions=transitions)
+        return sm
+
+    def nonoutcomes(self):
+        noc = []
+        for node_name in self.smach_states.keys():
+            if self.smach_states[node_name].__class__ != EmptyState:
+                noc.append(node_name)
+        return noc
+
+    def outcomes(self):
+        #all empty states are outcomes
+        oc = []
+        for node_name in self.smach_states.keys():
+            if self.smach_states[node_name].__class__ == EmptyState:
+                oc.append(node_name)
+        return oc
+
+
 
     def pop_smach_state(self, node_name):
         return self.smach_states.pop(node_name)
@@ -519,7 +568,7 @@ class GraphModel:
 
     def add_outcome(self, outcome_name):
         self.gve.add_node(outcome_name)
-        self.smach_states[outcome_name] = EmptyState('start', False)
+        self.smach_states[outcome_name] = EmptyState(outcome_name, False)
 
     def delete_node(self, node_name):
         #temporary nodes are only removable when the state transitions are linked to something else
