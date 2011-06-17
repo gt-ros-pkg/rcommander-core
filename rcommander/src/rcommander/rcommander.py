@@ -335,7 +335,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
 
         #user canceled
         if len(filename) == 0:
-            return
+            return False
 
         if pt.exists(filename):
             #Ask if want to over write
@@ -346,26 +346,33 @@ class RCommanderWindow(RNodeBoxBaseClass):
             msg_box.setDefaultButton(QMessageBox.Cancel)
             ret = msg_box.exec_()
             if ret == QMessageBox.No or ret == QMessageBox.Cancel:
-                return
+                return False
 
         self.graph_model.save(filename)
         self.document.set_filename(filename)
         self.document.real_filename = True
         self.document.modified = False
+        return True
 
     def save_sm_cb(self):
-#        print 'has real filename?', self.document.has_real_filename()
+        #print 'has real filename?', self.document.has_real_filename()
         if self.document.has_real_filename():
             self.graph_model.save(self.document.get_filename())
             self.document.modified = False
+            return True
         else:
-            self.save_as_sm_cb()
+            return self.save_as_sm_cb()
 
     def new_sm_cb(self):
-        pass
+        #prompt user to save if document has been modifid
+        if not self.check_current_document():
+            return
 
-    def open_sm_cb(self):
-        #prompt user if current document has not been saved
+        self._set_model(GraphModel())
+        self.nothing_cb(None)
+        self.document = FSMDocument.new_document()
+
+    def check_current_document(self):
         if self.document.modified:
             msg_box = QMessageBox()
             msg_box.setText('Current state machine has not been saved.')
@@ -373,10 +380,26 @@ class RCommanderWindow(RNodeBoxBaseClass):
             msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
             msg_box.setDefaultButton(QMessageBox.Cancel)
             ret = msg_box.exec_()
-            if ret == QMessageBox.Yes:
-                self.save_cb()
-            elif ret == QMessageBox.Cancel:
-                return
+
+            if ret == QMessageBox.Cancel:
+                return False
+
+            elif ret == QMessageBox.Yes:
+                return self.save_sm_cb()
+
+        return True
+
+
+    def open_sm_cb(self):
+        #prompt user if current document has not been saved
+        if not self.check_current_document():
+            return
+        #if self.document.modified:
+        #    if self.ask_to_save():
+        #    if ret == QMessageBox.Yes:
+        #        self.save_sm_cb()
+        #    elif ret == QMessageBox.Cancel:
+        #        return
 
         dialog = QFileDialog(self, 'Open State Machine', '~')
         dialog.setFileMode(QFileDialog.Directory)
