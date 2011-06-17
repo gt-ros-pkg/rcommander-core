@@ -354,6 +354,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.document.modified = False
 
     def save_sm_cb(self):
+#        print 'has real filename?', self.document.has_real_filename()
         if self.document.has_real_filename():
             self.graph_model.save(self.document.get_filename())
             self.document.modified = False
@@ -377,8 +378,6 @@ class RCommanderWindow(RNodeBoxBaseClass):
             elif ret == QMessageBox.Cancel:
                 return
 
-
-
         dialog = QFileDialog(self, 'Open State Machine', '~')
         dialog.setFileMode(QFileDialog.Directory)
         dialog.setViewMode(QFileDialog.List)
@@ -388,7 +387,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
             #Set this a the new model
             self._set_model(GraphModel.load(filename))
             #Reset state of GUI
-            self.nothing_cb()
+            self.nothing_cb(None)
             self.document = FSMDocument(filename, modified=False, real_filename=True)
             #TODO has to make sure selected and whatever variables are set right
             # as well as state of the GUI
