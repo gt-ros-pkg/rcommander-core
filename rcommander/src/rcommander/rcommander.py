@@ -18,10 +18,15 @@ import smach
 import smach_ros
 import threading
 from rcommander_auto import Ui_RCommanderWindow
+import cPickle as pk
+import os.path as pt
+import os
+import glob
 
 #Import tools
 import navigate_tool as nt
 import tuck_tool as tt
+import outcome_tool as ot
 
 class RNodeBoxBaseClass(QtGui.QMainWindow):
     def __init__(self):
@@ -153,9 +158,51 @@ class ThreadRunSMMonitor(threading.Thread):
         self.parent_window = parent_window
 
     def run(self):
-        r = rospy.Rate(100)
+        print 'ThreadRunSMMonitor: started'
+        r = rospy.Rate(10)
         while not rospy.is_shutdown():
+
+            if self.sm_thread.exception != None:
+                m = self.sm_thread.exception.message
+                self.parent_window.statusBar().showMessage('InvalidTransitionError: %s' % m, 15000)
+                return
+
+            if self.sm_thread.outcome != None:
+                self.parent_window.statusBar().showMessage('Finished with outcome: %s' % self.sm_thread.outcome, 15000)
+                return
+
+            if not self.sm_thread.isAlive():
+                self.parent_window.statusBar().showMessage('Error: SM thread unexpectedly died.', 15000)
+                return
+
             r.sleep()
+        print 'ThreadRunSMMonitor: returned'
+
+
+class FSMDocument:
+    count = 0
+    @staticmethod
+    def new_document():
+        d = FSMDocument('untitled' + str(FSMDocument.count), False, False)
+        FSMDocument.count = FSMDocument.count + 1
+        return d
+
+    def __init__(self, filename, modified, real_filename=False):
+        self.filename = filename
+        self.modified = modified
+        self.real_filename = real_filename
+
+    def get_name(self):
+        return pt.split(self.filename)[1]
+
+    def get_filename(self):
+        return self.filename
+
+    def set_filename(self, fn):
+        self.filename = fn
+
+    def has_real_filename(self):
+        return self.real_filename
 
 
 ##
@@ -165,17 +212,22 @@ class RCommanderWindow(RNodeBoxBaseClass):
 
     def __init__(self):
         RNodeBoxBaseClass.__init__(self)
-        self.connect(self.ui.run_button,   SIGNAL('clicked()'), self.run_cb)
-        self.connect(self.ui.add_button,   SIGNAL('clicked()'), self.add_cb)
-        self.connect(self.ui.reset_button, SIGNAL('clicked()'), self.reset_cb)
-        self.connect(self.ui.save_button, SIGNAL('clicked()'), self.save_cb)
-        self.add_mode()
+        self.connect(self.ui.run_button,         SIGNAL('clicked()'), self.run_cb)
+        self.connect(self.ui.add_button,         SIGNAL('clicked()'), self.add_cb)
+        self.connect(self.ui.reset_button,       SIGNAL('clicked()'), self.reset_cb)
+        self.connect(self.ui.save_button,        SIGNAL('clicked()'), self.save_cb)
 
         self.connect(self.ui.delete_button, SIGNAL('clicked()'), self.delete_cb)
         self.connect(self.ui.action_Run, SIGNAL('triggered(bool)'), self.run_sm_cb)
-        #self.connect(self.ui.add_edge_button, SIGNAL('clicked()'), self.add_edge_cb)
+        self.connect(self.ui.actionNew, SIGNAL('triggered(bool)'), self.new_sm_cb)
+        self.connect(self.ui.action_save, SIGNAL('triggered(bool)'), self.save_sm_cb)
+        self.connect(self.ui.action_save_as, SIGNAL('triggered(bool)'), self.save_as_sm_cb)
+        self.connect(self.ui.action_open, SIGNAL('triggered(bool)'), self.open_sm_cb)
+
         self.empty_container(self.ui.properties_tab)
         self.empty_container(self.ui.connections_tab)
+        self.add_mode()
+        self.disable_buttons()
 
         #create instance variables
         self.tool_dict = {}
@@ -184,14 +236,45 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.selected_graph_tool = None 
         self.selected_node = None
         self.selected_edge = None
-        self.current_graph_name = 'untitled'
+        #self.tool_dict['add_edge'] = {}
+
+        self.document = FSMDocument.new_document()
+        self.current_sm_threads = {}
+        #self.current_graph_name = 'untitled_fsm'
+
+        self.status_bar_timer = QTimer()
+        self.connect(self.status_bar_timer, SIGNAL('timeout()'), self.status_bar_check)
+        self.status_bar_timer.start(100)
         #self.set_selected_node('start')
-        self.tool_dict['add_edge'] = {}
         #self.node_cb(self.graph_model.node('start'))
         
-        #ros things
+        #ROS things
         rospy.init_node('rcommander', anonymous=True)
         self.tf_listener = tf.TransformListener()
+
+    def status_bar_check(self):
+        if self.current_sm_threads.has_key('run_sm'):
+            sm_thread = self.current_sm_threads['run_sm']
+
+            if sm_thread.exception != None:
+                m = sm_thread.exception.message
+                self.statusBar().showMessage('InvalidTransitionError: %s' % m, 15000)
+                self.current_sm_threads.pop('run_sm')
+                return
+
+            if sm_thread.outcome != None:
+                self.statusBar().showMessage('Finished with outcome: %s' % sm_thread.outcome, 15000)
+                self.current_sm_threads.pop('run_sm')
+                return
+
+            if not sm_thread.isAlive():
+                self.statusBar().showMessage('Error: SM thread unexpectedly died.', 15000)
+                self.current_sm_threads.pop('run_sm')
+                return
+
+            rstring = 'Running...'
+            if str(self.statusBar().currentMessage()) != rstring:
+                self.statusBar().showMessage(rstring, 1000)
 
     def add_tools(self, tools_list):
         # In the future add tools according to which tab they want to be in
@@ -199,33 +282,17 @@ class RCommanderWindow(RNodeBoxBaseClass):
         for tool in tools_list:
             self.button_group_tab.addButton(tool.create_button(self.ui.tab))
             self.tool_dict[tool.get_name()] = {'tool_obj': tool}
+
         self.ui.tab.update()
+        self.button_group_tab.addButton(self.ui.add_outcome_button)
+        outcome_tool = ot.OutcomeTool(self.ui.add_outcome_button, self)
+        self.tool_dict[outcome_tool.get_name()] = {'tool_obj': outcome_tool}
 
     def connectable_nodes(self, node_name, outcome):
         return self.graph_model.connectable_nodes(node_name, outcome)
 
-    #def set_selected_node(self, name):
-    #    if self.selected_node != None:
-    #        self.set_node_style(self.selected_node, 'normal')
-
-    #    self.selected_node = name
-    #    if name != None:
-    #        self.set_node_style(self.selected_node, 'selected')
-
-    #    self.nb_graph.layout.refresh()
-
     def set_selected_node(self, name):
         self.selected_node = name
-
-        #Unselect any tool from nongraph toolbar
-
-        ##Load the state in
-        #if self.graph_view.is_modifiable(name):
-        #    smach_state = self.graph_model.get_smach_state(name)
-        #    tool_obj = self.tool_dict[smach_state.tool_name()]['tool_obj']
-        #    tool_obj.load_state(smach_state)
-
-        #    #change add button to save
 
     def set_selected_edge(self, n1, n2):
         if n1 == None:
@@ -250,24 +317,86 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.selected_tool = tool
         #TODO: disable buttons
 
+    def create_and_run(self, graph_model):
+        if self.current_sm_threads.has_key('run_sm'):
+            raise RuntimeError('Only state machine execution thread maybe be active at a time.')
+        sm = graph_model.create_state_machine()
+        #rthread = ThreadRunSM(self.current_graph_name, sm)
+        rthread = ThreadRunSM(self.document.get_name(), sm)
+        rthread.start()
+        self.current_sm_threads['run_sm'] = rthread
+
     #####################################################################
     # Callbacks
     #####################################################################
+    def save_as_sm_cb(self):
+        #popup file dialog
+        filename = str(QFileDialog.getSaveFileName(self, 'Save As', self.document.get_filename()))
+
+        #user canceled
+        if len(filename) == 0:
+            return
+
+        if pt.exists(filename):
+            #Ask if want to over write
+            msg_box = QMessageBox()
+            msg_box.setText('There is already a file with this name.')
+            msg_box.setInformativeText('Do you want to overwrite it?')
+            msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
+            msg_box.setDefaultButton(QMessageBox.Cancel)
+            ret = msg_box.exec_()
+            if ret == QMessageBox.No or ret == QMessageBox.Cancel:
+                return
+
+        self.graph_model.save(filename)
+        self.document.set_filename(filename)
+        self.document.real_filename = True
+        self.document.modified = False
+
     def save_sm_cb(self):
-        #write the line that would instantiate state
+        if self.document.has_real_filename():
+            self.graph_model.save(self.document.get_filename())
+            self.document.modified = False
+        else:
+            self.save_as_sm_cb()
+
+    def new_sm_cb(self):
         pass
+
+    def open_sm_cb(self):
+        #prompt user if current document has not been saved
+        if self.document.modified:
+            msg_box = QMessageBox()
+            msg_box.setText('Current state machine has not been saved.')
+            msg_box.setInformativeText('Do you want to save it first?')
+            msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
+            msg_box.setDefaultButton(QMessageBox.Cancel)
+            ret = msg_box.exec_()
+            if ret == QMessageBox.Yes:
+                self.save_cb()
+            elif ret == QMessageBox.Cancel:
+                return
+
+
+
+        dialog = QFileDialog(self, 'Open State Machine', '~')
+        dialog.setFileMode(QFileDialog.Directory)
+        dialog.setViewMode(QFileDialog.List)
+        if dialog.exec_():
+            filenames = dialog.selectedFiles()
+            filename = str(filenames[0])
+            #Set this a the new model
+            self._set_model(GraphModel.load(filename))
+            #Reset state of GUI
+            self.nothing_cb()
+            self.document = FSMDocument(filename, modified=False, real_filename=True)
+            #TODO has to make sure selected and whatever variables are set right
+            # as well as state of the GUI
 
     def run_sm_cb(self, checked):
         #TODO Disable all buttons
-
-        #Create and run state machine
-        sm = self.graph_model.create_state_machine()
-        rthread = ThreadRunSM(self.current_graph_name, sm)
-        rthread.start()
-
-        #Create monitoring thread
-
-
+        self.create_and_run(self.graph_model)
+    
     ##################
     # Behavior tools
     ##################
@@ -275,7 +404,10 @@ class RCommanderWindow(RNodeBoxBaseClass):
         if self.selected_tool == None:
             return
         tool_instance = self.tool_dict[self.selected_tool]['tool_obj']
-        tool_instance.run()
+        node = tool_instance.create_node(unique=False)
+        temp_gm = GraphModel()
+        temp_gm.add_node(node)
+        self.create_and_run(temp_gm)
 
     def add_cb(self):
         if self.selected_tool == None:
@@ -283,12 +415,14 @@ class RCommanderWindow(RNodeBoxBaseClass):
         tool_instance = self.tool_dict[self.selected_tool]['tool_obj']
         smach_node = tool_instance.create_node()
         self.graph_model.add_node(smach_node, connect_to=self.selected_node)
-        if self.selected_node != None:
-            #self.set_selected_node(None)
-            self.set_selected_node(smach_node.name)
+        if self.selected_node == None:
+            self.node_cb(self.graph_model.node(smach_node.name))
+        else:
+            self.node_cb(self.graph_model.node(self.selected_node))
 
         self.tool_dict[self.selected_tool]['tool_obj'].refresh_connections_box()
         self.graph_view.refresh()
+        self.document.modified = True
 
     def reset_cb(self):
         if self.selected_tool == None:
@@ -301,16 +435,18 @@ class RCommanderWindow(RNodeBoxBaseClass):
         #old_smach_node = self.graph_model.get_smach_state()
         old_node_name = tool_instance.get_current_node_name()
         # create a node with new settings
-        smach_node = tool_instance.create_node()
+        smach_node = tool_instance.create_node(unique=False)
         # 'delete' old smach node
         self.graph_model.replace_node(smach_node, old_node_name)
         #self.graph_model.set_smach_state(old_smach_node.get_name(), smach_node)
 
         # connection changes are made instantly (so don't worry about them)
         # only saving of internal node parameters must be implemented by client tools
+        self.document.modified = True
 
     def connection_changed(self, node_name, outcome_name, new_outcome):
         self.graph_model.connection_changed(node_name, outcome_name, new_outcome)
+        self.document.modified = True
 
     ##################
     # Graph tools
@@ -330,12 +466,12 @@ class RCommanderWindow(RNodeBoxBaseClass):
     def deselect_tool_buttons(self):
         self.button_group_tab.setExclusive(False)
         button = self.button_group_tab.checkedButton()
-        print button
+        #print button
         if button != None:
-            print 'checked', button.isChecked(), button.isDown(), button.isCheckable(), button.text()
+            #print 'checked', button.isChecked(), button.isDown(), button.isCheckable(), button.text()
             button.setDown(False)
             button.setChecked(False)
-            print 'checked2', button.isChecked(), button.isDown()
+            #print 'checked2', button.isChecked(), button.isDown()
         self.button_group_tab.setExclusive(True)
 
     def edit_mode(self):
@@ -358,11 +494,13 @@ class RCommanderWindow(RNodeBoxBaseClass):
             else:
                 print 'Can\'t delete start node!'
 
-        if self.selected_edge != None:
-            se = self.selected_edge
-            self.set_selected_edge(None, None)
-            self.graph_model.delete_edge(se)
-            self.graph_view.refresh()
+        #TODO rethink deleting of edges
+        #if self.selected_edge != None:
+        #    se = self.selected_edge
+        #    self.set_selected_edge(None, None)
+        #    self.graph_model.delete_edge(se)
+        #    self.graph_view.refresh()
+        self.document.modified = True
 
     def nothing_cb(self, pt):
         self.set_selected_node(None)
@@ -376,16 +514,16 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.set_selected_node(node.id)
         self.set_selected_edge(None, None)
 
-        if self.graph_model.get_smach_state(node.id).__class__ != EmptyState:
+        if self.graph_model.get_smach_state(node.id).__class__ != ot.EmptyState:
             smach_state = self.graph_model.get_smach_state(node.id)
             tool = self.tool_dict[smach_state.tool_name]['tool_obj']
             tool.button.setChecked(True)
             tool.activate_cb(smach_state.get_name())
-            tool.node_selected(smach_state)
 
-            self.edit_mode()
             self.set_selected_tool(smach_state.tool_name)
+            self.edit_mode()
             self.enable_buttons()
+            tool.node_selected(smach_state)
         else:
             self.empty_properties_box()
             self.disable_buttons()
@@ -410,7 +548,10 @@ class RCommanderWindow(RNodeBoxBaseClass):
     #####################################################################
     def setup(self):
         graph._ctx = self.context
-        self.graph_model = GraphModel()
+        self._set_model(GraphModel())
+
+    def _set_model(self, model):
+        self.graph_model = model
         self.graph_view = GraphView(self.context, self.graph_model)
         self.graph_view.setup()
 
@@ -499,14 +640,10 @@ class GraphView:
         g.draw(directed=True, traffic=False, user_draw=draw_func)
 
 
-class EmptyState:
-
-    def __init__(self, name, temporary):
-        self.name = name
-        self.temporary = temporary
-
 
 class GraphModel:
+
+    GRAPH_FILE = 'edges.graph'
 
     def __init__(self):
         self.gve = graph.create(depth=True)
@@ -515,6 +652,52 @@ class GraphModel:
 
         self.node = self.gve.node
         self.edge = self.gve.edge
+
+    @staticmethod
+    def load(name):
+        state_pkl_names = glob.glob(pt.join(name, '*.state'))
+
+        gm = GraphModel()
+        gm.smach_states = {}
+
+        #Load individual states
+        for fname in state_pkl_names:
+            sname = pt.splitext(pt.split(fname)[1])[0]
+            pickle_file = open(fname, 'r')
+            gm.smach_states[sname] = pk.load(pickle_file)
+            pickle_file.close()
+
+        #Reconstruct graph
+        graph_name = pt.join(name, GraphModel.GRAPH_FILE)
+        pickle_file = open(graph_name, 'r')
+        edges = pk.load(pickle_file)
+        pickle_file.close()
+        for node1, node2, n1_outcome in edges:
+            gm.gve.add_edge(node1, node2)
+            eobject = gm.edge(node1, node2)
+            eobject.outcome = n1_outcome
+        return gm
+
+    def save(self, name):
+        if not pt.exists(name):
+            os.mkdir(name)
+
+        #Save each state
+        for state_name in self.smach_states.keys():
+            state_fname = pt.join(name, state_name) + '.state'
+            pickle_file = open(state_fname, 'w')
+            pk.dump(self.smach_states[state_name], pickle_file)
+            pickle_file.close()
+
+        #Save connections
+        edge_list = []
+        for e in self.gve.edges:
+            edge_list.append([e.node1.id, e.node2.id, e.outcome])
+
+        edge_fn = pt.join(name, 'edges.graph')
+        pickle_file = open(edge_fn, 'w')
+        pk.dump(edge_list, pickle_file)
+        pickle_file.close()
 
     def create_state_machine(self):
         sm = smach.StateMachine(outcomes=self.outcomes())
@@ -531,7 +714,7 @@ class GraphModel:
     def nonoutcomes(self):
         noc = []
         for node_name in self.smach_states.keys():
-            if self.smach_states[node_name].__class__ != EmptyState:
+            if self.smach_states[node_name].__class__ != ot.EmptyState:
                 noc.append(node_name)
         return noc
 
@@ -539,17 +722,16 @@ class GraphModel:
         #all empty states are outcomes
         oc = []
         for node_name in self.smach_states.keys():
-            if self.smach_states[node_name].__class__ == EmptyState:
+            if self.smach_states[node_name].__class__ == ot.EmptyState:
                 oc.append(node_name)
         print 'outcomes', oc
         return oc
-
-
 
     def pop_smach_state(self, node_name):
         return self.smach_states.pop(node_name)
 
     def get_smach_state(self, node_name):
+        #print self.smach_states.keys()
         return self.smach_states[node_name]
 
     def set_smach_state(self, node_name, state):
@@ -592,14 +774,14 @@ class GraphModel:
 
     def add_node(self, smach_node, connect_to=None):
         if self.smach_states.has_key(smach_node.name):
-            raise RuntimeException('Already has node of the same name.  This case should not happen.')
+            raise RuntimeError('Already has node of the same name.  This case should not happen.')
 
         #Link this node to all its outcomes
         self.gve.add_node(smach_node.name)
         self.smach_states[smach_node.name] = smach_node
         for outcome in smach_node.get_registered_outcomes():
             if not self.smach_states.has_key(outcome):
-                self.smach_states[outcome] = EmptyState(outcome, temporary=True)
+                self.smach_states[outcome] = ot.EmptyState(outcome, temporary=True)
                 self.gve.add_node(outcome)
             #self.gve.add_edge(smach_node.name, outcome)
             self._add_edge(smach_node.name, outcome, outcome)
@@ -614,7 +796,7 @@ class GraphModel:
 
     def add_outcome(self, outcome_name):
         self.gve.add_node(outcome_name)
-        self.smach_states[outcome_name] = EmptyState(outcome_name, False)
+        self.smach_states[outcome_name] = ot.EmptyState(outcome_name, False)
 
     def delete_node(self, node_name):
         #temporary nodes are only removable when the state transitions are linked to something else
@@ -634,7 +816,7 @@ class GraphModel:
             elif edge.node2.id == node_name:
                 parent_edges.append(edge)
 
-        #Remove added orphan children edges
+        #Remove placeholder children nodes
         filtered_children_edges = []
         for e in children_edges:
             if not self.is_modifiable(e.node2.id) and len(e.node2.edges) <= 1:
@@ -653,6 +835,16 @@ class GraphModel:
                 self.gve.remove_edge(node_name, e.node2.id)
                 self.gve.add_edge(parent_node_id, e.node2.id)
             new_selected_node = parent_node_id
+
+            #On each one of the parent, check to see if we are the terminal state
+            for e in parent_edges:
+                parent_id = e.node1.id
+                outcome_set = set(self.get_smach_state(parent_id).get_registered_outcomes())
+                if e.outcome in outcome_set:
+                    self.connection_changed(parent_id, e.outcome, e.outcome)
+                    #jjself.smach_states[e.outcome] = ot.EmptyState(e.outcome, temporary=True)
+                    #self.gve.add_node(e.outcome)
+                    #self._add_edge(parent_id, e.outcome, e.outcome)
 
         #If no parents
         elif len(parent_edges) == 0:
@@ -673,21 +865,21 @@ class GraphModel:
         return new_selected_node
 
     def is_modifiable(self, node_name):
-        if (self.smach_states[node_name].__class__ == EmptyState) and self.smach_states[node_name].temporary:
+        if (self.smach_states[node_name].__class__ == ot.EmptyState) and self.smach_states[node_name].temporary:
             return False
         else:
             return True
 
     def _add_edge(self, n1, n2, n1_outcome):
         if not self.smach_states.has_key(n1) or not self.smach_states.has_key(n2):
-            raise RuntimeException('One of the modes does not exist.  Can\'t add edge.')
+            raise RuntimeError('One of the modes does not exist.  Can\'t add edge.')
         if self.gve.edge(n1, n2) != None:
             rospy.loginfo("Edge between %s and %s exists, ignoring connnection request" % (n1, n2))
             return False
 
         #Don't add edges to "temporary" nodes
         if n1_outcome == None and self.is_modifiable(n2):
-            raise RuntimeException('Must specify outcome as goal node is not a temporary node.')
+            raise RuntimeError('Must specify outcome as goal node is not a temporary node.')
 
         self.gve.add_edge(n1, n2)
         self.gve.edge(n1, n2).outcome = n1_outcome
@@ -712,15 +904,15 @@ class GraphModel:
         if node_name == None:
             return
         if not self.smach_states.has_key(new_outcome):
-            raise RuntimeException('Doesn\'t have state: %s' % new_outcome)
+            raise RuntimeError('Doesn\'t have state: %s' % new_outcome)
         self.get_smach_state(node_name).outcome_choices[outcome_name] = new_outcome
 
         #find the old edge
         old_edge = None
         for edge in self.gve.node(node_name).edges:
-            if edge.outcome == outcome_name:
+            if edge.outcome == outcome_name and edge.node1.id == node_name:
                 if old_edge != None:
-                    raise RuntimeException('Two edges detected for one outcome named %s' % outcome_name)
+                    raise RuntimeError('Two edges detected for one outcome named %s. %s -> %s and %s -> %s' % (outcome_name, old_edge.node1.id, old_edge.node2.id, edge.node1.id, edge.node2.id))
                 old_edge = edge
 
         #remove the old connection
@@ -733,7 +925,8 @@ class GraphModel:
 
         #add new connection
         if self.gve.node(new_outcome) == None:
-            self.smach_states[new_outcome] = EmptyState(new_outcome, temporary=True)
+            print 'recreated node', new_outcome
+            self.smach_states[new_outcome] = ot.EmptyState(new_outcome, temporary=True)
             self.gve.add_node(new_outcome)
         self._add_edge(node_name, new_outcome, outcome_name)
 
