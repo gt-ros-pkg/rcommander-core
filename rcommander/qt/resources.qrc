@@ -1,0 +1,14 @@
+<RCC>
+  <qresource prefix="/">
+    <file alias="zoomsmall">images/zoomsmall.png</file>
+    <file>images/delete.png</file>
+    <file>images/arrow_right.png</file>
+    <file alias="zoomsmall_pressed">images/zoomsmall_pressed.png</file>
+    <file alias="zoombig">images/zoombig.png</file>
+    <file alias="zoombig_pressed">images/zoombig_pressed.png</file>
+    <file alias="animationspinner">images/spinner.gif</file>
+    <file alias="icon_app.svg">icons/nodeboxicon.svg</file>
+    <file alias="icon_app_error.svg">icons/nodeboxerroricon.svg</file>
+    <file alias="icon_file.png">icons/nodeboxfile.png</file>
+  </qresource>
+</RCC>
