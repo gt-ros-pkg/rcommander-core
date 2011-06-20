@@ -632,22 +632,19 @@
     <addaction name="action_save"/>
     <addaction name="action_save_as"/>
     <addaction name="separator"/>
-    <addaction name="actionClose"/>
-    <addaction name="actionExit"/>
+    <addaction name="action_quit"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
      <string>Edit</string>
     </property>
-    <addaction name="actionCut"/>
-    <addaction name="actionCopy"/>
-    <addaction name="actionPaste0"/>
    </widget>
    <widget class="QMenu" name="menuActions">
     <property name="title">
      <string>Actions</string>
     </property>
     <addaction name="action_Run"/>
+    <addaction name="action_stop"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -668,6 +665,9 @@
    <property name="text">
     <string>&amp;New</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
+   </property>
   </action>
   <action name="action_open">
    <property name="text">
@@ -677,6 +677,9 @@
   <action name="action_save">
    <property name="text">
     <string>&amp;Save</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
    </property>
   </action>
   <action name="action_save_as">
@@ -689,9 +692,12 @@
     <string>&amp;Close</string>
    </property>
   </action>
-  <action name="actionExit">
+  <action name="action_quit">
    <property name="text">
-    <string>E&amp;xit</string>
+    <string>&amp;Quit</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Q</string>
    </property>
   </action>
   <action name="actionCut">
@@ -717,6 +723,17 @@
   <action name="action_Run">
    <property name="text">
     <string>&amp;Run</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+R</string>
+   </property>
+  </action>
+  <action name="action_stop">
+   <property name="text">
+    <string>&amp;Stop</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+X</string>
    </property>
   </action>
  </widget>

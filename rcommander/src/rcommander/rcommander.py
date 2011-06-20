@@ -230,6 +230,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.disable_buttons()
 
         #create instance variables
+        self.tabs = {}
         self.tool_dict = {}
         self.selected_tool = None
         #Name of currently selected tool that operates on graph
@@ -276,14 +277,31 @@ class RCommanderWindow(RNodeBoxBaseClass):
             if str(self.statusBar().currentMessage()) != rstring:
                 self.statusBar().showMessage(rstring, 1000)
 
+    def _create_tab(self, tab_name):
+        ntab = QWidget()
+        ntab.setObjectName(tab_name)
+        QHBoxLayout(ntab)
+        self.ui.tools_box.addTab(ntab, tab_name)
+        self.ui.tools_box.setTabText(self.tools_box.indexOf(ntab), tab_name)
+        self.tabs[tab_name] = ntab
+
+    ##
+    # Should only be called once during initialization
+    # @param list of [tab-name, tool-object] pairs
     def add_tools(self, tools_list):
-        # In the future add tools according to which tab they want to be in
+        #add tools to the right tab, creating tabs if needed
         self.button_group_tab = QButtonGroup()
-        for tool in tools_list:
-            self.button_group_tab.addButton(tool.create_button(self.ui.tab))
+        for tab_name, tool in tools_list:
+            if not self.tabs.has_key(tab_name):
+                self._create_tab(tab_name)
+            tab_widget = self.tabs[tab_name]
+            self.button_group_tab.addButton(tool.create_button(tab_widget))
             self.tool_dict[tool.get_name()] = {'tool_obj': tool}
 
-        self.ui.tab.update()
+        for tname in self.tabs.keys():
+            self.tabs[tname].update()
+
+        #Outcome tool is a specialized built in tool
         self.button_group_tab.addButton(self.ui.add_outcome_button)
         outcome_tool = ot.OutcomeTool(self.ui.add_outcome_button, self)
         self.tool_dict[outcome_tool.get_name()] = {'tool_obj': outcome_tool}
@@ -389,7 +407,6 @@ class RCommanderWindow(RNodeBoxBaseClass):
 
         return True
 
-
     def open_sm_cb(self):
         #prompt user if current document has not been saved
         if not self.check_current_document():
@@ -412,11 +429,10 @@ class RCommanderWindow(RNodeBoxBaseClass):
             #Reset state of GUI
             self.nothing_cb(None)
             self.document = FSMDocument(filename, modified=False, real_filename=True)
-            #TODO has to make sure selected and whatever variables are set right
-            # as well as state of the GUI
 
     def run_sm_cb(self, checked):
-        #TODO Disable all buttons
+        #TODO Disable all buttons.
+        #TODO Reflect state of running graph.
         self.create_and_run(self.graph_model)
     
     ##################
@@ -434,8 +450,10 @@ class RCommanderWindow(RNodeBoxBaseClass):
     def add_cb(self):
         if self.selected_tool == None:
             return
+        print 'selected_tool', self.selected_tool
         tool_instance = self.tool_dict[self.selected_tool]['tool_obj']
         smach_node = tool_instance.create_node()
+        print 'new node', smach_node
         self.graph_model.add_node(smach_node, connect_to=self.selected_node)
         if self.selected_node == None:
             self.node_cb(self.graph_model.node(smach_node.name))
@@ -536,19 +554,19 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.set_selected_node(node.id)
         self.set_selected_edge(None, None)
 
-        if self.graph_model.get_smach_state(node.id).__class__ != ot.EmptyState:
-            smach_state = self.graph_model.get_smach_state(node.id)
-            tool = self.tool_dict[smach_state.tool_name]['tool_obj']
-            tool.button.setChecked(True)
-            tool.activate_cb(smach_state.get_name())
+        #if self.graph_model.get_smach_state(node.id).__class__ != ot.EmptyState:
+        smach_state = self.graph_model.get_smach_state(node.id)
+        tool = self.tool_dict[smach_state.tool_name]['tool_obj']
+        tool.button.setChecked(True)
+        tool.activate_cb(smach_state.get_name())
 
-            self.set_selected_tool(smach_state.tool_name)
-            self.edit_mode()
-            self.enable_buttons()
-            tool.node_selected(smach_state)
-        else:
-            self.empty_properties_box()
-            self.disable_buttons()
+        self.set_selected_tool(smach_state.tool_name)
+        self.edit_mode()
+        self.enable_buttons()
+        tool.node_selected(smach_state)
+        #else:
+        #    self.empty_properties_box()
+        #    self.disable_buttons()
 
     def edge_cb(self, edge):
         self.set_selected_edge(edge.node1.id, edge.node2.id)
@@ -746,7 +764,7 @@ class GraphModel:
         for node_name in self.smach_states.keys():
             if self.smach_states[node_name].__class__ == ot.EmptyState:
                 oc.append(node_name)
-        print 'outcomes', oc
+        #print 'outcomes', oc
         return oc
 
     def pop_smach_state(self, node_name):
@@ -955,7 +973,8 @@ class GraphModel:
 
 app = QtGui.QApplication(sys.argv)
 rc = RCommanderWindow()
-rc.add_tools([nt.NavigateTool(rc), tt.TuckTool(rc)])
+rc.add_tools([['Navigation',   nt.NavigateTool(rc)], 
+              ['Manipulation', tt.TuckTool(rc)]])
 rc.show()
 sys.exit(app.exec_())
 
