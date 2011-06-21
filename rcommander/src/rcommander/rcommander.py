@@ -27,6 +27,7 @@ import glob
 import navigate_tool as nt
 import tuck_tool as tt
 import outcome_tool as ot
+import gripper_tool as gt
 
 class RNodeBoxBaseClass(QtGui.QMainWindow):
     def __init__(self):
@@ -282,11 +283,12 @@ class RCommanderWindow(RNodeBoxBaseClass):
         ntab.setObjectName(tab_name)
         QHBoxLayout(ntab)
         self.ui.tools_box.addTab(ntab, tab_name)
-        self.ui.tools_box.setTabText(self.tools_box.indexOf(ntab), tab_name)
+        self.ui.tools_box.setTabText(self.ui.tools_box.indexOf(ntab), tab_name)
         self.tabs[tab_name] = ntab
 
     ##
     # Should only be called once during initialization
+    #
     # @param list of [tab-name, tool-object] pairs
     def add_tools(self, tools_list):
         #add tools to the right tab, creating tabs if needed
@@ -450,10 +452,10 @@ class RCommanderWindow(RNodeBoxBaseClass):
     def add_cb(self):
         if self.selected_tool == None:
             return
-        print 'selected_tool', self.selected_tool
+        #print 'selected_tool', self.selected_tool
         tool_instance = self.tool_dict[self.selected_tool]['tool_obj']
         smach_node = tool_instance.create_node()
-        print 'new node', smach_node
+        #print 'new node', smach_node
         self.graph_model.add_node(smach_node, connect_to=self.selected_node)
         if self.selected_node == None:
             self.node_cb(self.graph_model.node(smach_node.name))
@@ -794,11 +796,15 @@ class GraphModel:
                     #edges.append([e.node1.id, new_node_name])
             self.gve.remove_node(old_node_name)
 
+    def _outcome_name(self, node_name, outcome):
+        return node_name + '_' + outcome
+
     def connectable_nodes(self, node_name, outcome):
         #can't connect to
         #  temporary nodes already connected whose name is not current outcome
         allowed_nodes = []
-
+        #outcome_name = self._outcome_name(node_name, outcome)
+        #allowed_nodes.append(outcome_name)
         for k in self.smach_states.keys():
             if not self.is_modifiable(k) and k != outcome:
                 continue
@@ -820,19 +826,12 @@ class GraphModel:
         self.gve.add_node(smach_node.name)
         self.smach_states[smach_node.name] = smach_node
         for outcome in smach_node.get_registered_outcomes():
+            #outcome_name = self._outcome_name(smach_node.name, outcome)
             if not self.smach_states.has_key(outcome):
                 self.smach_states[outcome] = ot.EmptyState(outcome, temporary=True)
                 self.gve.add_node(outcome)
             #self.gve.add_edge(smach_node.name, outcome)
             self._add_edge(smach_node.name, outcome, outcome)
-
-        #TODO figure out sensible way
-        #Connect node to its parent
-        #if connect_to != None:
-        #    self.gve.add_edge(connect_to, smach_node.name)
-        #    return True
-        #else:
-        #    return False
 
     def add_outcome(self, outcome_name):
         self.gve.add_node(outcome_name)
@@ -973,8 +972,9 @@ class GraphModel:
 
 app = QtGui.QApplication(sys.argv)
 rc = RCommanderWindow()
-rc.add_tools([['Navigation',   nt.NavigateTool(rc)], 
-              ['Manipulation', tt.TuckTool(rc)]])
+rc.add_tools([['Misc', nt.NavigateTool(rc)], 
+              ['Misc', tt.TuckTool(rc)],
+              ['Misc', gt.GripperTool(rc)]])
 rc.show()
 sys.exit(app.exec_())
 

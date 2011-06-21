@@ -2,7 +2,7 @@ import tool_utils as tu
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 import time
-from pr2_common_action_msgs.msg as ca 
+import pr2_common_action_msgs.msg as ca 
 
 class TuckTool(tu.ToolBase):
 
@@ -11,7 +11,7 @@ class TuckTool(tu.ToolBase):
 
     def fill_property_box(self, pbox):
         formlayout = pbox.layout()
-        self.speedline = QLineEdit(pbox)
+        #self.speedline = QLineEdit(pbox)
 
         self.tuck_left = QComboBox(pbox)
         self.tuck_left.addItem('True')
@@ -27,8 +27,8 @@ class TuckTool(tu.ToolBase):
 
 
     def _create_node(self, name=None):
-        left = ('True' == str(self.tuck_left.text()))
-        right = ('True' == str(self.tuck_right.text()))
+        left = ('True' == str(self.tuck_left.currentText()))
+        right = ('True' == str(self.tuck_right.currentText()))
         if name == None:
             nname = self.name + str(self.counter)
         else:

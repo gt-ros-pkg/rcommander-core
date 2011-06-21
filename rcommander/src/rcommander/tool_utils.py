@@ -92,15 +92,16 @@ class ToolBase:
 
     def fill_connections_box(self, pbox):
         formlayout = pbox.layout()
-
+        current_node_name = self._create_node().get_name()
         self.name_input = QLineEdit()
-        self.name_input.setText(self._create_node().get_name())
+        self.name_input.setText(current_node_name)
         formlayout.addRow('Name', self.name_input)
 
         for outcome in self.get_outcomes():
             #Make a new combobox and add available choices to it
             input_box = QComboBox(pbox)
             nodes = self.rcommander.connectable_nodes(self.get_current_node_name(), outcome)
+
             nodes.sort()
             for n in nodes:
                 input_box.addItem(n)
@@ -108,6 +109,8 @@ class ToolBase:
             #add to view 
             formlayout.addRow(outcome, input_box)
             #set outcome as default
+            #TODO abstract this line out
+            #outcome_name = self.get_current_node_name() + '_' + outcome
             input_box.setCurrentIndex(input_box.findText(outcome))
             #store object
             self.outcome_inputs[outcome] = input_box
@@ -125,11 +128,9 @@ class ToolBase:
 
     def get_current_node_name(self):
         return self.loaded_node_name 
-        #return str(self.name_input.text())
 
     def create_node(self, unique=True):
         if unique:
-            print 'COUNTER INCREMENTED!'
             self.counter = self.counter + 1
         n = self._create_node(str(self.name_input.text()))
         n.tool_name = self.get_name()
