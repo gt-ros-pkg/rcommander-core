@@ -47,16 +47,18 @@ class TuckTool(tu.ToolBase):
 class TuckState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
     def __init__(self, name, tuck_left, tuck_right):
         tu.SimpleStateBase.__init__(self, name, \
-                'tuck_arm', ca.TuckArmsAction, 
+                'tuck_arms', ca.TuckArmsAction, 
                 goal_cb = self.ros_goal) 
 
         self.tuck_left = tuck_left
         self.tuck_right = tuck_right
 
-    def ros_goal(self):
+    def ros_goal(self, userdata, default_goal):
         goal = ca.TuckArmsGoal()
         goal.tuck_left = self.tuck_left
         goal.tuck_right = self.tuck_right
+        print 'GOAL', goal.tuck_left, goal.tuck_right
+        return goal
 
     def __getstate__(self):
         state = tu.SimpleStateBase.__getstate__(self)

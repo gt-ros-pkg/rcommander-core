@@ -88,13 +88,12 @@ class GripperTool(tu.ToolBase):
 
     def fill_property_box(self, pbox):
         formlayout = pbox.layout()
-
         #Left or right
         self.radio_boxes, self.radio_buttons = make_radio_box(pbox, ['Left', 'Right'], 'gripper_arm')
         #Opening distance
-        self.gripper_box = SliderBox(pbox, 0.0, 8.5, 0.0, .01, 'gripper', units='cm')
+        self.gripper_box = SliderBox(pbox, 0.01, 8.4, 0.02, .01, 'gripper', units='cm')
         #Effort
-        self.effort_box = SliderBox(pbox, 50., 200., 0., 10., 'effort', units='')
+        self.effort_box = SliderBox(pbox, 50., 200., 0., 40., 'effort', units='')
 
         formlayout.addRow('&Side', self.radio_boxes)
         formlayout.addRow('&Gripper Opening', self.gripper_box.container)
@@ -127,7 +126,6 @@ class GripperTool(tu.ToolBase):
         self.gripper_box.set_value(gripper_state.gripper_size)
         self.effort_box.set_value(gripper_state.effort)
 
-
     def reset(self):
         self.gripper_box.set_value(0.0)
         self.effort_box.set_value(50.)
@@ -149,8 +147,8 @@ class GripperState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
         self.effort = effort
         self.arm = arm
 
-    def ros_goal(self):
-        return pm.Pr2GripperCommandGoal(pm.Pr2Grippercommand(position=self.gripper_size, max_effort=self.effort))
+    def ros_goal(self, userdata, default_goal):
+        return pm.Pr2GripperCommandGoal(pm.Pr2GripperCommand(position=self.gripper_size/100., max_effort=self.effort))
 
     def __getstate__(self):
         state = tu.SimpleStateBase.__getstate__(self)
@@ -160,3 +158,4 @@ class GripperState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
     def __setstate__(self, state):
         tu.SimpleStateBase.__setstate__(self, state['simple_state'])
         self.gripper_size, self.effort = state['self']
+
