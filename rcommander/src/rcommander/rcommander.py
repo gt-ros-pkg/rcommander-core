@@ -745,7 +745,7 @@ class GraphModel:
         edges = pk.load(pickle_file)
         pickle_file.close()
         for node1, node2, n1_outcome in edges:
-            print node1, node2, n1_outcome
+            #print node1, node2, n1_outcome
             gm.gve.add_edge(node1, node2)
             eobject = gm.edge(node1, node2)
             eobject.outcome = n1_outcome
@@ -785,7 +785,7 @@ class GraphModel:
 
 
     def create_state_machine(self):
-        print '>>>>>>>>>>>>>> create_state_machine'
+        #print '>>>>>>>>>>>>>> create_state_machine'
         sm = smach.StateMachine(outcomes=self.outcomes())
         with sm:
             for node_name in self.nonoutcomes():
@@ -795,14 +795,14 @@ class GraphModel:
                     if e.node1.id == node_name:
                         transitions[e.outcome] = e.node2.id
                         print e.node1.id, e.outcome, e.node2.id
-                print '>> node_name', node_name, 'transitions', transitions
+                #print '>> node_name', node_name, 'transitions', transitions
                 smach.StateMachine.add(node_name, node, transitions=transitions)
 
         if self.start_state == None:
             raise RuntimeError('No start state set.')
-        print 'create_state_machine start state is', self.start_state
+        #print 'create_state_machine start state is', self.start_state
         sm.set_initial_state([self.start_state])
-        print '<<<<<<<<<<<<<<'
+        #print '<<<<<<<<<<<<<<'
         return sm
 
     def nonoutcomes(self):
