@@ -217,6 +217,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.connect(self.ui.add_button,         SIGNAL('clicked()'), self.add_cb)
         self.connect(self.ui.reset_button,       SIGNAL('clicked()'), self.reset_cb)
         self.connect(self.ui.save_button,        SIGNAL('clicked()'), self.save_cb)
+        self.connect(self.ui.start_state_button, SIGNAL('clicked()'), self.start_state_cb)
 
         self.connect(self.ui.delete_button, SIGNAL('clicked()'), self.delete_cb)
         self.connect(self.ui.action_Run, SIGNAL('triggered(bool)'), self.run_sm_cb)
@@ -435,11 +436,19 @@ class RCommanderWindow(RNodeBoxBaseClass):
     def run_sm_cb(self, checked):
         #TODO Disable all buttons.
         #TODO Reflect state of running graph.
-        self.create_and_run(self.graph_model)
+        if self.graph_model.get_start_state() == None:
+            QMessageBox.information(self, str(self.objectName()), 'No start state set.  Select a state and click on \'Start State\' to set a new start state.')
+        else:
+            self.create_and_run(self.graph_model)
     
     ##################
     # Behavior tools
     ##################
+    def start_state_cb(self):
+        if self.selected_node != None:
+            print 'start state setted to', self.selected_node
+            self.graph_model.set_start_state(self.selected_node)
+
     def run_cb(self):
         if self.selected_tool == None:
             return
@@ -447,6 +456,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
         node = tool_instance.create_node(unique=False)
         temp_gm = GraphModel()
         temp_gm.add_node(node)
+        temp_gm.set_start_state(node.name)
         self.create_and_run(temp_gm)
 
     def add_cb(self):
@@ -612,10 +622,10 @@ class GraphView:
     def __init__(self, context, graph_model):
         self.graph_model = graph_model
         g = self.graph_model.gve
-        self.context = context 
         self.gve = g
-        self.refresh = self.gve.layout.refresh
 
+        self.context = context 
+        self.refresh = self.gve.layout.refresh
         selected_style = g.styles.create('selected')
         normal_style   = g.styles.create('normal')
         normal_edge_style   = g.styles.create('normal_edge')
@@ -634,6 +644,9 @@ class GraphView:
         self.gve.node(node_name).style = style
         self.gve.layout.refresh()
 
+    def get_node_style(self, node_name):
+        return self.gve.node(node_name).style
+
     def setup(self):
         self.context.speed(30.)
         self.context.size(700, 700)
@@ -647,6 +660,12 @@ class GraphView:
                 self.set_node_style(n.id, 'selected')
             else:
                 self.set_node_style(n.id, 'normal')
+
+            if self.graph_model.get_start_state() == n.id:
+                if self.get_node_style(n.id) == 'selected':
+                    self.set_node_style(n.id, 'important')
+                else:
+                    self.set_node_style(n.id, 'root')
 
         draw_func = None
         if properties_dict['selected_edge'] != None:
@@ -685,15 +704,26 @@ class GraphView:
 
 class GraphModel:
 
-    GRAPH_FILE = 'edges.graph'
+    #Information about graph connectivity
+    EDGES_FILE = 'edges.graph'
+
+    #Misc information about graph itself
+    NODES_FILE = 'nodes.graph'
 
     def __init__(self):
         self.gve = graph.create(depth=True)
         self.smach_states = {}
+        self.start_state = None
         #self.add_outcome('start')
 
         self.node = self.gve.node
         self.edge = self.gve.edge
+
+    def get_start_state(self):
+        return self.start_state
+
+    def set_start_state(self, state):
+        self.start_state = state
 
     @staticmethod
     def load(name):
@@ -710,7 +740,7 @@ class GraphModel:
             pickle_file.close()
 
         #Reconstruct graph
-        graph_name = pt.join(name, GraphModel.GRAPH_FILE)
+        graph_name = pt.join(name, GraphModel.EDGES_FILE)
         pickle_file = open(graph_name, 'r')
         edges = pk.load(pickle_file)
         pickle_file.close()
@@ -718,6 +748,12 @@ class GraphModel:
             gm.gve.add_edge(node1, node2)
             eobject = gm.edge(node1, node2)
             eobject.outcome = n1_outcome
+
+        #Get meta info
+        nodes_fn = pt.join(name, GraphModel.NODES_FILE)
+        pickle_file = open(nodes_fn, 'r')
+        info = pk.load(pickle_file)
+        gm.start_state = info['start_state']
         return gm
 
     def save(self, name):
@@ -736,12 +772,19 @@ class GraphModel:
         for e in self.gve.edges:
             edge_list.append([e.node1.id, e.node2.id, e.outcome])
 
-        edge_fn = pt.join(name, 'edges.graph')
+        edge_fn = pt.join(name, GraphModel.EDGES_FILE)
         pickle_file = open(edge_fn, 'w')
         pk.dump(edge_list, pickle_file)
         pickle_file.close()
 
+        nodes_fn = pt.join(name, GraphModel.NODES_FILE)
+        pickle_file = open(nodes_fn, 'w')
+        pk.dump({'start_state': self.start_state}, pickle_file)
+        pickle_file.close()
+
+
     def create_state_machine(self):
+        print '>>>>>>>>>>>>>> create_state_machine'
         sm = smach.StateMachine(outcomes=self.outcomes())
         with sm:
             for node_name in self.nonoutcomes():
@@ -749,8 +792,14 @@ class GraphModel:
                 transitions = {}
                 for e in self.gve.node(node_name).edges:
                     transitions[e.outcome] = e.node2.id
-                print node_name, transitions
+                print '>> node_name', node_name, 'transitions', transitions
                 smach.StateMachine.add(node_name, node, transitions=transitions)
+
+        if self.start_state == None:
+            raise RuntimeError('No start state set.')
+        print 'create_state_machine start state is', self.start_state
+        sm.set_initial_state([self.start_state])
+        print '<<<<<<<<<<<<<<'
         return sm
 
     def nonoutcomes(self):

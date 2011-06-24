@@ -142,7 +142,7 @@ class GripperState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
 
         tu.SimpleStateBase.__init__(self, name, \
                 action, pm.Pr2GripperCommandAction,
-                goal_cb = self.ros_goal)
+                goal_cb_str = 'ros_goal')
 
         self.gripper_size = gripper_size
         self.effort = effort

@@ -203,8 +203,26 @@ class StateBase:
 
 
 class SimpleStateBase(smach_ros.SimpleActionState, StateBase):
-    def __init__(self, name, action_name, action_type, goal_cb):
-        smach_ros.SimpleActionState.__init__(self, action_name, action_type, goal_cb = goal_cb)
+    def __init__(self, name, action_name, action_type, goal_cb_str):
+        smach_ros.SimpleActionState.__init__(self, action_name, action_type, goal_cb = eval('self.%s' % goal_cb_str))
         StateBase.__init__(self, name)
+
+        self.action_name = action_name
+        self.action_type = action_type
+        self.goal_cb_str = goal_cb_str
+
+    def __getstate__(self):
+        sb_state = StateBase.__getstate__(self)
+        return {'sb_state': sb_state, 'action_name': self.action_name, 'action_type': self.action_type, 'goal_cb_str': self.goal_cb_str}
+
+    def __setstate__(self, state):
+        StateBase.__setstate__(self, state['sb_state'])
+        self.action_name = state['action_name']
+        self.action_type = state['action_type']
+        self.goal_cb_str = state['goal_cb_str']
+        smach_ros.SimpleActionState.__init__(self, self.action_name, self.action_type, goal_cb = eval('self.%s' % self.goal_cb_str))
+
+
+
 
 

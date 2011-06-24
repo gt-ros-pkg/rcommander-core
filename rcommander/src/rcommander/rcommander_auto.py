@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'RCommander.ui'
 #
-# Created: Tue Jun 21 11:27:13 2011
+# Created: Fri Jun 24 11:46:25 2011
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -49,6 +49,10 @@ class Ui_RCommanderWindow(object):
         self.horizontalLayout.setObjectName("horizontalLayout")
         spacerItem = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem)
+        self.start_state_button = QtGui.QToolButton(self.widget_3)
+        self.start_state_button.setAutoRaise(True)
+        self.start_state_button.setObjectName("start_state_button")
+        self.horizontalLayout.addWidget(self.start_state_button)
         self.add_outcome_button = QtGui.QToolButton(self.widget_3)
         self.add_outcome_button.setCheckable(True)
         self.add_outcome_button.setAutoRaise(True)
@@ -309,6 +313,7 @@ class Ui_RCommanderWindow(object):
 
     def retranslateUi(self, RCommanderWindow):
         RCommanderWindow.setWindowTitle(QtGui.QApplication.translate("RCommanderWindow", "RCommanderWindow", None, QtGui.QApplication.UnicodeUTF8))
+        self.start_state_button.setText(QtGui.QApplication.translate("RCommanderWindow", "Start State", None, QtGui.QApplication.UnicodeUTF8))
         self.add_outcome_button.setText(QtGui.QApplication.translate("RCommanderWindow", "State Outcome", None, QtGui.QApplication.UnicodeUTF8))
         self.delete_button.setToolTip(QtGui.QApplication.translate("RCommanderWindow", "Delete Tool", None, QtGui.QApplication.UnicodeUTF8))
         self.delete_button.setText(QtGui.QApplication.translate("RCommanderWindow", "Delete", None, QtGui.QApplication.UnicodeUTF8))

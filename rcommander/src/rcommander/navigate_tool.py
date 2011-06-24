@@ -96,7 +96,7 @@ class NavigateState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
     def __init__(self, name, xy, theta, frame):
         tu.SimpleStateBase.__init__(self, name, \
                 'move_base', mm.MoveBaseAction, 
-                goal_cb = self.ros_goal) 
+                goal_cb_str = 'ros_goal') 
 
         self.xy = xy
         self.theta = theta #stored as r internally

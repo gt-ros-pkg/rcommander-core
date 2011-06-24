@@ -47,7 +47,7 @@ class TuckState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
     def __init__(self, name, tuck_left, tuck_right):
         tu.SimpleStateBase.__init__(self, name, \
                 'tuck_arms', ca.TuckArmsAction, 
-                goal_cb = self.ros_goal) 
+                goal_cb_str = 'ros_goal') 
 
         self.tuck_left = tuck_left
         self.tuck_right = tuck_right
