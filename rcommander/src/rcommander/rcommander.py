@@ -665,7 +665,7 @@ class GraphView:
                 if self.get_node_style(n.id) == 'selected':
                     self.set_node_style(n.id, 'important')
                 else:
-                    self.set_node_style(n.id, 'root')
+                    self.set_node_style(n.id, 'marked')
 
         draw_func = None
         if properties_dict['selected_edge'] != None:
@@ -745,6 +745,7 @@ class GraphModel:
         edges = pk.load(pickle_file)
         pickle_file.close()
         for node1, node2, n1_outcome in edges:
+            print node1, node2, n1_outcome
             gm.gve.add_edge(node1, node2)
             eobject = gm.edge(node1, node2)
             eobject.outcome = n1_outcome
@@ -791,7 +792,9 @@ class GraphModel:
                 node = self.smach_states[node_name]
                 transitions = {}
                 for e in self.gve.node(node_name).edges:
-                    transitions[e.outcome] = e.node2.id
+                    if e.node1.id == node_name:
+                        transitions[e.outcome] = e.node2.id
+                        print e.node1.id, e.outcome, e.node2.id
                 print '>> node_name', node_name, 'transitions', transitions
                 smach.StateMachine.add(node_name, node, transitions=transitions)
 
