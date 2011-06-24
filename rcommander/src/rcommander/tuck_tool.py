@@ -25,7 +25,6 @@ class TuckTool(tu.ToolBase):
         formlayout.addRow("&Right Arm", self.tuck_right)
         pbox.update()
 
-
     def _create_node(self, name=None):
         left = ('True' == str(self.tuck_left.currentText()))
         right = ('True' == str(self.tuck_right.currentText()))

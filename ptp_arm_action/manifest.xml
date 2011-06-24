@@ -9,6 +9,12 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/ptp_arm_action</url>
 
+  <depend package="rospy"/>
+  <depend package="tf"/>
+  <depend package="actionlib"/>
+  <depend package="pr2_mechanism_msgs"/>
+  <depend package="object_manipulator"/>
+  <depend package="hrl_pr2_lib"/>
 </package>
 
 

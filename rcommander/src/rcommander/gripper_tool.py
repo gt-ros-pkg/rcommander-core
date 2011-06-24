@@ -143,6 +143,7 @@ class GripperState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
         tu.SimpleStateBase.__init__(self, name, \
                 action, pm.Pr2GripperCommandAction,
                 goal_cb = self.ros_goal)
+
         self.gripper_size = gripper_size
         self.effort = effort
         self.arm = arm
@@ -152,10 +153,10 @@ class GripperState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
 
     def __getstate__(self):
         state = tu.SimpleStateBase.__getstate__(self)
-        my_state = [self.gripper_size, self.effort]
+        my_state = [self.gripper_size, self.effort, self.arm]
         return {'simple_state': state, 'self': my_state}
 
     def __setstate__(self, state):
         tu.SimpleStateBase.__setstate__(self, state['simple_state'])
-        self.gripper_size, self.effort = state['self']
+        self.gripper_size, self.effort, self.arm = state['self']
 
