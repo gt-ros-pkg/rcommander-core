@@ -24,11 +24,13 @@ import os
 import glob
 
 #Import tools
+import tool_utils as tu
 import navigate_tool as nt
 import tuck_tool as tt
 import outcome_tool as ot
 import gripper_tool as gt
 import linear_move_tool as lmt
+import point_tool as ptl
 
 class RNodeBoxBaseClass(QtGui.QMainWindow):
     def __init__(self):
@@ -313,6 +315,9 @@ class RCommanderWindow(RNodeBoxBaseClass):
     def connectable_nodes(self, node_name, outcome):
         return self.graph_model.connectable_nodes(node_name, outcome)
 
+    def global_nodes(self, class_filter):
+        return self.graph_model.global_nodes(class_filter)
+
     def set_selected_node(self, name):
         self.selected_node = name
 
@@ -440,15 +445,21 @@ class RCommanderWindow(RNodeBoxBaseClass):
         if self.graph_model.get_start_state() == None:
             QMessageBox.information(self, str(self.objectName()), 'No start state set.  Select a state and click on \'Start State\' to set a new start state.')
         else:
-            self.create_and_run(self.graph_model)
+            try:
+                self.create_and_run(self.graph_model)
+            except RuntimeError, e:
+                QMessageBox.information(self, str(self.objectName()), 'RuntimeError: ' + e.message)
     
     ##################
     # Behavior tools
     ##################
     def start_state_cb(self):
         if self.selected_node != None:
-            print 'start state setted to', self.selected_node
-            self.graph_model.set_start_state(self.selected_node)
+            try:
+                self.graph_model.set_start_state(self.selected_node)
+            except RuntimeError, e:
+                QMessageBox.information(self, str(self.objectName()), 'RuntimeError: ' + e.message)
+
 
     def run_cb(self):
         if self.selected_tool == None:
@@ -668,6 +679,8 @@ class GraphView:
                 else:
                     self.set_node_style(n.id, 'marked')
 
+        self.set_node_style(tu.InfoStateBase.GLOBAL_NAME, 'root')
+
         draw_func = None
         if properties_dict['selected_edge'] != None:
             def draw_selected():
@@ -715,15 +728,17 @@ class GraphModel:
         self.gve = graph.create(depth=True)
         self.smach_states = {}
         self.start_state = None
-        #self.add_outcome('start')
-
         self.node = self.gve.node
         self.edge = self.gve.edge
+
+        self.add_outcome(tu.InfoStateBase.GLOBAL_NAME)
 
     def get_start_state(self):
         return self.start_state
 
     def set_start_state(self, state):
+        if state == tu.InfoStateBase.GLOBAL_NAME or issubclass(self.smach_states[state].__class__, tu.InfoStateBase):
+            raise RuntimeError("Can\'t make info states start states")
         self.start_state = state
 
     @staticmethod
@@ -784,10 +799,14 @@ class GraphModel:
         pk.dump({'start_state': self.start_state}, pickle_file)
         pickle_file.close()
 
-
     def create_state_machine(self):
         #print '>>>>>>>>>>>>>> create_state_machine'
         sm = smach.StateMachine(outcomes=self.outcomes())
+        for global_node in self.global_nodes(None):
+            global_variable_name = global_node.get_name()
+            value = global_node.get_info()
+            exec "sm.userdata.%s = value" % global_variable_name
+
         with sm:
             for node_name in self.nonoutcomes():
                 node = self.smach_states[node_name]
@@ -796,8 +815,12 @@ class GraphModel:
                     if e.node1.id == node_name:
                         transitions[e.outcome] = e.node2.id
                         print e.node1.id, e.outcome, e.node2.id
+
+                remapping = {}
+                for input_key in node.get_registered_input_keys():
+                    remapping[input_key] = node.source_for(input_key)
                 #print '>> node_name', node_name, 'transitions', transitions
-                smach.StateMachine.add(node_name, node, transitions=transitions)
+                smach.StateMachine.add(node_name, node, transitions=transitions, remapping=remapping)
 
         if self.start_state == None:
             raise RuntimeError('No start state set.')
@@ -869,6 +892,19 @@ class GraphModel:
             allowed_nodes.append(outcome)
             allowed_nodes = list(set(allowed_nodes))
 
+        return allowed_nodes
+
+    def global_nodes(self, class_filter):
+        allowed_nodes = []
+        for k in self.smach_states.keys():
+            state = self.smach_states[k]
+            if issubclass(state.__class__, tu.InfoStateBase):
+                if class_filter != None:
+                    if state.__class__ == class_filter:
+                        allowed_nodes.append(k)
+                else:
+                    allowed_nodes.append(k)
+        allowed_nodes.sort()
         return allowed_nodes
 
     def add_node(self, smach_node, connect_to=None):
@@ -1028,6 +1064,7 @@ rc = RCommanderWindow()
 rc.add_tools([['Misc', nt.NavigateTool(rc)], 
               ['Misc', tt.TuckTool(rc)],
               ['Misc', lmt.LinearMoveTool(rc)],
+              ['Misc', ptl.Point3DTool(rc)],
               ['Misc', gt.GripperTool(rc)]])
 rc.show()
 sys.exit(app.exec_())

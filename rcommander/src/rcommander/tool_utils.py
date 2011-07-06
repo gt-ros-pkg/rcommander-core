@@ -91,36 +91,39 @@ class ToolBase:
 
     def fill_connections_box(self, pbox):
         formlayout = pbox.layout()
-        current_node_name = self._create_node().get_name()
+        current_node = self._create_node()
+        current_node_name = current_node.get_name()
         self.name_input = QLineEdit()
         self.name_input.setText(current_node_name)
         formlayout.addRow('Name', self.name_input)
 
-        for outcome in self.get_outcomes():
-            #Make a new combobox and add available choices to it
-            input_box = QComboBox(pbox)
-            nodes = self.rcommander.connectable_nodes(self.get_current_node_name(), outcome)
+        if not issubclass(current_node.__class__, InfoStateBase):
+            for outcome in self.get_outcomes():
+                #Make a new combobox and add available choices to it
+                input_box = QComboBox(pbox)
+                nodes = self.rcommander.connectable_nodes(self.get_current_node_name(), outcome)
 
-            nodes.sort()
-            for n in nodes:
-                input_box.addItem(n)
+                nodes.sort()
+                for n in nodes:
+                    input_box.addItem(n)
 
-            #add to view 
-            formlayout.addRow(outcome, input_box)
-            #set outcome as default
-            #TODO abstract this line out
-            #outcome_name = self.get_current_node_name() + '_' + outcome
-            input_box.setCurrentIndex(input_box.findText(outcome))
-            #store object
-            self.outcome_inputs[outcome] = input_box
+                #add to view 
+                formlayout.addRow(outcome, input_box)
+                #set outcome as default
+                #TODO abstract this line out
+                #outcome_name = self.get_current_node_name() + '_' + outcome
+                input_box.setCurrentIndex(input_box.findText(outcome))
+                #store object
+                self.outcome_inputs[outcome] = input_box
 
-            #make callback
-            def cb(outcome, new_index):
-                new_outcome = str(self.outcome_inputs[outcome].currentText())
-                self.rcommander.connection_changed(self.get_current_node_name(), outcome, new_outcome)
-            outcome_cb = ft.partial(cb, outcome)
-            self.rcommander.connect(input_box, SIGNAL('currentIndexChanged(int)'), outcome_cb)
-            #self.combo_box_cbs[outcome] = outcome_cb
+                #make callback
+                def cb(outcome, new_index):
+                    new_outcome = str(self.outcome_inputs[outcome].currentText())
+                    self.rcommander.connection_changed(self.get_current_node_name(), outcome, new_outcome)
+                outcome_cb = ft.partial(cb, outcome)
+                self.rcommander.connect(input_box, SIGNAL('currentIndexChanged(int)'), outcome_cb)
+
+                #self.combo_box_cbs[outcome] = outcome_cb
 
     def set_loaded_node_name(self, name):
         self.loaded_node_name = name
@@ -179,6 +182,7 @@ class StateBase:
         self.name = name
         self.tool_name = None
         self.outcome_choices = []
+        self.remapping = {}
 
     def set_name(self, name):
         self.name = name
@@ -200,6 +204,28 @@ class StateBase:
         self.tool_name = tool
         self.outcome_choices = choices
 
+    def source_for(self, var_name):
+        return self.remapping[var_name]
+
+    def set_source_for(self, var, source):
+        self.remapping[var] = source
+
+
+class InfoStateBase(StateBase):
+
+    GLOBAL_NAME = 'Global'
+
+    def __init__(self, name):
+        StateBase.__init__(self, name)
+
+    def set_info(self, info):
+        raise RuntimeError('Unimplemented method!')
+
+    def get_info(self):
+        raise RuntimeError('Unimplemented method!')
+
+    def get_registered_outcomes(self):
+        return [InfoStateBase.GLOBAL_NAME]
 
 class SimpleStateBase(smach_ros.SimpleActionState, StateBase):
     def __init__(self, name, action_name, action_type, goal_cb_str):
