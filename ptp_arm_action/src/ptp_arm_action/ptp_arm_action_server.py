@@ -113,28 +113,42 @@ class PTPArmActionServer:
 
         goal_ps = msg.goal
         relative_movement = msg.relative
+        trans_vel = msg.trans_vel
+        rot_vel = msg.rot_vel
+        if trans_vel <= 0:
+            trans_vel = .02
+        if rot_vel <= 0:
+            rot_vel = pi/20.
+
         if relative_movement:
+            rospy.loginfo('Received relative motion.')
             #Motion we want in given reference frame
             ref_T_pose = pose_to_mat(goal_ps.pose)
+            rospy.loginfo('Motion we want in given reference frame\n' + str(ref_T_pose[:,3].T))
 
             #Rotation that converts it from that random reference frame to the arm's tool frame
-            tip_T_ref = tfu.tf_as_matrix(self.tf_listener.lookupTransform(self.tool_frame, goal_ps.header.frame_id, rospy.Time(0)))
+            tip_T_ref = tfu.tf_as_matrix(self.tf.lookupTransform(self.tool_frame, goal_ps.header.frame_id, rospy.Time(0)))
             tip_R_ref = tip_T_ref
             tip_R_ref[0:3,3] = 0
 
             #Motion we want in tool frame
             tip_T_pose = tip_R_ref * ref_T_pose
+            rospy.loginfo('Motion we want in tool frame\n' + str(tip_T_pose[:,3].T))
 
             #Current position of tool frame in torso_lift_link frame 
             # (this choice is arbitrary, but affects behavior of cartesian controller)
-            tll_T_tip  = tfu.tf_as_matrix(self.tf_listener.lookupTransform('torso_lift_link', self.tool_frame, rospy.Time(0)))
+            tll_T_tip  = tfu.tf_as_matrix(self.tf.lookupTransform('torso_lift_link', self.tool_frame, rospy.Time(0)))
+            rospy.loginfo('Current position of tool frame in torso_lift_link frame\n' + str(tll_T_tip[:,3].T))
+
             tll_T_pose = tll_T_tip * tip_T_pose
+            rospy.loginfo('New position' + str(tll_T_pose[:,3].T))
             goal_ps = stamp_pose(mat_to_pose(tll_T_pose), 'torso_lift_link')
 
         tstart = rospy.get_time()
         tmax = tstart + self.time_out
         self.controller_manager = ControllerManager()
-        print 'goal is', goal_ps.pose.position
+        rospy.loginfo('Goal is' + str(goal_ps.pose.position))
+        verbose = False
 
         while True:
             if self.linear_movement_as.is_preempt_requested():
@@ -145,7 +159,8 @@ class PTPArmActionServer:
 
             #Calc feedback
             #print self.last_pose_msg.__class__, goal_ps.__class__
-            print 'curent_pose', self.last_pose_msg.pose.position
+            if verbose:
+                print 'curent_pose', self.last_pose_msg.pose.position
             trans, ang, _ = pose_distance(self.last_pose_msg, goal_ps, self.tf)
             #TODO What is trans, verify its type
             #print trans, trans.__class__
@@ -154,7 +169,8 @@ class PTPArmActionServer:
 
             #Reached goal
             trans_mag = np.linalg.norm(trans)
-            print 'trans_mag', trans_mag
+            if verbose:
+                print 'trans_mag', trans_mag
             if self.trans_tolerance > trans_mag:
                 rospy.loginfo('action_cb: reached goal.')
                 break
@@ -164,9 +180,10 @@ class PTPArmActionServer:
                 break
 
             #Send controls
-            clamped_target = self.clamp_pose(goal_ps)
+            clamped_target = self.clamp_pose(goal_ps, trans_vel, rot_vel)
             self.target_pub.publish(clamped_target)
-            print 'sending controls'
+            if verbose:
+                print 'sending controls'
 
         trans, ang, _ = pose_distance(self.last_pose_msg, goal_ps, self.tf)
         result = ptp.LinearMovementResult(gm.Vector3(trans[0,0], trans[1,0], trans[2,0]))
@@ -180,7 +197,7 @@ class PTPArmActionServer:
         #   clamp pose
         #   send to controller
     
-    def clamp_pose(self, desired_pose, max_trans=.02, max_rot=pi/20):
+    def clamp_pose(self, desired_pose, max_trans, max_rot):
         current_pose_d = change_pose_stamped_frame(self.tf, self.last_pose_msg, desired_pose.header.frame_id) 
         g_T_c  = pose_to_mat(current_pose_d.pose)
         #target_mat = pose_to_mat(pose.pose)

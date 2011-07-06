@@ -1,4 +1,6 @@
 bool relative
+float64 trans_vel
+float64 rot_vel
 geometry_msgs/PoseStamped goal
 ---
 geometry_msgs/Vector3 error
