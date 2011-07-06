@@ -28,6 +28,7 @@ import navigate_tool as nt
 import tuck_tool as tt
 import outcome_tool as ot
 import gripper_tool as gt
+import linear_move_tool as lmt
 
 class RNodeBoxBaseClass(QtGui.QMainWindow):
     def __init__(self):
@@ -1026,6 +1027,7 @@ app = QtGui.QApplication(sys.argv)
 rc = RCommanderWindow()
 rc.add_tools([['Misc', nt.NavigateTool(rc)], 
               ['Misc', tt.TuckTool(rc)],
+              ['Misc', lmt.LinearMoveTool(rc)],
               ['Misc', gt.GripperTool(rc)]])
 rc.show()
 sys.exit(app.exec_())

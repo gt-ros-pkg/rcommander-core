@@ -37,7 +37,6 @@ class ToolBase:
         #self.combo_box_cbs = {}
         self.counter = 0
 
-
     def get_name(self):
         return self.name
 

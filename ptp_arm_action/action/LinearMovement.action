@@ -1,3 +1,4 @@
+bool relative
 geometry_msgs/PoseStamped goal
 ---
 geometry_msgs/Vector3 error

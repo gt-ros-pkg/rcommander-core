@@ -47,7 +47,7 @@ class NavigateTool(tu.ToolBase):
 
     def get_current_pose(self):
         frame = str(self.frameline.text())
-        self.tf_listener.waitForTransform(frame, self.robot_frame_name, rospy.Time(), rospy.Duration(10.))
+        self.tf_listener.waitForTransform(frame, self.robot_frame_name, rospy.Time(), rospy.Duration(2.))
         p_base = tfu.transform(frame, self.robot_frame_name, self.tf_listener) \
                     * tfu.tf_as_matrix(([0., 0., 0., 1.], tr.quaternion_from_euler(0,0,0)))
         t, r = tfu.matrix_as_tf(p_base)
@@ -84,7 +84,6 @@ class NavigateTool(tu.ToolBase):
         self.yline.setText('0.')
         self.tline.setText('0.')
         self.frameline.setText(self.default_frame)
-
 
 
 #
