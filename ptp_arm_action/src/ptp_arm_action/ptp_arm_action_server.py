@@ -102,6 +102,8 @@ class PTPArmActionServer:
     def pose_callback(self, data):
         self.last_pose_msg = data
 
+    ##
+    # comments
     def action_cb(self, msg):
         self.controller_manager.cart_mode('both')
         success = False
