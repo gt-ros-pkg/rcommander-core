@@ -8,11 +8,11 @@ import ptp_arm_action.msg as ptp
 
 from object_manipulator.convert_functions import *
 from math import sqrt, pi, fabs
-import math
-#import scipy
+import tf_utils as tfu
 import numpy as np
+#import scipy
+import math
 import tf
-
 
 class ControllerManager:
 
@@ -59,7 +59,9 @@ class ControllerManager:
 
 
 ##
-# Measures the distance between two poses, independently factors out distance in rotation and distance in translation
+# Measures the distance between two pose stamps, independently factors out
+# distance in rotation and distance in translation. Converts both poses into
+# the same coordinate frame before comparison.
 def pose_distance(ps_a, ps_b, tflistener):
     #put both into the same frame
     ps_a_fb = change_pose_stamped_frame(tflistener, ps_a, ps_b.header.frame_id)
@@ -80,9 +82,11 @@ class PTPArmActionServer:
         if arm == 'left':
             self.controller = 'l_cart'
             self.joint_controller = 'l_arm_controller'
+            self.tool_frame = 'l_gripper_tool_frame'
         elif arm == 'right':
             self.controller = 'r_cart'
             self.joint_controller = 'r_arm_controller'
+            self.tool_frame = 'r_gripper_tool_frame'
         else:
             raise RuntimeError('Invalid parameter for arm: %s' % arm)
 
@@ -102,13 +106,31 @@ class PTPArmActionServer:
     def pose_callback(self, data):
         self.last_pose_msg = data
 
-    ##
-    # comments
     def action_cb(self, msg):
         self.controller_manager.cart_mode('both')
         success = False
         r = rospy.Rate(100) 
+
         goal_ps = msg.goal
+        relative_movement = msg.relative
+        if relative_movement:
+            #Motion we want in given reference frame
+            ref_T_pose = pose_to_mat(goal_ps.pose)
+
+            #Rotation that converts it from that random reference frame to the arm's tool frame
+            tip_T_ref = tfu.tf_as_matrix(self.tf_listener.lookupTransform(self.tool_frame, goal_ps.header.frame_id, rospy.Time(0)))
+            tip_R_ref = tip_T_ref
+            tip_R_ref[0:3,3] = 0
+
+            #Motion we want in tool frame
+            tip_T_pose = tip_R_ref * ref_T_pose
+
+            #Current position of tool frame in torso_lift_link frame 
+            # (this choice is arbitrary, but affects behavior of cartesian controller)
+            tll_T_tip  = tfu.tf_as_matrix(self.tf_listener.lookupTransform('torso_lift_link', self.tool_frame, rospy.Time(0)))
+            tll_T_pose = tll_T_tip * tip_T_pose
+            goal_ps = stamp_pose(mat_to_pose(tll_T_pose), 'torso_lift_link')
+
         tstart = rospy.get_time()
         tmax = tstart + self.time_out
         self.controller_manager = ControllerManager()
