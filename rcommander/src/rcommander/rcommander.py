@@ -752,6 +752,7 @@ class GraphModel:
         for fname in state_pkl_names:
             sname = pt.splitext(pt.split(fname)[1])[0]
             pickle_file = open(fname, 'r')
+            rospy.loginfo('Loading state %s' % sname)
             gm.smach_states[sname] = pk.load(pickle_file)
             pickle_file.close()
 
@@ -802,7 +803,8 @@ class GraphModel:
     def create_state_machine(self):
         #print '>>>>>>>>>>>>>> create_state_machine'
         sm = smach.StateMachine(outcomes=self.outcomes())
-        for global_node in self.global_nodes(None):
+        for global_node_name in self.global_nodes(None):
+            global_node = self.smach_states[global_node_name]
             global_variable_name = global_node.get_name()
             value = global_node.get_info()
             exec "sm.userdata.%s = value" % global_variable_name
@@ -810,7 +812,11 @@ class GraphModel:
         with sm:
             for node_name in self.nonoutcomes():
                 node = self.smach_states[node_name]
+                if issubclass(node.__class__, tu.InfoStateBase):
+                    continue
+
                 transitions = {}
+                print node_name
                 for e in self.gve.node(node_name).edges:
                     if e.node1.id == node_name:
                         transitions[e.outcome] = e.node2.id

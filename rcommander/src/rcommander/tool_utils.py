@@ -194,15 +194,16 @@ class StateBase:
         return []
 
     def __getstate__(self):
-        r = [self.name, self.tool_name, self.outcome_choices]
+        r = [self.name, self.tool_name, self.outcome_choices, self.remapping]
         return r
 
     def __setstate__(self, state):
         #print 'state base', state
-        name, tool, choices = state
+        name, tool, choices, remapping = state
         self.name = name
         self.tool_name = tool
         self.outcome_choices = choices
+        self.remapping = remapping
 
     def source_for(self, var_name):
         return self.remapping[var_name]
@@ -219,10 +220,10 @@ class InfoStateBase(StateBase):
         StateBase.__init__(self, name)
 
     def set_info(self, info):
-        raise RuntimeError('Unimplemented method!')
+        raise RuntimeError('Unimplemented method. set_info')
 
     def get_info(self):
-        raise RuntimeError('Unimplemented method!')
+        raise RuntimeError('Unimplemented method. get_info')
 
     def get_registered_outcomes(self):
         return [InfoStateBase.GLOBAL_NAME]

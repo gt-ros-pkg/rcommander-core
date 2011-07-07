@@ -1,3 +1,4 @@
+#! /usr/bin/python
 import roslib; roslib.load_manifest('ptp_arm_action')
 import rospy
 import actionlib
@@ -34,7 +35,7 @@ class ControllerManager:
             self.cart_controllers[arm] = cart_controller_name = arm + '_cart'
 
     def switch(self, start_con, stop_con):
-        print 'switching from', start_con, 'to', stop_con
+        print 'switching to', start_con, 'from', stop_con
         for n in start_con:
             self.load(n)
         resp = self._switch_controller(start_con, stop_con, pmm.SwitchControllerRequest.STRICT)
@@ -90,6 +91,7 @@ class PTPArmActionServer:
         else:
             raise RuntimeError('Invalid parameter for arm: %s' % arm)
 
+        self.arm = arm
         self.target_pub = rospy.Publisher(self.controller + '/command_pose', gm.PoseStamped)
         self.pose_sub = rospy.Subscriber(self.controller + '/state/x', gm.PoseStamped, self.pose_callback)
         self.tf = tf.TransformListener()
@@ -98,16 +100,17 @@ class PTPArmActionServer:
         self.time_out = 30.
 
         self.controller_manager = ControllerManager()
-        self.controller_manager.cart_mode('both')
+        #self.controller_manager.cart_mode(self.arm)
         self._action_name = name
         self.linear_movement_as = actionlib.SimpleActionServer(self._action_name, ptp.LinearMovementAction, execute_cb=self.action_cb, auto_start=False)
         self.linear_movement_as.start()
+        rospy.loginfo('Action name: %s Arm: %s' % (self._action_name, self.arm))
 
     def pose_callback(self, data):
         self.last_pose_msg = data
 
     def action_cb(self, msg):
-        self.controller_manager.cart_mode('both')
+        self.controller_manager.cart_mode(self.arm)
         success = False
         r = rospy.Rate(100) 
 
@@ -191,6 +194,7 @@ class PTPArmActionServer:
             self.linear_movement_as.set_succeeded(result)
         else:
             self.linear_movement_as.set_aborted(result)
+        self.controller_manager.joint_mode(self.arm)
 
         #loop
         # while not at goal and not timed out
@@ -229,8 +233,15 @@ class PTPArmActionServer:
         return clamped_pose
 
 if __name__ == '__main__':
+    import sys
+
+    if len(sys.argv) < 2:
+        arm = 'left'
+    else:
+        arm = sys.argv[1]
+
     rospy.init_node('ptp')
-    left_as = PTPArmActionServer('left_ptp', 'left')
+    left_as = PTPArmActionServer(arm +'_ptp', arm)
     rospy.loginfo('PTP action server started.')
     rospy.spin()
 

@@ -90,11 +90,13 @@ class LinearMoveTool(tu.ToolBase):
             self.yline.setEnabled(False)
             self.zline.setEnabled(False)
             self.frameline.setEnabled(False)
+            self.pose_button.setEnabled(False)
         else:
             self.xline.setEnabled(True)
             self.yline.setEnabled(True)
             self.zline.setEnabled(True)
             self.frameline.setEnabled(True)
+            self.pose_button.setEnabled(True)
 
     def get_current_pose(self):
         frame_described_in = str(self.frameline.text())
@@ -119,10 +121,9 @@ class LinearMoveTool(tu.ToolBase):
         trans  = [float(vr.text()) for vr in [self.xline, self.yline, self.zline]]
         angles = [float(vr.text()) for vr in [self.phi_line, self.theta_line, self.psi_line]]
         frame  = str(self.frameline.text())
-        trans_vel = str(self.trans_vel_line.text())
-        rot_vel   = str(self.rot_vel_line.text())
+        trans_vel = float(str(self.trans_vel_line.text()))
+        rot_vel   = float(str(self.rot_vel_line.text()))
         source_name = str(self.source_box.currentText())
-        print 'created node with source', source_name
         if source_name == ' ':
             source_name = None
 
@@ -130,7 +131,6 @@ class LinearMoveTool(tu.ToolBase):
             nname = self.name + str(self.counter)
         else:
             nname = name
-
 
         return LinearMoveState(nname, trans, angles, 
                 str(self.arm_box.currentText()), [trans_vel, rot_vel],
@@ -148,7 +148,6 @@ class LinearMoveTool(tu.ToolBase):
         self.motion_box.setCurrentIndex(self.motion_box.findText(str(node.motion_type)))
 
         source_name = node.source_for('point')
-        print 'node selected', source_name
         if source_name == None:
             source_name = ' '
         index = self.source_box.findText(source_name)
@@ -182,6 +181,7 @@ class LinearMoveState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
 
         self.register_input_keys(['point'])
         self.set_source_for('point', source)
+
         self.trans = trans
         self.angles = angles #convert angles to _quat
         self.arm = arm
@@ -199,9 +199,11 @@ class LinearMoveState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
             raise RuntimeError('Invalid motion type given.')
 
         if self.source_for('point') != None:
+            print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             print 'Using user data!'
             trans, frame = userdata.point
         else:
+            print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
             trans = self.trans
             frame = self.frame
 
@@ -209,6 +211,7 @@ class LinearMoveState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
         goal.goal = stamp_pose(pose, frame)
         goal.trans_vel = self.vels[0]
         goal.rot_vel = self.vels[1]
+        print goal
         return goal
 
     def _set_angles(self, euler_angs):

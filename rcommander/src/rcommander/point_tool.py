@@ -29,7 +29,7 @@ class Point3DTool(tu.ToolBase):
         pbox.update()
 
     def _create_node(self, name=None):
-        point = np.matrix([float(self.xline.text()), float(self.yline.text()), float(self.zline.text())]).T
+        point = [float(str(self.xline.text())), float(str(self.yline.text())), float(str(self.zline.text()))]
         frame = str(self.frameline.text())
         if name == None:
             nname = self.name + str(self.counter)
@@ -38,9 +38,9 @@ class Point3DTool(tu.ToolBase):
         return Point3DState(nname, point, frame)
     
     def _node_selected(self, node):
-        self.xline.setText(str(node.point[0,0]))
-        self.yline.setText(str(node.point[1,0]))
-        self.zline.setText(str(node.point[1,0]))
+        self.xline.setText(str(node.point[0]))
+        self.yline.setText(str(node.point[1]))
+        self.zline.setText(str(node.point[2]))
         self.frameline.setText(node.frame)
 
     def reset(self):
@@ -60,7 +60,7 @@ class Point3DState(tu.InfoStateBase):
     def set_info(self, info):
         self.point, self.frame = info
 
-    def set_info(self):
+    def get_info(self):
         return [self.point, self.frame]
 
     def __getstate__(self):
@@ -68,4 +68,6 @@ class Point3DState(tu.InfoStateBase):
         my_state = [self.point, self.frame]
         return {'simple_state': state, 'self': my_state}
 
-
+    def __setstate__(self, state):
+        tu.InfoStateBase.__setstate__(self, state['simple_state'])
+        self.point, self.frame = state['self']
