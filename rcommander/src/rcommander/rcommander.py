@@ -32,6 +32,11 @@ import gripper_tool as gt
 import linear_move_tool as lmt
 import point_tool as ptl
 
+def split(num, factor):
+    num1 = int(round(num * factor))
+    num2 = num - num1
+    return [num1, num2]
+
 class RNodeBoxBaseClass(QtGui.QMainWindow):
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
@@ -228,6 +233,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.connect(self.ui.action_save, SIGNAL('triggered(bool)'), self.save_sm_cb)
         self.connect(self.ui.action_save_as, SIGNAL('triggered(bool)'), self.save_as_sm_cb)
         self.connect(self.ui.action_open, SIGNAL('triggered(bool)'), self.open_sm_cb)
+        self.ui.splitter.setSizes(split(self.width(), .83))
 
         self.empty_container(self.ui.properties_tab)
         self.empty_container(self.ui.connections_tab)
@@ -870,12 +876,15 @@ class GraphModel:
             self.gve.add_node(new_node_name)
             for e in self.gve.node(old_node_name).edges:
                 self.gve.remove_edge(e.node1.id, e.node2.id)
+                print 'removing edge between', e.node1.id, e.node2.id
                 if e.node1.id == old_node_name:
                     self.gve.add_edge(new_node_name, e.node2.id)
+                    print 'adding edge between', new_node_name, e.node2.id
                     #edges.append([new_node_name, e.node2.id])
                 else:
                     self.gve.add_edge(e.node1.id, new_node_name)
                     #edges.append([e.node1.id, new_node_name])
+                    print 'adding edge betwee', e.node1.id, new_node_name
             self.gve.remove_node(old_node_name)
 
     def _outcome_name(self, node_name, outcome):
