@@ -136,18 +136,24 @@ class ToolBase:
             self.counter = self.counter + 1
         n = self._create_node(str(self.name_input.text()))
         n.tool_name = self.get_name()
-        n.outcome_choices = self._get_outcome_choices()
+        #n.outcome_choices = self._get_outcome_choices()
         return n
 
     def node_selected(self, node):
-        #Set default choices to new node info
-        for outcome_name in node.outcome_choices:
-            selected = node.outcome_choices[outcome_name]
+        outcome_list = self.rcommander.current_children_of(node.get_name())
+        for outcome_name, connected_node in outcome_list:
             widget = self.outcome_inputs[outcome_name]
-            widget.setCurrentIndex(widget.findText(selected))
+            widget.setCurrentIndex(widget.findText(connected_node))
+
+        #Set default choices to new node info
+        #for outcome_name in node.outcome_choices:
+        #    selected = node.outcome_choices[outcome_name]
+        #    widget = self.outcome_inputs[outcome_name]
+        #    widget.setCurrentIndex(widget.findText(selected))
+
         self.name_input.setText(node.get_name())
         self.set_loaded_node_name(node.get_name())
-        #self.loaded_node_name = node.get_name()
+        self.loaded_node_name = node.get_name()
         self._node_selected(node)
 
     ##
@@ -181,7 +187,7 @@ class StateBase:
     def __init__(self, name):
         self.name = name
         self.tool_name = None
-        self.outcome_choices = []
+        #self.outcome_choices = []
         self.remapping = {}
 
     def set_name(self, name):
@@ -194,7 +200,8 @@ class StateBase:
         return []
 
     def __getstate__(self):
-        r = [self.name, self.tool_name, self.outcome_choices, self.remapping]
+        #r = [self.name, self.tool_name, self.outcome_choices, self.remapping]
+        r = [self.name, self.tool_name, self.remapping]
         return r
 
     def __setstate__(self, state):
@@ -202,7 +209,7 @@ class StateBase:
         name, tool, choices, remapping = state
         self.name = name
         self.tool_name = tool
-        self.outcome_choices = choices
+        #self.outcome_choices = choices
         self.remapping = remapping
 
     def source_for(self, var_name):
