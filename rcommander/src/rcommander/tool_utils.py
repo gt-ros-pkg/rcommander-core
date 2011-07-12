@@ -196,6 +196,13 @@ class StateBase:
         self.tool_name = None
         #self.outcome_choices = []
         self.remapping = {}
+        self.runnable = True
+
+    def is_runnable(self):
+        return self.runnable
+
+    def set_runnable(self, v):
+        self.runnable = v
 
     def set_name(self, name):
         self.name = name
@@ -232,6 +239,7 @@ class InfoStateBase(StateBase):
 
     def __init__(self, name):
         StateBase.__init__(self, name)
+        self.set_runnable(False)
 
     def set_info(self, info):
         raise RuntimeError('Unimplemented method. set_info')
@@ -242,25 +250,58 @@ class InfoStateBase(StateBase):
     def get_registered_outcomes(self):
         return [InfoStateBase.GLOBAL_NAME]
 
+
+class SimpleStateCB:
+
+    def __init__(self, cb_func, input_keys, output_keys):
+        self.cb_func = cb_func
+        self.input_keys = input_keys
+        self.output_keys = output_keys
+
+    def __call__(self, userdata, default_goal): 
+        return self.cb_func(userdata, default_goal)
+
+    def get_registered_input_keys(self):
+        return self.input_keys
+
+    def get_registered_output_keys(self):
+        return self.output_keys
+
+    def get_registered_outcomes(self):
+        return []
+
+
 class SimpleStateBase(smach_ros.SimpleActionState, StateBase):
-    def __init__(self, name, action_name, action_type, goal_cb_str):
-        smach_ros.SimpleActionState.__init__(self, action_name, action_type, goal_cb = eval('self.%s' % goal_cb_str))
+    def __init__(self, name, action_name, action_type, goal_cb_str, input_keys=[]):
+        #func = eval('self.%s' % goal_cb_str)
+        #print dir(func)
+        #func.get_registered_input_keys  = self.get_registered_input_keys
+        #func.get_registered_output_keys = self.get_registered_output_keys
+        #func.get_registered_outcomes    = self.get_registered_outcomes
+        smach_ros.SimpleActionState.__init__(self, action_name, action_type, goal_cb = SimpleStateCB(eval('self.%s' % goal_cb_str), input_keys, []))
         StateBase.__init__(self, name)
 
         self.action_name = action_name
         self.action_type = action_type
         self.goal_cb_str = goal_cb_str
+        self.input_keys = input_keys
+
+    def __call__(self, userdata, default_goal): 
+        f = eval('self.%s' % self.goal_cb_str)
+        return f(userdata, default_goal)
 
     def __getstate__(self):
         sb_state = StateBase.__getstate__(self)
-        return {'sb_state': sb_state, 'action_name': self.action_name, 'action_type': self.action_type, 'goal_cb_str': self.goal_cb_str}
+        return {'sb_state': sb_state, 'action_name': self.action_name, 'action_type': self.action_type, 'goal_cb_str': self.goal_cb_str, 'input_keys': self.input_keys}
 
     def __setstate__(self, state):
         StateBase.__setstate__(self, state['sb_state'])
         self.action_name = state['action_name']
         self.action_type = state['action_type']
         self.goal_cb_str = state['goal_cb_str']
-        smach_ros.SimpleActionState.__init__(self, self.action_name, self.action_type, goal_cb = eval('self.%s' % self.goal_cb_str))
+        self.input_keys  = state['input_keys']
+        smach_ros.SimpleActionState.__init__(self, self.action_name, self.action_type, goal_cb = SimpleStateCB(eval('self.%s' % self.goal_cb_str), self.input_keys, []))
+               
 
 
 

@@ -107,9 +107,11 @@ class PTPArmActionServer:
         rospy.loginfo('Action name: %s Arm: %s' % (self._action_name, self.arm))
 
     def pose_callback(self, data):
+        #rospy.loginfo('pose_callback')
         self.last_pose_msg = data
 
     def action_cb(self, msg):
+        rospy.loginfo('message that we got:\n' + str(msg))
         self.controller_manager.cart_mode(self.arm)
         success = False
         r = rospy.Rate(100) 
@@ -150,7 +152,7 @@ class PTPArmActionServer:
         tstart = rospy.get_time()
         tmax = tstart + self.time_out
         self.controller_manager = ControllerManager()
-        rospy.loginfo('Goal is' + str(goal_ps.pose.position))
+        rospy.loginfo('Goal is x %f y %f z %f' % (goal_ps.pose.position.x, goal_ps.pose.position.y, goal_ps.pose.position.z))
         verbose = False
 
         while True:

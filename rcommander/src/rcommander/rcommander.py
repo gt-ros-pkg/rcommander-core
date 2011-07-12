@@ -469,16 +469,18 @@ class RCommanderWindow(RNodeBoxBaseClass):
             except RuntimeError, e:
                 QMessageBox.information(self, str(self.objectName()), 'RuntimeError: ' + e.message)
 
-
     def run_cb(self):
         if self.selected_tool == None:
             return
-        tool_instance = self.tool_dict[self.selected_tool]['tool_obj']
-        node = tool_instance.create_node(unique=False)
-        temp_gm = GraphModel()
-        temp_gm.add_node(node)
-        temp_gm.set_start_state(node.name)
-        self.create_and_run(temp_gm)
+        try:
+            tool_instance = self.tool_dict[self.selected_tool]['tool_obj']
+            node = tool_instance.create_node(unique=False)
+            temp_gm = GraphModel()
+            temp_gm.add_node(node)
+            temp_gm.set_start_state(node.name)
+            self.create_and_run(temp_gm)
+        except RuntimeError, e:
+            QMessageBox.information(self, str(self.objectName()), 'RuntimeError: ' + e.message)
 
     def add_cb(self):
         if self.selected_tool == None:
@@ -600,6 +602,11 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.edit_mode()
         self.enable_buttons()
         tool.node_selected(smach_state)
+
+        if smach_state.is_runnable():
+            self.ui.run_button.setDisabled(False)
+        else:
+            self.ui.run_button.setDisabled(True)
         #else:
         #    self.empty_properties_box()
         #    self.disable_buttons()
@@ -819,7 +826,9 @@ class GraphModel:
             global_node = self.smach_states[global_node_name]
             global_variable_name = global_node.get_name()
             value = global_node.get_info()
-            exec "sm.userdata.%s = value" % global_variable_name
+            exec_str = "sm.userdata.%s = value" % global_variable_name
+            print 'executing', exec_str
+            exec exec_str
 
         with sm:
             for node_name in self.nonoutcomes():
@@ -837,7 +846,7 @@ class GraphModel:
                 remapping = {}
                 for input_key in node.get_registered_input_keys():
                     remapping[input_key] = node.source_for(input_key)
-                #print '>> node_name', node_name, 'transitions', transitions
+                print '>> node_name', node_name, 'transitions', transitions, 'remapping', remapping
                 smach.StateMachine.add(node_name, node, transitions=transitions, remapping=remapping)
 
         if self.start_state == None:
@@ -935,6 +944,8 @@ class GraphModel:
 
         return allowed_nodes
 
+    ##
+    # @return a list of nodes that are of subclass InfoStateBase
     def global_nodes(self, class_filter):
         allowed_nodes = []
         for k in self.smach_states.keys():

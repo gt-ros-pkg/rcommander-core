@@ -177,10 +177,10 @@ class LinearMoveState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
     def __init__(self, name, trans, angles, arm, vels, motion_type, source, frame):
         tu.SimpleStateBase.__init__(self, name, \
                 arm + '_ptp', ptp.LinearMovementAction, 
-                goal_cb_str = 'ros_goal') 
-
-        self.register_input_keys(['point'])
+                goal_cb_str = 'ros_goal', input_keys=['point']) 
         self.set_source_for('point', source)
+        #self.register_input_keys(['point'])
+        #print 'registered input keys', self.get_registered_input_keys()
 
         self.trans = trans
         self.angles = angles #convert angles to _quat
@@ -201,6 +201,7 @@ class LinearMoveState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
         if self.source_for('point') != None:
             print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             print 'Using user data!'
+            print self.get_registered_input_keys()
             trans, frame = userdata.point
         else:
             print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
@@ -211,7 +212,6 @@ class LinearMoveState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
         goal.goal = stamp_pose(pose, frame)
         goal.trans_vel = self.vels[0]
         goal.rot_vel = self.vels[1]
-        print goal
         return goal
 
     def _set_angles(self, euler_angs):

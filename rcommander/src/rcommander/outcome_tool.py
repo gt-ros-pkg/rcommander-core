@@ -8,6 +8,7 @@ class EmptyState(tu.StateBase):
 
     def __init__(self, name, temporary, tool_name=TOOL_NAME):
         tu.StateBase.__init__(self, name)
+        self.set_runnable(False)
         self.temporary = temporary
         self.tool_name = tool_name
 
