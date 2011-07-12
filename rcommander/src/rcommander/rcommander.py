@@ -948,8 +948,8 @@ class GraphModel:
 
             self.gve.remove_node(old_node_name)
 
-    def _outcome_name(self, node_name, outcome):
-        return node_name + '_' + outcome
+    #def _outcome_name(self, node_name, outcome):
+    #    return node_name + '_' + outcome
 
     def connectable_nodes(self, node_name, outcome):
         #can't connect to
@@ -958,8 +958,9 @@ class GraphModel:
         #outcome_name = self._outcome_name(node_name, outcome)
         #allowed_nodes.append(outcome_name)
         for k in self.smach_states.keys():
-            #If it's someone else's temporary node
-            if not self.is_modifiable(k) and k != outcome:
+            #If it's a temporary node and does not have the name of this outcome
+            #if not self.is_modifiable(k) and k != outcome:
+            if (not self.is_modifiable(k)) and (not self._is_type(k, outcome)):
                 continue
             #ignore our own name
             if node_name == k:
@@ -971,7 +972,7 @@ class GraphModel:
             allowed_nodes.append(k)
 
         if node_name == None:
-            allowed_nodes.append(outcome)
+            allowed_nodes.append(self._create_outcome_name(outcome))
             allowed_nodes = list(set(allowed_nodes))
 
         return allowed_nodes
@@ -991,6 +992,21 @@ class GraphModel:
         allowed_nodes.sort()
         return allowed_nodes
 
+    def _create_outcome_name(self, outcome):
+        idx = 0
+        name = "%s%d" % (outcome, idx)
+        while self.smach_states.has_key(name):
+            idx = idx + 1
+            name = "%s%d" % (outcome, idx)
+        return name
+
+    def _is_type(self, state_name, outcome):
+        r = state_name.find(outcome)
+        if r < 0:
+            return False
+        else:
+            return True
+
     def add_node(self, smach_node, connect_to=None):
         if self.smach_states.has_key(smach_node.name):
             raise RuntimeError('Already has node of the same name.  This case should not happen.')
@@ -1001,11 +1017,12 @@ class GraphModel:
         #print 'adding node', smach_node.name, 'with outcomes', smach_node.get_registered_outcomes()
         for outcome in smach_node.get_registered_outcomes():
             #outcome_name = self._outcome_name(smach_node.name, outcome)
-            if not self.smach_states.has_key(outcome):
-                self.smach_states[outcome] = ot.EmptyState(outcome, temporary=True)
-                self.gve.add_node(outcome)
+            outcome_name = self._create_outcome_name(outcome)
+            #if not self.smach_states.has_key(outcome):
+            self.smach_states[outcome_name] = ot.EmptyState(outcome_name, temporary=True)
+            self.gve.add_node(outcome_name)
             #self.gve.add_edge(smach_node.name, outcome)
-            self._add_edge(smach_node.name, outcome, outcome)
+            self._add_edge(smach_node.name, outcome_name, outcome)
 
     def add_outcome(self, outcome_name):
         self.gve.add_node(outcome_name)
@@ -1098,8 +1115,9 @@ class GraphModel:
         for outcome in self.smach_states[node_name].get_registered_outcomes():
             if not cdict.has_key(outcome):
                 #print 'outcome', outcome, 'is missing. restoring connection'
-                self._add_temporary_outcome(outcome)
-                self._add_edge(node_name, outcome, outcome)
+                new_outcome_name = self._create_outcome_name(outcome)
+                self._add_temporary_outcome(new_outcome_name)
+                self._add_edge(node_name, new_outcome_name, outcome)
 
     def _add_temporary_outcome(self, outcome):
         self.smach_states[outcome] = ot.EmptyState(outcome, temporary=True)
