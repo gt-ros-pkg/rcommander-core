@@ -586,6 +586,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.deselect_tool_buttons()
 
     def node_cb(self, node):
+        #print node.id
         self.set_selected_node(node.id)
         self.set_selected_edge(None, None)
 
@@ -916,10 +917,16 @@ class GraphModel:
         #outcome_name = self._outcome_name(node_name, outcome)
         #allowed_nodes.append(outcome_name)
         for k in self.smach_states.keys():
+            #If it's someone else's temporary node
             if not self.is_modifiable(k) and k != outcome:
                 continue
+            #ignore our own name
             if node_name == k:
                 continue
+            #ignore special global node
+            if k == tu.InfoStateBase.GLOBAL_NAME:
+                continue
+
             allowed_nodes.append(k)
 
         if node_name == None:

@@ -140,10 +140,17 @@ class ToolBase:
         return n
 
     def node_selected(self, node):
+        #print 'node name', node.get_name()
         outcome_list = self.rcommander.current_children_of(node.get_name())
+        #print 'outcome_list', outcome_list
         for outcome_name, connected_node in outcome_list:
+            if not self.outcome_inputs.has_key(outcome_name):
+                continue
             widget = self.outcome_inputs[outcome_name]
+            #print 'connected_node', connected_node
+            #print 'widget returned', widget.findText(connected_node)
             widget.setCurrentIndex(widget.findText(connected_node))
+        #print 'returned'
 
         #Set default choices to new node info
         #for outcome_name in node.outcome_choices:
