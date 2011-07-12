@@ -22,6 +22,7 @@ import cPickle as pk
 import os.path as pt
 import os
 import glob
+import ctypes
 
 #Import tools
 import tool_utils as tu
@@ -36,6 +37,14 @@ def split(num, factor):
     num1 = int(round(num * factor))
     num2 = num - num1
     return [num1, num2]
+
+class UserStoppedException:
+    def __init__(self):
+        self.msg = "Stopped"
+
+    def __str__(self):
+        return repr(self.msg)
+
 
 class RNodeBoxBaseClass(QtGui.QMainWindow):
     def __init__(self):
@@ -146,15 +155,32 @@ class ThreadRunSM(threading.Thread):
         self.exception = None
 
     def run(self):
-        print 'ThreadRunSM started with %s' % self.sm_name
+        rospy.loginfo('ThreadRunSM started with %s' % self.sm_name)
         try:
             self.intro_server = smach_ros.IntrospectionServer(self.sm_name, self.sm, '/' + self.sm_name)
             self.intro_server.start()
             self.outcome = self.sm.execute()
         except smach.InvalidTransitionError, e:
             self.exception = e
-        print 'ThreadRunSM finished'
+        except UserStoppedException, e:
+            self.exception = e
+            rospy.loginfo('ThreadRunSM: execution stopped')
+        rospy.loginfo('ThreadRunSM finished')
 
+    def except_stop(self):
+        while self.isAlive():
+            self._raise_exception()
+            time.sleep(.1)
+
+    def _raise_exception(self):
+        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(self.ident), ctypes.py_object(UserStoppedException))
+        if res == 0:
+            raise ValueError("Invalid thread ID")
+        elif res != 1:
+            # "if it returns a number greater than one, you're in trouble,
+            # and you should call it again with exc=NULL to revert the effect"
+            ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, 0)
+            raise SystemError("PyThreadState_SetAsyncExc failed")
 
 ##
 # Checks for errors and redraw status bar if needed
@@ -229,6 +255,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
 
         self.connect(self.ui.delete_button, SIGNAL('clicked()'), self.delete_cb)
         self.connect(self.ui.action_Run, SIGNAL('triggered(bool)'), self.run_sm_cb)
+        self.connect(self.ui.action_stop, SIGNAL('triggered(bool)'), self.stop_sm_cb)
         self.connect(self.ui.actionNew, SIGNAL('triggered(bool)'), self.new_sm_cb)
         self.connect(self.ui.action_save, SIGNAL('triggered(bool)'), self.save_sm_cb)
         self.connect(self.ui.action_save_as, SIGNAL('triggered(bool)'), self.save_as_sm_cb)
@@ -270,7 +297,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
 
             if sm_thread.exception != None:
                 m = sm_thread.exception.message
-                self.statusBar().showMessage('InvalidTransitionError: %s' % m, 15000)
+                self.statusBar().showMessage('%s: %s' % (sm_thread.exception.__class__, m), 15000)
                 self.current_sm_threads.pop('run_sm')
                 return
 
@@ -361,6 +388,8 @@ class RCommanderWindow(RNodeBoxBaseClass):
         rthread = ThreadRunSM(self.document.get_name(), sm)
         rthread.start()
         self.current_sm_threads['run_sm'] = rthread
+        time.sleep(3)
+        rthread.except_stop()
 
     #####################################################################
     # Callbacks
@@ -458,6 +487,9 @@ class RCommanderWindow(RNodeBoxBaseClass):
                 self.create_and_run(self.graph_model)
             except RuntimeError, e:
                 QMessageBox.information(self, str(self.objectName()), 'RuntimeError: ' + e.message)
+
+    def stop_sm_cb(self):
+        return
     
     ##################
     # Behavior tools

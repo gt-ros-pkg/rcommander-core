@@ -149,6 +149,9 @@ class GripperState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
         self.arm = arm
 
     def ros_goal(self, userdata, default_goal):
+        #import time
+        #while True:
+        #    time.sleep(.01)
         return pm.Pr2GripperCommandGoal(pm.Pr2GripperCommand(position=self.gripper_size/100., max_effort=self.effort))
 
     def __getstate__(self):
