@@ -32,6 +32,7 @@ import outcome_tool as ot
 import gripper_tool as gt
 import linear_move_tool as lmt
 import point_tool as ptl
+import gripper_event_tool as get
 
 def split(num, factor):
     num1 = int(round(num * factor))
@@ -1265,6 +1266,7 @@ rc = RCommanderWindow()
 rc.add_tools([['Misc', nt.NavigateTool(rc)], 
               ['Misc', tt.TuckTool(rc)],
               ['Misc', lmt.LinearMoveTool(rc)],
+              ['Misc', get.GripperEventTool(rc)],
               ['Misc', ptl.Point3DTool(rc)],
               ['Misc', gt.GripperTool(rc)]])
 rc.show()

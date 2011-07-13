@@ -114,7 +114,7 @@ class PTPArmActionServer:
         rospy.loginfo('message that we got:\n' + str(msg))
         self.controller_manager.cart_mode(self.arm)
         success = False
-        r = rospy.Rate(100) 
+        r = rospy.Rate(100)
 
         goal_ps = msg.goal
         relative_movement = msg.relative
