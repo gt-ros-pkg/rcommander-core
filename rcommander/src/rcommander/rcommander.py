@@ -633,6 +633,18 @@ class RCommanderWindow(RNodeBoxBaseClass):
 
         #if self.graph_model.get_smach_state(node.id).__class__ != ot.EmptyState:
         smach_state = self.graph_model.get_smach_state(node.id)
+        #for k in self.graph_model.smach_states.keys():
+        #    sstate = self.graph_model.smach_states[k]
+        #    print sstate.name, sstate.tool_name, sstate.runnable
+
+        #self.name = name
+        #self.tool_name = tool
+        ##self.outcome_choices = choices
+        #self.remapping = remapping
+        #self.runnable = runnable
+
+
+        #print 'smach-state.tool_name', smach_state, smach_state.name, smach_state.tool_name, smach_state.runnable
         tool = self.tool_dict[smach_state.tool_name]['tool_obj']
         tool.button.setChecked(True)
         tool.activate_cb(smach_state.get_name())

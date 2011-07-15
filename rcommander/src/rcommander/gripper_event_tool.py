@@ -84,7 +84,8 @@ class GripperEventState(smach.State, tu.StateBase):
     EVENT_OUTCOME = 'detected_event'
 
     def __init__(self, name, child_smach_node, arm, event_type, accel, slip):
-        tu.StateBase.__init__(self, name)
+        self.name = name
+        tu.StateBase.__init__(self, self.name)
         self.child_smach_node = child_smach_node
         self.arm = arm
         self.event_type = event_type
@@ -117,12 +118,12 @@ class GripperEventState(smach.State, tu.StateBase):
 
     def __getstate__(self):
         state = tu.StateBase.__getstate__(self)
-        my_state = [self.child_smach_node, self.arm, self.event_type, self.accel, self.slip]
+        my_state = [self.name, self.child_smach_node, self.arm, self.event_type, self.accel, self.slip]
         return {'state_base': state, 'self': my_state}
 
     def __setstate__(self, state):
         tu.StateBase.__setstate__(self, state['state_base'])
-        self.child_smach_node, self.arm, self.event_type, self.accel, self.slip = state['self']
+        self.name, self.child_smach_node, self.arm, self.event_type, self.accel, self.slip = state['self']
         self.__init_unpicklables__()
 
     def execute(self, userdata):

@@ -45,9 +45,13 @@ class GraphModel:
         for fname in state_pkl_names:
             sname = pt.splitext(pt.split(fname)[1])[0]
             pickle_file = open(fname, 'r')
+            #if fname == tu.InfoStateBase.GLOBAL_NAME:
+            #    continue
             rospy.loginfo('Loading state %s' % sname)
             gm.smach_states[sname] = pk.load(pickle_file)
             pickle_file.close()
+            #print '##', gm.smach_states[sname].name, gm.smach_states[sname].tool_name
+
 
         #Reconstruct graph
         graph_name = pt.join(name, GraphModel.EDGES_FILE)
@@ -65,6 +69,9 @@ class GraphModel:
         pickle_file = open(nodes_fn, 'r')
         info = pk.load(pickle_file)
         gm.start_state = info['start_state']
+
+        #for k in gm.smach_states.keys():
+        #    print '>>', gm.smach_states[k].name, gm.smach_states[k].tool_name
         return gm
 
     def save(self, name):

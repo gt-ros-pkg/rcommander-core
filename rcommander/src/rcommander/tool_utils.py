@@ -295,16 +295,19 @@ class StateBase:
 
     def __getstate__(self):
         #r = [self.name, self.tool_name, self.outcome_choices, self.remapping]
-        r = [self.name, self.tool_name, self.remapping]
+        r = [self.name, self.tool_name, self.remapping, self.runnable]
         return r
 
     def __setstate__(self, state):
         #print 'state base', state
-        name, tool, choices, remapping = state
+        print state
+        name, tool, remapping, runnable = state
         self.name = name
         self.tool_name = tool
         #self.outcome_choices = choices
         self.remapping = remapping
+        self.runnable = runnable
+        print name, 'toolname set to', self.tool_name
 
     def source_for(self, var_name):
         return self.remapping[var_name]
