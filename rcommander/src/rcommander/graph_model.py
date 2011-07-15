@@ -265,6 +265,7 @@ class GraphModel:
             self.smach_states[smach_node.name] = smach_node
             #print 'adding node', smach_node.name, 'with outcomes', smach_node.get_registered_outcomes()
             for outcome in smach_node.get_registered_outcomes():
+                #print smach_node.name, outcome
                 #outcome_name = self._outcome_name(smach_node.name, outcome)
                 outcome_name = self._create_outcome_name(outcome)
                 #if not self.smach_states.has_key(outcome):
@@ -275,6 +276,7 @@ class GraphModel:
         else:
             #If this node has a child node we replace its child node instead of performing an add
             self.replace_node(smach_node, smach_node.get_child_name())
+            self.restore_node_consistency(smach_node.name)
 
     def add_outcome(self, outcome_name):
         self.gve.add_node(outcome_name)

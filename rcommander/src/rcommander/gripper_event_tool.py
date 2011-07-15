@@ -1,3 +1,5 @@
+from PyQt4.QtGui import *
+from PyQt4.QtCore import *
 import pr2_gripper_sensor_msgs.msg as gr
 import actionlib_msgs.msg as am
 import actionlib
@@ -14,7 +16,7 @@ class GripperEventTool(tu.ToolBase):
         self.child_node = None
 
     def set_child_node(self, child):
-        self.child_node = None
+        self.child_node = child
 
     def fill_property_box(self, pbox):
         formlayout = pbox.layout()
@@ -36,7 +38,7 @@ class GripperEventTool(tu.ToolBase):
         if self.child_node == None:
             raise RuntimeError('No child node!')
         selected_arm = None
-        for r in self.radio_buttons:
+        for r in self.gripper_radio_buttons:
             if r.isChecked():
                 selected_arm = str(r.text()).lower()
         if selected_arm == None:
@@ -54,19 +56,21 @@ class GripperEventTool(tu.ToolBase):
         return GripperEventState(nname, self.child_node, selected_arm, event_type, accel_val, slip_val)
     
     def _node_selected(self, gripper_event_state):
-        if gripper_state.arm == 'left':
-            self.radio_buttons[0].setChecked(True)
-        if gripper_state.arm == 'right':
-            self.radio_buttons[1].setChecked(True)
+        if gripper_event_state.arm == 'left':
+            self.gripper_radio_buttons[0].setChecked(True)
+        if gripper_event_state.arm == 'right':
+            self.gripper_radio_buttons[1].setChecked(True)
 
-        self.child_node = gripper_state.get_child()
-        self.gripper_box.set_value(gripper_state.gripper_size)
-        self.effort_box.set_value(gripper_state.effort)
+        self.event_box.setCurrentIndex(self.event_box.findText(gripper_event_state.event_type))
+        self.accel_box.set_value(gripper_event_state.accel)
+        self.slip_box.set_value(gripper_event_state.slip)
+        self.child_node = gripper_event_state.get_child()
 
     def reset(self):
-        self.gripper_box.set_value(0.0)
-        self.effort_box.set_value(50.)
-        self.radio_buttons[0].setChecked(True)
+        self.gripper_radio_buttons[0].setChecked(True)
+        self.event_box.setCurrentIndex(self.event_box.findText(GripperEventState.EVENT_LIST[0]))
+        self.accel_box.set_value(8.25)
+        self.slip_box.set_value(.01)
 
 
 class GripperEventState(smach.State, tu.StateBase): 
@@ -80,6 +84,7 @@ class GripperEventState(smach.State, tu.StateBase):
     EVENT_OUTCOME = 'detected_event'
 
     def __init__(self, name, child_smach_node, arm, event_type, accel, slip):
+        tu.StateBase.__init__(self, name)
         self.child_smach_node = child_smach_node
         self.arm = arm
         self.event_type = event_type
@@ -89,10 +94,11 @@ class GripperEventState(smach.State, tu.StateBase):
 
     def __init_unpicklables__(self):
         #Init smach stuff
-        input_keys = self.child_smach_node.get_registered_input_keys()
-        output_keys = self.child_smach_node.get_registered_output_keys()
-        outcomes = self.child_smach_node.get_registered_outcomes() + [GripperEventState.EVENT_OUTCOME]
+        input_keys = list(self.child_smach_node.get_registered_input_keys())
+        output_keys = list(self.child_smach_node.get_registered_output_keys())
+        outcomes = list(self.child_smach_node.get_registered_outcomes()) + [GripperEventState.EVENT_OUTCOME]
         smach.State.__init__(self, outcomes = outcomes, input_keys = input_keys, output_keys = output_keys)
+        #print '>> my registered outcomes', self.get_registered_outcomes()
 
         #Setup our action server
         if self.arm == 'left':
@@ -117,6 +123,7 @@ class GripperEventState(smach.State, tu.StateBase):
     def __setstate__(self, state):
         tu.StateBase.__setstate__(self, state['state_base'])
         self.child_smach_node, self.arm, self.event_type, self.accel, self.slip = state['self']
+        self.__init_unpicklables__()
 
     def execute(self, userdata):
         goal = PR2GripperEventDetectorGoal()
@@ -131,12 +138,23 @@ class GripperEventState(smach.State, tu.StateBase):
         rthread.start()
         
         event = self._detected_event()
+        preempted = False
         while not event:
-            event = self._detected_event()
-        rthread.except_stop()
+            if self.preempt_requested():
+                self.service_preempt()
+                preempted = True
+                break
+            event = self._detected_event() 
+
+        #send preempt to whatever is executing
+        rthread.preempt()
+
+        if preempted:
+            return 'preempted'
+
         if rthread.exception != None:
             raise rthread.exception
-        
+
         if event:
             return self.EVENT_OUTCOME
         else:

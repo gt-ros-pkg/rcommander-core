@@ -164,6 +164,13 @@ class ToolBase:
 
     def fill_connections_box(self, pbox):
         formlayout = pbox.layout()
+        if hasattr(self, 'set_child_node'):
+            if self.rcommander.selected_node == None:
+                return
+            else:
+                smach_state = self.rcommander.graph_model.get_smach_state(self.rcommander.selected_node)
+                self.set_child_node(smach_state)
+
         current_node = self._create_node()
         current_node_name = current_node.get_name()
         self.name_input = QLineEdit()

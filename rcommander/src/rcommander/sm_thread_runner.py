@@ -34,7 +34,11 @@ class ThreadRunSM(threading.Thread):
             rospy.loginfo('ThreadRunSM: execution stopped')
         rospy.loginfo('ThreadRunSM finished')
 
-    def except_stop(self):
+    def preempt(self):
+        if self.isAlive():
+            self.sm.request_preempt()
+
+    def except_preempt(self):
         while self.isAlive():
             self._raise_exception()
             time.sleep(.1)

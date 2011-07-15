@@ -156,8 +156,10 @@ class PTPArmActionServer:
         verbose = False
 
         while True:
+            #Someone preempted us!
             if self.linear_movement_as.is_preempt_requested():
-                #Someone preempted us!
+                #Stop our motion
+                self.target_pub.publish(stamp_pose(self.last_pose_msg.pose, self.last_pose_msg.frame_id))
                 self.linear_movement_as.set_preempted()
                 rospy.loginfo('action_cb: preempted!')
                 break

@@ -383,8 +383,9 @@ class RCommanderWindow(RNodeBoxBaseClass):
         rthread = smtr.ThreadRunSM(self.document.get_name(), sm)
         rthread.start()
         self.current_sm_threads['run_sm'] = rthread
-        time.sleep(3)
-        rthread.except_stop()
+
+        #time.sleep(3)
+        #rthread.stop()
 
     #####################################################################
     # Callbacks
@@ -484,7 +485,8 @@ class RCommanderWindow(RNodeBoxBaseClass):
                 QMessageBox.information(self, str(self.objectName()), 'RuntimeError: ' + e.message)
 
     def stop_sm_cb(self):
-        return
+        if self.current_sm_threads.has_key('run_sm'):
+            self.current_sm_threads['run_sm'].preempt()
     
     ##################
     # Behavior tools
@@ -516,14 +518,21 @@ class RCommanderWindow(RNodeBoxBaseClass):
         if hasattr(tool_instance, 'set_child_node'):
             if self.selected_node == None:
                 QMessageBox.information(self, str(self.objectName()), 'Need to have another node selected to create an instance of this node.')
+                return
             else:
-                tool_instance.set_child_node(self.graph_mode)
+                smach_state = self.graph_model.get_smach_state(self.selected_node)
+                tool_instance.set_child_node(smach_state)
+
         smach_node = tool_instance.create_node()
         self.graph_model.add_node(smach_node)
         if self.selected_node == None:
             self.node_cb(self.graph_model.node(smach_node.name))
         else:
-            self.node_cb(self.graph_model.node(self.selected_node))
+            snode = self.graph_model.node(self.selected_node)
+            if snode != None:
+                self.node_cb(snode)
+            else:
+                self.selected_node = None
 
         self.tool_dict[self.selected_tool]['tool_obj'].refresh_connections_box()
         self.graph_view.refresh()
