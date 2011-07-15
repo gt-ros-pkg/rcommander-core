@@ -352,6 +352,7 @@ class SimpleStateBase(smach_ros.SimpleActionState, StateBase):
         #func.get_registered_output_keys = self.get_registered_output_keys
         #func.get_registered_outcomes    = self.get_registered_outcomes
         smach_ros.SimpleActionState.__init__(self, action_name, action_type, goal_cb = SimpleStateCB(eval('self.%s' % goal_cb_str), input_keys, []))
+
         StateBase.__init__(self, name)
 
         self.action_name = action_name

@@ -199,12 +199,12 @@ class LinearMoveState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
             raise RuntimeError('Invalid motion type given.')
 
         if self.source_for('point') != None:
-            print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            print 'Using user data!'
-            print self.get_registered_input_keys()
+            #print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+            #print 'Using user data!'
+            #print self.get_registered_input_keys()
             trans, frame = userdata.point
         else:
-            print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
+            #print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
             trans = self.trans
             frame = self.frame
 
