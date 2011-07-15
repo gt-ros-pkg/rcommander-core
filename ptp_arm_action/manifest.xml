@@ -14,7 +14,6 @@
   <depend package="actionlib"/>
   <depend package="pr2_mechanism_msgs"/>
   <depend package="object_manipulator"/>
-  <depend package="hrl_pr2_lib"/>
 </package>
 
 
