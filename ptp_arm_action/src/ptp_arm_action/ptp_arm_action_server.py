@@ -91,9 +91,11 @@ class PTPArmActionServer:
         else:
             raise RuntimeError('Invalid parameter for arm: %s' % arm)
 
+        self.last_pose_msg = None
         self.arm = arm
         self.target_pub = rospy.Publisher(self.controller + '/command_pose', gm.PoseStamped)
         self.pose_sub = rospy.Subscriber(self.controller + '/state/x', gm.PoseStamped, self.pose_callback)
+
         self.tf = tf.TransformListener()
         self.trans_tolerance = .005
         self.rot_tolerance = math.radians(5.)
@@ -102,9 +104,18 @@ class PTPArmActionServer:
         self.controller_manager = ControllerManager()
         #self.controller_manager.cart_mode(self.arm)
         self._action_name = name
-        self.linear_movement_as = actionlib.SimpleActionServer(self._action_name, ptp.LinearMovementAction, execute_cb=self.action_cb, auto_start=False)
+        self.linear_movement_as = actionlib.SimpleActionServer(self._action_name, ptp.LinearMovementAction, 
+					execute_cb=self.action_cb, auto_start=False)
         self.linear_movement_as.start()
+
         rospy.loginfo('Action name: %s Arm: %s' % (self._action_name, self.arm))
+
+    def _wait_for_pose_message(self):
+        rospy.loginfo('waiting for pose message...')
+        r = rospy.Rate(10)
+        while self.last_pose_msg == None:
+            r.sleep()
+        rospy.loginfo('ok. got it!')
 
     def pose_callback(self, data):
         #rospy.loginfo('pose_callback')
@@ -113,6 +124,8 @@ class PTPArmActionServer:
     def action_cb(self, msg):
         rospy.loginfo('message that we got:\n' + str(msg))
         self.controller_manager.cart_mode(self.arm)
+        self._wait_for_pose_message()
+
         success = False
         r = rospy.Rate(100)
 
@@ -153,13 +166,13 @@ class PTPArmActionServer:
         tmax = tstart + self.time_out
         self.controller_manager = ControllerManager()
         rospy.loginfo('Goal is x %f y %f z %f' % (goal_ps.pose.position.x, goal_ps.pose.position.y, goal_ps.pose.position.z))
-        verbose = False
+        verbose = True
 
         while True:
             #Someone preempted us!
             if self.linear_movement_as.is_preempt_requested():
                 #Stop our motion
-                self.target_pub.publish(stamp_pose(self.last_pose_msg.pose, self.last_pose_msg.frame_id))
+                self.target_pub.publish(stamp_pose(self.last_pose_msg.pose, self.last_pose_msg.header.frame_id))
                 self.linear_movement_as.set_preempted()
                 rospy.loginfo('action_cb: preempted!')
                 break
