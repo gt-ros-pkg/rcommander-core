@@ -146,6 +146,7 @@ class LinearMoveTool(tu.ToolBase):
             vr.setText(str(value))
         self.frameline.setText(node.frame)
         self.motion_box.setCurrentIndex(self.motion_box.findText(str(node.motion_type)))
+        self.arm_box.setCurrentIndex(self.arm_box.findText(node.arm))
 
         source_name = node.source_for('point')
         if source_name == None:

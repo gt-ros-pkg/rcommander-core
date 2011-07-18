@@ -1,3 +1,5 @@
+import roslib; roslib.load_manifest('rcommander')
+import rospy
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 import pr2_gripper_sensor_msgs.msg as gr
@@ -44,7 +46,7 @@ class GripperEventTool(tu.ToolBase):
         if selected_arm == None:
             raise RuntimeError('No arm selected!')
 
-        event_type = self.event_box.currentText()
+        event_type = str(self.event_box.currentText())
         accel_val = self.accel_box.value()
         slip_val = self.slip_box.value()
 
@@ -64,7 +66,8 @@ class GripperEventTool(tu.ToolBase):
         self.event_box.setCurrentIndex(self.event_box.findText(gripper_event_state.event_type))
         self.accel_box.set_value(gripper_event_state.accel)
         self.slip_box.set_value(gripper_event_state.slip)
-        self.child_node = gripper_event_state.get_child()
+        self.child_node = gripper_event_state.child_smach_node
+        #self.child_node = gripper_event_state.get_child()
 
     def reset(self):
         self.gripper_radio_buttons[0].setChecked(True)
@@ -91,7 +94,7 @@ class GripperEventState(smach.State, tu.StateBase):
         self.event_type = event_type
         self.accel = accel
         self.slip = slip
-        self.__init_unpicklables__()
+        self.__init_unpicklables__() 
 
     def __init_unpicklables__(self):
         #Init smach stuff
@@ -99,6 +102,7 @@ class GripperEventState(smach.State, tu.StateBase):
         output_keys = list(self.child_smach_node.get_registered_output_keys())
         outcomes = list(self.child_smach_node.get_registered_outcomes()) + [GripperEventState.EVENT_OUTCOME]
         smach.State.__init__(self, outcomes = outcomes, input_keys = input_keys, output_keys = output_keys)
+        self.remapping = self.child_smach_node.remapping
         #print '>> my registered outcomes', self.get_registered_outcomes()
 
         #Setup our action server
@@ -127,43 +131,65 @@ class GripperEventState(smach.State, tu.StateBase):
         self.__init_unpicklables__()
 
     def execute(self, userdata):
-        goal = PR2GripperEventDetectorGoal()
-        goal.command.acceleration_trigger_magnitude = accel
-        goal.command.slip_trigger_magnitude = slip
+        goal = gr.PR2GripperEventDetectorGoal()
+        goal.command.acceleration_trigger_magnitude = self.accel
+        goal.command.slip_trigger_magnitude = self.slip
         goal.command.trigger_conditions = GripperEventState.EVENT_CODES[self.event_type]
+        #print 'ge: sending goal'
         self.action_client.send_goal(goal)
 
         #Let state machine execute, but kill its thread if we detect an event
-        sm = self.get_child().create_state_machine(userdata=userdata)
+        #print 'ge: creating sm and running'
+        child_gm = self.get_child()
+        sm = child_gm.create_state_machine(userdata=userdata)
         rthread = smtr.ThreadRunSM(self.child_smach_node.get_name(), sm)
         rthread.start()
         
         event = self._detected_event()
         preempted = False
+        r = rospy.Rate(100)
         while not event:
+            if rthread.exception != None:
+                raise rthread.exception
+
+            if rthread.outcome != None:
+                rospy.loginfo('child node finished with outcome ' + rthread.outcome)
+                break
+
+            if not rthread.isAlive():
+                rospy.loginfo('child node died')
+                break
+
             if self.preempt_requested():
                 self.service_preempt()
                 preempted = True
                 break
             event = self._detected_event() 
+            r.sleep()
+
+        #print 'ge: sm finished'
 
         #send preempt to whatever is executing
         rthread.preempt()
+        rthread.except_preempt()
 
         if preempted:
             return 'preempted'
 
-        if rthread.exception != None:
-            raise rthread.exception
-
         if event:
             return self.EVENT_OUTCOME
         else:
+            #reverse look up child outcome
+            for outcome, outcome_rename in child_gm.current_children_of(self.child_smach_node.name):
+                if outcome_rename == rthread.outcome:
+                    return outcome
+            #if not found just return what we have
             return rthread.outcome
 
     def get_child(self):
         child = gm.GraphModel()
         child.add_node(self.child_smach_node)
+        child.set_start_state(self.child_smach_node.name)
         return child
 
     def get_child_name(self):
