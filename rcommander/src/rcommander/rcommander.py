@@ -36,6 +36,7 @@ import linear_move_tool as lmt
 import point_tool as ptl
 import gripper_event_tool as get
 
+
 def split(num, factor):
     num1 = int(round(num * factor))
     num2 = num - num1
@@ -295,17 +296,27 @@ class RCommanderWindow(RNodeBoxBaseClass):
                 m = sm_thread.exception.message
                 self.statusBar().showMessage('%s: %s' % (sm_thread.exception.__class__, m), 15000)
                 self.current_sm_threads.pop('run_sm')
+                self.current_sm_threads.pop('preempted')
                 return
 
             if sm_thread.outcome != None:
                 self.statusBar().showMessage('Finished with outcome: %s' % sm_thread.outcome, 15000)
                 self.current_sm_threads.pop('run_sm')
+                self.current_sm_threads.pop('preempted')
                 return
 
             if not sm_thread.isAlive():
                 self.statusBar().showMessage('Error: SM thread unexpectedly died.', 15000)
                 self.current_sm_threads.pop('run_sm')
+                self.current_sm_threads.pop('preempted')
                 return
+
+            if self.current_sm_threads['preempted'] != None and (time.time() - self.current_sm_threads['preempted'] > 5.):
+                rospy.loginfo('Thread took too long to terminate.  Escallating and using exception exit.')
+                self.current_sm_threads['run_sm'].except_preempt()
+                rospy.loginfo('Thread terminated.')
+                self.current_sm_threads.pop('run_sm')
+                self.current_sm_threads.pop('preempted')
 
             rstring = 'Running...'
             if str(self.statusBar().currentMessage()) != rstring:
@@ -383,6 +394,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
         rthread = smtr.ThreadRunSM(self.document.get_name(), sm)
         rthread.start()
         self.current_sm_threads['run_sm'] = rthread
+        self.current_sm_threads['preempted'] = None
 
         #time.sleep(3)
         #rthread.stop()
@@ -487,6 +499,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
     def stop_sm_cb(self):
         if self.current_sm_threads.has_key('run_sm'):
             self.current_sm_threads['run_sm'].preempt()
+            self.current_sm_threads['preempted'] = time.time()
     
     ##################
     # Behavior tools

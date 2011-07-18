@@ -108,7 +108,7 @@ class GraphModel:
             global_variable_name = global_node.get_name()
             value = global_node.get_info()
             exec_str = "sm.userdata.%s = value" % global_variable_name
-            #print 'executing', exec_str
+            print 'executing', exec_str
             exec exec_str
 
         #Copy over input userdata into our state machine so that nodes inside
@@ -116,6 +116,7 @@ class GraphModel:
         if userdata != None:
             for key in userdata.keys():
                 exec ("sm.userdata.%s = userdata.%s" % (key, key))
+                print 'copying key', key
 
         with sm:
             for node_name in self.nonoutcomes():
@@ -124,7 +125,7 @@ class GraphModel:
                     continue
 
                 transitions = {}
-                print node_name
+                print node_name, node.get_registered_input_keys()
                 for e in self.gve.node(node_name).edges:
                     if e.node1.id == node_name:
                         transitions[e.outcome] = e.node2.id
@@ -132,6 +133,7 @@ class GraphModel:
 
                 remapping = {}
                 for input_key in node.get_registered_input_keys():
+                    print 'source for', input_key, 'is', node.source_for(input_key)
                     remapping[input_key] = node.source_for(input_key)
                 #print '>> node_name', node_name, 'transitions', transitions, 'remapping', remapping
                 smach.StateMachine.add(node_name, node, transitions=transitions, remapping=remapping)

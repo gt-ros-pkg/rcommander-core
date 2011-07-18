@@ -3,6 +3,8 @@ import threading
 import rospy
 import smach
 import smach_ros
+import ctypes
+import time
 
 class UserStoppedException:
     def __init__(self):
@@ -41,10 +43,14 @@ class ThreadRunSM(threading.Thread):
     def except_preempt(self):
         while self.isAlive():
             self._raise_exception()
-            time.sleep(.1)
+            time.sleep(2.)
+            if self.isAlive():
+                threading.Thread._Thread__stop(self)
 
     def _raise_exception(self):
-        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(self.ident), ctypes.py_object(UserStoppedException))
+        #res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(self.ident), ctypes.py_object(UserStoppedException))
+        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(self.ident), ctypes.py_object(SystemExit))
+        print 'raised exception returned', res
         if res == 0:
             raise ValueError("Invalid thread ID")
         elif res != 1:
