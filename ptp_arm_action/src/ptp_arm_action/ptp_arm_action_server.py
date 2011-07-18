@@ -91,15 +91,15 @@ class PTPArmActionServer:
         else:
             raise RuntimeError('Invalid parameter for arm: %s' % arm)
 
-        self.last_pose_msg = None
         self.arm = arm
         self.target_pub = rospy.Publisher(self.controller + '/command_pose', gm.PoseStamped)
-        self.pose_sub = rospy.Subscriber(self.controller + '/state/x', gm.PoseStamped, self.pose_callback)
+        #self.pose_sub = rospy.Subscriber(self.controller + '/state/x', gm.PoseStamped, self.pose_callback)
 
         self.tf = tf.TransformListener()
-        self.trans_tolerance = .005
-        self.rot_tolerance = math.radians(5.)
-        self.time_out = 30.
+        self.trans_tolerance = rospy.get_param("~translation_tolerance")
+        self.rot_tolerance = math.radians(rospy.get_param("~rotation_tolerance"))
+        #rospy.loginfo('trans tolerance ' + str(self.trans_tolerance))
+        self.time_out = rospy.get_param("~timeout")
 
         self.controller_manager = ControllerManager()
         #self.controller_manager.cart_mode(self.arm)
@@ -110,21 +110,11 @@ class PTPArmActionServer:
 
         rospy.loginfo('Action name: %s Arm: %s' % (self._action_name, self.arm))
 
-    def _wait_for_pose_message(self):
-        rospy.loginfo('waiting for pose message...')
-        r = rospy.Rate(10)
-        while self.last_pose_msg == None:
-            r.sleep()
-        rospy.loginfo('ok. got it!')
-
-    def pose_callback(self, data):
-        #rospy.loginfo('pose_callback')
-        self.last_pose_msg = data
 
     def action_cb(self, msg):
         rospy.loginfo('message that we got:\n' + str(msg))
         self.controller_manager.cart_mode(self.arm)
-        self._wait_for_pose_message()
+        #self._wait_for_pose_message()
 
         success = False
         r = rospy.Rate(100)
@@ -151,37 +141,38 @@ class PTPArmActionServer:
 
             #Motion we want in tool frame
             tip_T_pose = tip_R_ref * ref_T_pose
-            rospy.loginfo('Motion we want in tool frame\n' + str(tip_T_pose[:,3].T))
-
+            rospy.loginfo('Motion we want in tool frame %.3f %.3f %.3f\n' % (tip_T_pose[0,3], tip_T_pose[1,3], tip_T_pose[2,3]))
             #Current position of tool frame in torso_lift_link frame 
             # (this choice is arbitrary, but affects behavior of cartesian controller)
             tll_T_tip  = tfu.tf_as_matrix(self.tf.lookupTransform('torso_lift_link', self.tool_frame, rospy.Time(0)))
             rospy.loginfo('Current position of tool frame in torso_lift_link frame\n' + str(tll_T_tip[:,3].T))
 
             tll_T_pose = tll_T_tip * tip_T_pose
-            rospy.loginfo('New position' + str(tll_T_pose[:,3].T))
+            rospy.loginfo('New position in torso lift link' + str(tll_T_pose[:,3].T))
             goal_ps = stamp_pose(mat_to_pose(tll_T_pose), 'torso_lift_link')
 
         tstart = rospy.get_time()
         tmax = tstart + self.time_out
         self.controller_manager = ControllerManager()
-        rospy.loginfo('Goal is x %f y %f z %f' % (goal_ps.pose.position.x, goal_ps.pose.position.y, goal_ps.pose.position.z))
-        verbose = True
+        rospy.loginfo('Goal is x %f y %f z %f in %s' % (goal_ps.pose.position.x, goal_ps.pose.position.y, goal_ps.pose.position.z, goal_ps.header.frame_id))
+        verbose = False
 
         while True:
+            #tfu.tf_as_matrix(self.tf.lookupTransform('base_link', self.tool_frame
+            gripper_ps = stamp_pose(mat_to_pose(tfu.tf_as_matrix(self.tf.lookupTransform('torso_lift_link', self.tool_frame, rospy.Time(0)))), 'torso_lift_link')
             #Someone preempted us!
             if self.linear_movement_as.is_preempt_requested():
                 #Stop our motion
-                self.target_pub.publish(stamp_pose(self.last_pose_msg.pose, self.last_pose_msg.header.frame_id))
+                self.target_pub.publish(stamp_pose(gripper_ps.pose, gripper_ps.header.frame_id))
                 self.linear_movement_as.set_preempted()
                 rospy.loginfo('action_cb: preempted!')
                 break
 
             #Calc feedback
-            #print self.last_pose_msg.__class__, goal_ps.__class__
             if verbose:
-                print 'curent_pose', self.last_pose_msg.pose.position
-            trans, ang, _ = pose_distance(self.last_pose_msg, goal_ps, self.tf)
+                print 'current_pose %.3f %.3f %.3f in %s' % (gripper_ps.pose.position.x, gripper_ps.pose.position.y, gripper_ps.pose.position.z, gripper_ps.header.frame_id)
+
+            trans, ang, _ = pose_distance(gripper_ps, goal_ps, self.tf)
             #TODO What is trans, verify its type
             #print trans, trans.__class__
             feedback = ptp.LinearMovementFeedback(gm.Vector3(trans[0,0], trans[1,0], trans[2,0]))
@@ -190,8 +181,9 @@ class PTPArmActionServer:
             #Reached goal
             trans_mag = np.linalg.norm(trans)
             if verbose:
-                print 'trans_mag', trans_mag
-            if self.trans_tolerance > trans_mag:
+                print trans.T, 'trans_mag', trans_mag, abs(ang), self.rot_tolerance
+
+            if self.trans_tolerance > trans_mag and self.rot_tolerance > abs(ang):
                 rospy.loginfo('action_cb: reached goal.')
                 break
 
@@ -200,16 +192,21 @@ class PTPArmActionServer:
                 break
 
             #Send controls
-            clamped_target = self.clamp_pose(goal_ps, trans_vel, rot_vel)
-            self.target_pub.publish(clamped_target)
+            clamped_target = self.clamp_pose(goal_ps, trans_vel, rot_vel, ref_pose=gripper_ps)
             if verbose:
-                print 'sending controls'
+                print 'clamped_target', clamped_target.pose.position.x, clamped_target.pose.position.y, clamped_target.pose.position.z, '\n'
+            #return
+            self.target_pub.publish(clamped_target)
+            #if verbose:
+            #    print 'sending controls'
 
-        trans, ang, _ = pose_distance(self.last_pose_msg, goal_ps, self.tf)
+        trans, ang, _ = pose_distance(gripper_ps, goal_ps, self.tf)
         result = ptp.LinearMovementResult(gm.Vector3(trans[0,0], trans[1,0], trans[2,0]))
-        if self.trans_tolerance < np.linalg.norm(trans):
+        if self.trans_tolerance > np.linalg.norm(trans):
+            rospy.loginfo( 'SUCCEEDED! %.3f ang %.3f' % (np.linalg.norm(trans), np.degrees(ang)))
             self.linear_movement_as.set_succeeded(result)
         else:
+            rospy.loginfo('ABORTED! %.3f ang %.3f' % (np.linalg.norm(trans), np.degrees(ang)))
             self.linear_movement_as.set_aborted(result)
         self.controller_manager.joint_mode(self.arm)
 
@@ -218,8 +215,8 @@ class PTPArmActionServer:
         #   clamp pose
         #   send to controller
     
-    def clamp_pose(self, desired_pose, max_trans, max_rot):
-        current_pose_d = change_pose_stamped_frame(self.tf, self.last_pose_msg, desired_pose.header.frame_id) 
+    def clamp_pose(self, desired_pose, max_trans, max_rot, ref_pose):
+        current_pose_d = change_pose_stamped_frame(self.tf, ref_pose, desired_pose.header.frame_id) 
         g_T_c  = pose_to_mat(current_pose_d.pose)
         #target_mat = pose_to_mat(pose.pose)
 
@@ -230,7 +227,7 @@ class PTPArmActionServer:
 
         #desired_angle, desired_axis, point = tf.transformations.rotation_from_matrix(target_to_current)
             
-        desired_trans, desired_angle, desired_axis = pose_distance(self.last_pose_msg, desired_pose, self.tf)
+        desired_trans, desired_angle, desired_axis = pose_distance(ref_pose, desired_pose, self.tf)
         desired_trans_mag = np.linalg.norm(desired_trans)
         frac_trans = fabs(desired_trans_mag / max_trans)
         frac_rot = fabs(desired_angle / max_rot)
