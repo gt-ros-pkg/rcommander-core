@@ -204,9 +204,7 @@ class PTPArmActionServer:
             #goal_ps = stamp_pose(mat_to_pose(tll_T_pose), 'torso_lift_link')
 
             goal_ps = stamp_pose(mat_to_pose(tll_T_tp), 'torso_lift_link')
-            self.linear_movement_as.set_aborted(ptp.LinearMovementResult(gm.Vector3(0,0,0)))
-
-
+            #self.linear_movement_as.set_aborted(ptp.LinearMovementResult(gm.Vector3(0,0,0)))
 
         tstart = rospy.get_time()
         tmax = tstart + self.time_out
