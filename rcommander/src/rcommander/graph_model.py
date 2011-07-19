@@ -41,9 +41,18 @@ class GraphModel:
         gm = GraphModel()
         gm.smach_states = {}
 
+        #Get meta info
+        nodes_fn = pt.join(name, GraphModel.NODES_FILE)
+        pickle_file = open(nodes_fn, 'r')
+        info = pk.load(pickle_file)
+        gm.start_state = info['start_state']
+        states_to_load = set(info['state_names'])
+
         #Load individual states
         for fname in state_pkl_names:
             sname = pt.splitext(pt.split(fname)[1])[0]
+            if not states_to_load.issuperset([sname]):
+                continue
             pickle_file = open(fname, 'r')
             #if fname == tu.InfoStateBase.GLOBAL_NAME:
             #    continue
@@ -51,7 +60,6 @@ class GraphModel:
             gm.smach_states[sname] = pk.load(pickle_file)
             pickle_file.close()
             #print '##', gm.smach_states[sname].name, gm.smach_states[sname].tool_name
-
 
         #Reconstruct graph
         graph_name = pt.join(name, GraphModel.EDGES_FILE)
@@ -63,12 +71,6 @@ class GraphModel:
             gm.gve.add_edge(node1, node2)
             eobject = gm.edge(node1, node2)
             eobject.outcome = n1_outcome
-
-        #Get meta info
-        nodes_fn = pt.join(name, GraphModel.NODES_FILE)
-        pickle_file = open(nodes_fn, 'r')
-        info = pk.load(pickle_file)
-        gm.start_state = info['start_state']
 
         #for k in gm.smach_states.keys():
         #    print '>>', gm.smach_states[k].name, gm.smach_states[k].tool_name
@@ -97,11 +99,11 @@ class GraphModel:
 
         nodes_fn = pt.join(name, GraphModel.NODES_FILE)
         pickle_file = open(nodes_fn, 'w')
-        pk.dump({'start_state': self.start_state}, pickle_file)
+        pk.dump({'start_state': self.start_state, 'state_names': self.smach_states.keys()}, pickle_file)
         pickle_file.close()
 
     def create_state_machine(self, userdata=None):
-        #print '>>>>>>>>>>>>>> create_state_machine'
+        print '>>>>>>>>>>>>>> create_state_machine'
         sm = smach.StateMachine(outcomes=self.outcomes())
         for global_node_name in self.global_nodes(None):
             global_node = self.smach_states[global_node_name]
@@ -119,6 +121,12 @@ class GraphModel:
                 print 'copying key', key
 
         with sm:
+            print '========================'
+            print 'all nodes'
+            for n in self.gve.nodes:
+                print n.id
+            print '========================'
+
             for node_name in self.nonoutcomes():
                 node = self.smach_states[node_name]
                 if issubclass(node.__class__, tu.InfoStateBase):
@@ -276,7 +284,10 @@ class GraphModel:
             for outcome in smach_node.get_registered_outcomes():
                 #print smach_node.name, outcome
                 #outcome_name = self._outcome_name(smach_node.name, outcome)
-                outcome_name = self._create_outcome_name(outcome)
+                if outcome == tu.InfoStateBase.GLOBAL_NAME:
+                    outcome_name = outcome
+                else:
+                    outcome_name = self._create_outcome_name(outcome)
                 #if not self.smach_states.has_key(outcome):
                 self.smach_states[outcome_name] = ot.EmptyState(outcome_name, temporary=True)
                 self.gve.add_node(outcome_name)

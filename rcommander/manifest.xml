@@ -18,6 +18,7 @@
   <depend package="move_base_msgs"/>
   <depend package="pr2_common_action_msgs"/>
   <depend package="pr2_controllers_msgs"/>
+  <depend package="pr2_gripper_sensor_msgs"/>
   <depend package="ptp_arm_action"/>
 </package>
 
