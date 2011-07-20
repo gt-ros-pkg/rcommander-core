@@ -437,10 +437,21 @@ class graph(dict):
     def edge(self, id1, id2, label):
         """ Returns the edge between the nodes with given id1 and id2.
         """
+        for e in self.all_edges_between(id1, id2):
+            if e.label == label:
+                return e
+        return None
+        #if id1 in self and \
+        #   id2 in self and \
+        #   self[id2] in self[id1].links:
+        #    return self[id1].links.edge(id2, label)
+        #return None
+
+    def all_edges_between(self, id1, id2):
         if id1 in self and \
            id2 in self and \
            self[id2] in self[id1].links:
-            return self[id1].links.edge(id2, label)
+            return self[id1].links.edges(id2)
         return None
     
     def __getattr__(self, a):

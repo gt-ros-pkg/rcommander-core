@@ -90,7 +90,7 @@ class GraphModel:
         #Save connections
         edge_list = []
         for e in self.gve.edges:
-            edge_list.append([e.node1.id, e.node2.id, e.outcome])
+            edge_list.append([e.node1.id, e.node2.id, e.label])
 
         edge_fn = pt.join(name, GraphModel.EDGES_FILE)
         pickle_file = open(edge_fn, 'w')
@@ -121,11 +121,11 @@ class GraphModel:
                 print 'copying key', key
 
         with sm:
-            #print '========================'
-            #print 'all nodes'
-            #for n in self.gve.nodes:
-            #    print n.id
-            #print '========================'
+            print '========================'
+            print 'all nodes'
+            for n in self.gve.nodes:
+                print n.id
+            print '========================'
 
             for node_name in self.nonoutcomes():
                 node = self.smach_states[node_name]
@@ -136,21 +136,21 @@ class GraphModel:
                 print node_name, node.get_registered_input_keys()
                 for e in self.gve.node(node_name).edges:
                     if e.node1.id == node_name:
-                        transitions[e.outcome] = e.node2.id
-                        print e.node1.id, e.outcome, e.node2.id
+                        transitions[e.label] = e.node2.id
+                        print e.node1.id, e.label, e.node2.id
 
                 remapping = {}
                 for input_key in node.get_registered_input_keys():
                     print 'source for', input_key, 'is', node.source_for(input_key)
                     remapping[input_key] = node.source_for(input_key)
-                #print '>> node_name', node_name, 'transitions', transitions, 'remapping', remapping
+                print '>> node_name', node_name, 'transitions', transitions, 'remapping', remapping
                 smach.StateMachine.add(node_name, node, transitions=transitions, remapping=remapping)
 
         if self.start_state == None:
             raise RuntimeError('No start state set.')
-        #print 'create_state_machine start state is', self.start_state
+        print 'create_state_machine start state is', self.start_state
         sm.set_initial_state([self.start_state])
-        #print '<<<<<<<<<<<<<<'
+        print '<<<<<<<<<<<<<<'
         return sm
 
     def nonoutcomes(self):
@@ -311,7 +311,7 @@ class GraphModel:
 
         #Separate edges from parents and edges to children
         for cn in node_obj.links:
-            for edge in self.gve.edges(node_name, cn.id):
+            for edge in self.gve.all_edges_between(node_name, cn.id):
                 if (edge.node1.id == node_name) and (edge.node2.id == node_name):
                     raise Exception('Self link detected on node %s! This isn\'t supposed to happen.' % node_name)
                 if edge.node1.id == node_name:
@@ -362,7 +362,7 @@ class GraphModel:
                             self.gve.remove_node(parent_outcome_node)
                             self.smach_states.pop(parent_outcome_node)
                 #remove this edge
-                self.gve.remove_edge(edge.node1.id, edge.node2.id)
+                self.gve.remove_edge(edge.node1.id, edge.node2.id, edge.label)
 
         #If no parents
         elif len(parent_edges) == 0:
@@ -544,4 +544,5 @@ class GraphModel:
             print 'recreated node', new_node
             self.smach_states[new_node] = ot.EmptyState(new_node, temporary=True)
             self.gve.add_node(new_node)
+        print 'calling add_edge with a', node_name, 'b', new_node, 'outcome', outcome_name
         self._add_edge(node_name, new_node, outcome_name)
