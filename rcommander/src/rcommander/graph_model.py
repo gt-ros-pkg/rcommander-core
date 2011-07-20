@@ -309,6 +309,7 @@ class GraphModel:
         children_edges = []
         parent_edges = []
 
+        print 'deleting', node_name
         #Separate edges from parents and edges to children
         for cn in node_obj.links:
             for edge in self.gve.all_edges_between(node_name, cn.id):
@@ -324,7 +325,10 @@ class GraphModel:
         for e in children_edges:
             # If the connected node is not modifiable (i.e. a temporary added
             # node) and it doesn't have any other parents.
+            print 'child edge', e.label, e.node1.id, e.node2.id
             if not self.is_modifiable(e.node2.id) and len(e.node2.edges) <= 1:
+                print (not self.is_modifiable(e.node2.id)), (len(e.node2.edges) <= 1)
+                #Delete it
                 self.gve.remove_edge(node_name, e.node2.id, e.label)
                 self.gve.remove_node(e.node2.id)
                 self.smach_states.pop(e.node2.id)
@@ -336,20 +340,23 @@ class GraphModel:
             #Pick the first parent
             parent_node_id = parent_edges[0].node1.id
             parent_node = self.gve.node(parent_node_id)
+            print 'picked parent', parent_node_id
 
             #Create an index of siblings
             parents_children = {}
             for parent_outcome_name, sibling_node_name in self.current_children_of(parent_node_id):
                 parents_children[parent_outcome_name] = sibling_node_name
+            print 'siblings', parents_children
 
             #For each child edge of ours
             for edge in filtered_children_edges:
+                print 'processing child edge', edge.node1.id, edge.label, edge.node2.id
                 #node_outcome_name = edge.outcome
                 node_outcome_name = edge.label
-                parent_outcome_node = parents_children[node_outcome_name]
 
                 #if parent has a similar outcome connected to a temporary node
                 if parents_children.has_key(node_outcome_name):
+                    parent_outcome_node = parents_children[node_outcome_name]
                     #If parent outcome is connected to a temporary node, replace the temporary node with link to us
                     if not self.is_modifiable(parent_outcome_node):
                         #connect this child node to parent
@@ -546,3 +553,8 @@ class GraphModel:
             self.gve.add_node(new_node)
         print 'calling add_edge with a', node_name, 'b', new_node, 'outcome', outcome_name
         self._add_edge(node_name, new_node, outcome_name)
+
+        print 'OUR NEW EDGES ARE'
+        for e in self.gve.node(node_name).edges:
+            print e.node1.id, e.node2.id, e.label
+

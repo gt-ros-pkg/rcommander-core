@@ -31,9 +31,12 @@ class ThreadRunSM(threading.Thread):
             self.outcome = self.sm.execute()
         except smach.InvalidTransitionError, e:
             self.exception = e
+            self.intro_server.stop()
         except UserStoppedException, e:
+            self.intro_server.stop()
             self.exception = e
             rospy.loginfo('ThreadRunSM: execution stopped')
+        self.intro_server.stop()
         rospy.loginfo('ThreadRunSM finished')
 
     def preempt(self):

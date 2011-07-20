@@ -794,7 +794,7 @@ class GraphView:
                 cx.drawpath(path)
             draw_func = draw_selected
         g.draw(directed=True, traffic=False, user_draw=draw_func)
-        print 'drawing'
+        #print 'drawing'
 
 
 #class GraphModel:
