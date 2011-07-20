@@ -300,7 +300,7 @@ class StateBase:
 
     def __setstate__(self, state):
         #print 'state base', state
-        print state
+        #print state
         name, tool, remapping, runnable = state
         self.name = name
         self.tool_name = tool

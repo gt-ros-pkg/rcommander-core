@@ -236,7 +236,6 @@ class FSMDocument:
     def has_real_filename(self):
         return self.real_filename
 
-
 ##
 # keeps track of smach state machine, makes sure it is consistent with (G,V) representation
 # model at this level has (V,E) reprentation
@@ -364,11 +363,11 @@ class RCommanderWindow(RNodeBoxBaseClass):
     def set_selected_node(self, name):
         self.selected_node = name
 
-    def set_selected_edge(self, n1, n2):
+    def set_selected_edge(self, n1, n2, label):
         if n1 == None:
             self.selected_edge = None
         else:
-            self.selected_edge = self.graph_model.edge(n1, n2)
+            self.selected_edge = self.graph_model.edge(n1, n2, label=label)
 
     def empty_container(self, pbox): 
         #pbox = self.ui.properties_tab
@@ -633,7 +632,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
 
     def nothing_cb(self, pt):
         self.set_selected_node(None)
-        self.set_selected_edge(None, None)
+        self.set_selected_edge(None, None, None)
         self.empty_properties_box()
         self.add_mode()
         self.disable_buttons()
@@ -642,7 +641,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
     def node_cb(self, node):
         #print node.id
         self.set_selected_node(node.id)
-        self.set_selected_edge(None, None)
+        self.set_selected_edge(None, None, None)
 
         #if self.graph_model.get_smach_state(node.id).__class__ != ot.EmptyState:
         smach_state = self.graph_model.get_smach_state(node.id)
@@ -676,7 +675,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
         #    self.disable_buttons()
 
     def edge_cb(self, edge):
-        self.set_selected_edge(edge.node1.id, edge.node2.id)
+        self.set_selected_edge(edge.node1.id, edge.node2.id, edge.label)
         self.set_selected_node(None)
         self.disable_buttons()
 
@@ -705,7 +704,6 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.graph_model.gve.events.click = self.node_cb
         self.graph_model.gve.events.click_edge = self.edge_cb
         self.graph_model.gve.events.click_nothing = self.nothing_cb
-
 
     def draw(self):
         properties_dict = {'selected_edge': self.selected_edge,
@@ -796,6 +794,7 @@ class GraphView:
                 cx.drawpath(path)
             draw_func = draw_selected
         g.draw(directed=True, traffic=False, user_draw=draw_func)
+        #print 'drawing'
 
 
 #class GraphModel:

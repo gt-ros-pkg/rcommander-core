@@ -68,9 +68,9 @@ class GraphModel:
         pickle_file.close()
         for node1, node2, n1_outcome in edges:
             #print node1, node2, n1_outcome
-            gm.gve.add_edge(node1, node2)
-            eobject = gm.edge(node1, node2)
-            eobject.outcome = n1_outcome
+            gm.gve.add_edge(node1, node2, label=n1_outcome)
+            #eobject = gm.edge(node1, node2)
+            #eobject.outcome = n1_outcome
 
         #for k in gm.smach_states.keys():
         #    print '>>', gm.smach_states[k].name, gm.smach_states[k].tool_name
@@ -121,11 +121,11 @@ class GraphModel:
                 print 'copying key', key
 
         with sm:
-            print '========================'
-            print 'all nodes'
-            for n in self.gve.nodes:
-                print n.id
-            print '========================'
+            #print '========================'
+            #print 'all nodes'
+            #for n in self.gve.nodes:
+            #    print n.id
+            #print '========================'
 
             for node_name in self.nonoutcomes():
                 node = self.smach_states[node_name]
@@ -167,7 +167,7 @@ class GraphModel:
         for edge in self.gve.node(node_name).edges:
             if edge.node1.id != node_name:
                 continue
-            ret_list.append([edge.outcome, edge.node2.id])
+            ret_list.append([edge.label, edge.node2.id])
         return ret_list
 
     def outcomes(self):
@@ -197,20 +197,19 @@ class GraphModel:
         if new_node_name != old_node_name:
             self.gve.add_node(new_node_name)
             for e in self.gve.node(old_node_name).edges:
-                outcome = e.outcome
-                self.gve.remove_edge(e.node1.id, e.node2.id)
-                print 'removing edge between', e.node1.id, e.node2.id
+                #outcome = e.outcome
+                self.gve.remove_edge(e.node1.id, e.node2.id, label=e.label)
+                print 'removing edge between', e.node1.id, e.node2.id, 'with label', e.label
                 if e.node1.id == old_node_name:
-                    self.gve.add_edge(new_node_name, e.node2.id)
-                    self.gve.edge(new_node_name, e.node2.id).outcome = outcome
-                    print 'adding edge between', new_node_name, e.node2.id
+                    self.gve.add_edge(new_node_name, e.node2.id, label=e.label)
+                    #self.gve.edge(new_node_name, e.node2.id).outcome = outcome
+                    print 'adding edge between', new_node_name, e.node2.id, 'with label', e.label
                     #edges.append([new_node_name, e.node2.id])
                 else:
-                    self.gve.add_edge(e.node1.id, new_node_name)
-                    self.gve.edge(e.node1.id, new_node_name).outcome = outcome
+                    self.gve.add_edge(e.node1.id, new_node_name, label=e.label)
+                    #self.gve.edge(e.node1.id, new_node_name).outcome = outcome
                     #edges.append([e.node1.id, new_node_name])
                     print 'adding edge between', e.node1.id, new_node_name
-
             self.gve.remove_node(old_node_name)
 
     #def _outcome_name(self, node_name, outcome):
@@ -276,6 +275,7 @@ class GraphModel:
         if self.smach_states.has_key(smach_node.name):
             raise RuntimeError('Already has node of the same name.  This case should not happen.')
 
+        #if this is a regular singleton node
         if not hasattr(smach_node, 'get_child_name'):
             #Link this node to all its outcomes
             self.gve.add_node(smach_node.name)
@@ -293,8 +293,10 @@ class GraphModel:
                 self.gve.add_node(outcome_name)
                 #self.gve.add_edge(smach_node.name, outcome)
                 self._add_edge(smach_node.name, outcome_name, outcome)
+                print 'adding edge between', smach_node.name, 'and', outcome_name, 'with label', outcome
+
+        #If this node has a child node we replace its child node instead of performing an add
         else:
-            #If this node has a child node we replace its child node instead of performing an add
             self.replace_node(smach_node, smach_node.get_child_name())
             self.restore_node_consistency(smach_node.name)
 
@@ -306,14 +308,16 @@ class GraphModel:
         node_obj = self.gve.node(node_name)
         children_edges = []
         parent_edges = []
+
+        #Separate edges from parents and edges to children
         for cn in node_obj.links:
-            edge = self.gve.edge(node_name, cn.id)
-            if (edge.node1.id == node_name) and (edge.node2.id == node_name):
-                raise Exception('Self link detected on node %s! This isn\'t supposed to happen.' % node_name)
-            if edge.node1.id == node_name:
-                children_edges.append(edge)
-            elif edge.node2.id == node_name:
-                parent_edges.append(edge)
+            for edge in self.gve.edges(node_name, cn.id):
+                if (edge.node1.id == node_name) and (edge.node2.id == node_name):
+                    raise Exception('Self link detected on node %s! This isn\'t supposed to happen.' % node_name)
+                if edge.node1.id == node_name:
+                    children_edges.append(edge)
+                elif edge.node2.id == node_name:
+                    parent_edges.append(edge)
 
         #Remove placeholder children nodes
         filtered_children_edges = []
@@ -321,7 +325,7 @@ class GraphModel:
             # If the connected node is not modifiable (i.e. a temporary added
             # node) and it doesn't have any other parents.
             if not self.is_modifiable(e.node2.id) and len(e.node2.edges) <= 1:
-                self.gve.remove_edge(node_name, e.node2.id)
+                self.gve.remove_edge(node_name, e.node2.id, e.label)
                 self.gve.remove_node(e.node2.id)
                 self.smach_states.pop(e.node2.id)
             else:
@@ -329,31 +333,34 @@ class GraphModel:
 
         #If we have one or more than one parent
         if len(parent_edges) >= 1:
+            #Pick the first parent
             parent_node_id = parent_edges[0].node1.id
             parent_node = self.gve.node(parent_node_id)
-            parents_children = {}
 
+            #Create an index of siblings
+            parents_children = {}
             for parent_outcome_name, sibling_node_name in self.current_children_of(parent_node_id):
                 parents_children[parent_outcome_name] = sibling_node_name
 
+            #For each child edge of ours
             for edge in filtered_children_edges:
-                node_outcome_name = edge.outcome
+                #node_outcome_name = edge.outcome
+                node_outcome_name = edge.label
                 parent_outcome_node = parents_children[node_outcome_name]
 
                 #if parent has a similar outcome connected to a temporary node
                 if parents_children.has_key(node_outcome_name):
-                    self.gve.remove_edge(parent_node_id, parent_outcome_node)
-                    #If parent outcome is connected to a temporary node
+                    #If parent outcome is connected to a temporary node, replace the temporary node with link to us
                     if not self.is_modifiable(parent_outcome_node):
                         #connect this child node to parent
-                        self.gve.add_edge(parent_node_id, node_outcome_name)
-                        e = self.gve.edge(parent_node_id, node_outcome_name)
-                        e.outcome = node_outcome_name
-                    #delete parent's temporary node if it is now unconnected
-                    if len(self.gve.node(parent_outcome_node).edges) <= 1:
-                        self.gve.remove_node(parent_outcome_node)
-                        self.smach_states.pop(parent_outcome_node)
-
+                        self.gve.remove_edge(parent_node_id, parent_outcome_node, label=node_outcome_name)
+                        self.gve.add_edge(parent_node_id, edge.node2.id, label=node_outcome_name)
+                        #e = self.gve.edge(parent_node_id, node_outcome_name)
+                        #e.outcome = node_outcome_name
+                        #delete parent's temporary node if it is now unconnected
+                        if len(self.gve.node(parent_outcome_node).edges) < 1:
+                            self.gve.remove_node(parent_outcome_node)
+                            self.smach_states.pop(parent_outcome_node)
                 #remove this edge
                 self.gve.remove_edge(edge.node1.id, edge.node2.id)
 
@@ -361,11 +368,11 @@ class GraphModel:
         elif len(parent_edges) == 0:
             #just remove children edges
             for e in filtered_children_edges:
-                self.gve.remove_edge(node_name, e.node2.id)
+                self.gve.remove_edge(node_name, e.node2.id, label=e.label)
 
         #Remove edge from parents, and restore consistency for parent nodes
         for parent_edge in parent_edges:
-            self.gve.remove_edge(parent_edge.node1.id, parent_edge.node2.id)
+            self.gve.remove_edge(parent_edge.node1.id, parent_edge.node2.id, parent_edge.label)
             self.restore_node_consistency(parent_edge.node1.id)
 
         self.gve.remove_node(node_name)
@@ -397,71 +404,71 @@ class GraphModel:
         self.smach_states[outcome] = ot.EmptyState(outcome, temporary=True)
         self.gve.add_node(outcome)
 
-    def delete_node_old(self, node_name):
-        #temporary nodes are only removable when the state transitions are linked to something else
-        if not self.is_modifiable(node_name):
-            return 
+    #def delete_node_old(self, node_name):
+    #    #temporary nodes are only removable when the state transitions are linked to something else
+    #    if not self.is_modifiable(node_name):
+    #        return 
 
-        #Find parents and children
-        node_obj = self.gve.node(node_name)
-        children_edges = []
-        parent_edges = []
-        for cn in node_obj.links:
-            edge = self.gve.edge(node_name, cn.id)
-            if (edge.node1.id == node_name) and (edge.node2.id == node_name):
-                raise Exception('Self link detected on node %s! This isn\'t supposed to happen.' % node_name)
-            if edge.node1.id == node_name:
-                children_edges.append(edge)
-            elif edge.node2.id == node_name:
-                parent_edges.append(edge)
+    #    #Find parents and children
+    #    node_obj = self.gve.node(node_name)
+    #    children_edges = []
+    #    parent_edges = []
+    #    for cn in node_obj.links:
+    #        edge = self.gve.edge(node_name, cn.id)
+    #        if (edge.node1.id == node_name) and (edge.node2.id == node_name):
+    #            raise Exception('Self link detected on node %s! This isn\'t supposed to happen.' % node_name)
+    #        if edge.node1.id == node_name:
+    #            children_edges.append(edge)
+    #        elif edge.node2.id == node_name:
+    #            parent_edges.append(edge)
 
-        #Remove placeholder children nodes
-        filtered_children_edges = []
-        for e in children_edges:
-            if not self.is_modifiable(e.node2.id) and len(e.node2.edges) <= 1:
-                self.gve.remove_edge(node_name, e.node2.id)
-                self.gve.remove_node(e.node2.id)
-                self.smach_states.pop(e.node2.id)
-            else:
-                filtered_children_edges.append(e)
+    #    #Remove placeholder children nodes
+    #    filtered_children_edges = []
+    #    for e in children_edges:
+    #        if not self.is_modifiable(e.node2.id) and len(e.node2.edges) <= 1:
+    #            self.gve.remove_edge(node_name, e.node2.id)
+    #            self.gve.remove_node(e.node2.id)
+    #            self.smach_states.pop(e.node2.id)
+    #        else:
+    #            filtered_children_edges.append(e)
 
-        new_selected_node = None
-        #If we have one or more than one parent
-        if len(parent_edges) >= 1:
-            #Point edges on children to first parent
-            parent_node_id = parent_edges[0].node1.id
-            for e in filtered_children_edges:
-                self.gve.remove_edge(node_name, e.node2.id)
-                self.gve.add_edge(parent_node_id, e.node2.id)
-            new_selected_node = parent_node_id
+    #    new_selected_node = None
+    #    #If we have one or more than one parent
+    #    if len(parent_edges) >= 1:
+    #        #Point edges on children to first parent
+    #        parent_node_id = parent_edges[0].node1.id
+    #        for e in filtered_children_edges:
+    #            self.gve.remove_edge(node_name, e.node2.id)
+    #            self.gve.add_edge(parent_node_id, e.node2.id)
+    #        new_selected_node = parent_node_id
 
-            #On each one of the parent, check to see if we are the terminal state
-            for e in parent_edges:
-                parent_id = e.node1.id
-                outcome_set = set(self.get_smach_state(parent_id).get_registered_outcomes())
-                if e.outcome in outcome_set:
-                    self.connection_changed(parent_id, e.outcome, e.outcome)
-                    #jjself.smach_states[e.outcome] = ot.EmptyState(e.outcome, temporary=True)
-                    #self.gve.add_node(e.outcome)
-                    #self._add_edge(parent_id, e.outcome, e.outcome)
+    #        #On each one of the parent, check to see if we are the terminal state
+    #        for e in parent_edges:
+    #            parent_id = e.node1.id
+    #            outcome_set = set(self.get_smach_state(parent_id).get_registered_outcomes())
+    #            if e.outcome in outcome_set:
+    #                self.connection_changed(parent_id, e.outcome, e.outcome)
+    #                #jjself.smach_states[e.outcome] = ot.EmptyState(e.outcome, temporary=True)
+    #                #self.gve.add_node(e.outcome)
+    #                #self._add_edge(parent_id, e.outcome, e.outcome)
 
-        #If no parents
-        elif len(parent_edges) == 0:
-            #just remove children edges
-            for e in filtered_children_edges:
-                self.gve.remove_edge(node_name, e.node2.id)
+    #    #If no parents
+    #    elif len(parent_edges) == 0:
+    #        #just remove children edges
+    #        for e in filtered_children_edges:
+    #            self.gve.remove_edge(node_name, e.node2.id)
 
-            if len(filtered_children_edges) > 1:
-                new_selected_node = filtered_children_edges[0].node2.id
-            else:
-                if len(self.gve.nodes) > 0:
-                    new_selected_node = self.gve.nodes[0].id
-                else:
-                    new_selected_node = 'start'
+    #        if len(filtered_children_edges) > 1:
+    #            new_selected_node = filtered_children_edges[0].node2.id
+    #        else:
+    #            if len(self.gve.nodes) > 0:
+    #                new_selected_node = self.gve.nodes[0].id
+    #            else:
+    #                new_selected_node = 'start'
 
-        self.gve.remove_node(node_name)
-        self.smach_states.pop(node_name)
-        return new_selected_node
+    #    self.gve.remove_node(node_name)
+    #    self.smach_states.pop(node_name)
+    #    return new_selected_node
 
     def is_modifiable(self, node_name):
         if (self.smach_states[node_name].__class__ == ot.EmptyState) and self.smach_states[node_name].temporary:
@@ -472,7 +479,8 @@ class GraphModel:
     def _add_edge(self, n1, n2, n1_outcome):
         if not self.smach_states.has_key(n1) or not self.smach_states.has_key(n2):
             raise RuntimeError('One of the specified nodes does not exist.  Can\'t add edge.')
-        if self.gve.edge(n1, n2) != None:
+
+        if self.gve.edge(n1, n2, n1_outcome) != None:
             rospy.loginfo("Edge between %s and %s exists, ignoring connnection request" % (n1, n2))
             return False
 
@@ -480,8 +488,9 @@ class GraphModel:
         if n1_outcome == None and self.is_modifiable(n2):
             raise RuntimeError('Must specify outcome as goal node is not a temporary node.')
 
-        self.gve.add_edge(n1, n2)
-        self.gve.edge(n1, n2).outcome = n1_outcome
+        self.gve.add_edge(n1, n2, label=n1_outcome)
+        print 'actually added edge'
+        #self.gve.edge(n1, n2).outcome = n1_outcome
         return True
 
     def add_edge(self, n1, n2, n1_outcome):
@@ -494,32 +503,36 @@ class GraphModel:
         if not self.is_modifiable(edge.node1.id) or not self.is_modifiable(edge.node2.id):
             return False
         else:
-            self.gve.remove_edge(edge.node1.id, edge.node2.id)
+            self.gve.remove_edge(edge.node1.id, edge.node2.id, e.label)
             return True
 
-    def connection_changed(self, node_name, outcome_name, new_outcome):
+    def connection_changed(self, node_name, outcome_name, new_node):
         #node is not valid or hasn't been created yet
 
         if node_name == None:
             return
-        if not self.smach_states.has_key(new_outcome):
-            raise RuntimeError('Doesn\'t have state: %s' % new_outcome)
-        #self.get_smach_state(node_name).outcome_choices[outcome_name] = new_outcome
+
+        if not self.smach_states.has_key(new_node):
+            raise RuntimeError('Doesn\'t have state: %s' % new_node)
+        #self.get_smach_state(node_name).outcome_choices[outcome_name] = new_node
 
         #find the old edge
         old_edge = None
         for edge in self.gve.node(node_name).edges:
-            if edge.outcome == outcome_name and edge.node1.id == node_name:
+            #if edge.outcome == outcome_name and edge.node1.id == node_name:
+            print 'edge', edge.node1.id, edge.node2.id, edge.label
+            if edge.label == outcome_name and edge.node1.id == node_name:
                 if old_edge != None:
                     raise RuntimeError('Two edges detected for one outcome named %s. %s -> %s and %s -> %s' % (outcome_name, old_edge.node1.id, old_edge.node2.id, edge.node1.id, edge.node2.id))
                 old_edge = edge
 
-        if old_edge.node2.id == new_outcome:
+        print node_name, outcome_name, new_node
+        if old_edge.node2.id == new_node:
             return
 
-        #print 'connection_changed', node_name, outcome_name, new_outcome
+        #print 'connection_changed', node_name, outcome_name, new_node
         #remove the old connection
-        self.gve.remove_edge(node_name, old_edge.node2.id)
+        self.gve.remove_edge(node_name, old_edge.node2.id, label=old_edge.label)
         #remove the old node if it's temporary 
         if not self.is_modifiable(old_edge.node2.id) and old_edge.node2.id != 'start':
             #and not connected
@@ -527,8 +540,8 @@ class GraphModel:
                 self.gve.remove_node(old_edge.node2.id)
 
         #add new connection
-        if self.gve.node(new_outcome) == None:
-            print 'recreated node', new_outcome
-            self.smach_states[new_outcome] = ot.EmptyState(new_outcome, temporary=True)
-            self.gve.add_node(new_outcome)
-        self._add_edge(node_name, new_outcome, outcome_name)
+        if self.gve.node(new_node) == None:
+            print 'recreated node', new_node
+            self.smach_states[new_node] = ot.EmptyState(new_node, temporary=True)
+            self.gve.add_node(new_node)
+        self._add_edge(node_name, new_node, outcome_name)

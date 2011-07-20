@@ -58,7 +58,11 @@ class node:
                 self.__dict__[k] = v
 
     def _edges(self):
-        return self.links._edges.values()
+        e = []
+        for d in self.links._edges.values():
+            e = e + d.values()
+        return e
+        #return self.links._edges.values()
 
     edges = property(_edges)
     
@@ -154,17 +158,43 @@ class links(list):
     def __init__(self): 
         self._edges = dict()
     
-    def append(self, node, edge=None): 
-        if edge: self._edges[node.id] = edge
-        list.append(self, node)
+    def append(self, node, edge): 
+        if not self._edges.has_key(node.id):
+            self._edges[node.id] = {}
+        self._edges[node.id][edge.label] = edge
+        if not (node in self):
+            list.append(self, node)
 
-    def remove(self, node):
-        if self._edges.has_key(node.id): del self._edges[node.id]
-        list.remove(self, node)
+    def remove(self, node, label):
+        if self._edges.has_key(node.id): 
+            if self._edges[node.id].has_key(label):
+                del self._edges[node.id][label]
+            if len(self._edges[node.id].keys()) == 0:
+                del self._edges[node.id]
+                list.remove(self, node)
 
-    def edge(self, id): 
-        if isinstance(id, node): id = id.id
-        return self._edges[id]
+    #def edge(self, id): 
+    #    if isinstance(id, node): 
+    #        id = id.id
+    #    return self._edges[id]
+
+    def edge(self, a, label):
+        if isinstance(a, node):
+            node_id = a.id
+        else:
+            node_id = a
+        return self._edges[node_id][label]
+
+    def edges(self, id):
+        if isinstance(id, node): 
+            id = id.id
+        return self._edges[id].values()
+
+    def has_edge(self, node_name, label):
+        if self._edges.has_key(node_name) and self._edges[node_name].has_key(label):
+            return True
+        else:
+            return False
 
 ##### GRAPH EDGE #####################################################################################
 
@@ -345,14 +375,17 @@ class graph(dict):
         
         # If a->b already exists, don't re-create it.
         # However, b->a may still pass.
-        if n1 in n2.links:
-            if n2.links.edge(n1).node1 == n1:
-                return self.edge(id1, id2)
+        #if n1 in n2.links:
+        #    if n2.links.edge(n1).node1 == n1:
+        #        return self.edge(id1, id2)
 
+        #If a->b with label c exists don't recreate it
+        if n2.links.has_edge(n1.id, label):
+            return n2.edge(n1, label)
         weight = max(0.0, min(weight, 1.0))
 
         e = self.new_edge(n1, n2, weight, length, label, properties)
-        self.edges.append(e)    
+        self.edges.append(e)
         n1.links.append(n2, e)
         n2.links.append(n1, e)
 
@@ -371,22 +404,27 @@ class graph(dict):
             # Remove all edges involving id and all links to it.
             for e in list(self.edges):
                 if n in (e.node1, e.node2):
-                    if n in e.node1.links: 
-                        e.node1.links.remove(n)
-                    if n in e.node2.links: 
-                        e.node2.links.remove(n)
+                    for n1_edge in e.node1.links.edges(n):
+                        e.node1.links.remove(n, n1_edge.label)
+                    for n2_edge in e.node2.links.edges(n):
+                        e.node2.links.remove(n, n2_edge.label)
+                    #if n in e.node1.links: 
+                    #    e.node1.links.remove(n)
+                    #if n in e.node2.links: 
+                    #    e.node2.links.remove(n)
                     self.edges.remove(e)
 
-    def remove_edge(self, id1, id2):
+    def remove_edge(self, id1, id2, label):
         
         """ Remove edges between nodes with given id's.
         """
         
         for e in list(self.edges):
             if id1 in (e.node1.id, e.node2.id) and \
-               id2 in (e.node1.id, e.node2.id):
-                e.node1.links.remove(e.node2)
-                e.node2.links.remove(e.node1)
+               id2 in (e.node1.id, e.node2.id) and\
+               e.label == label:
+                e.node1.links.remove(e.node2, label)
+                e.node2.links.remove(e.node1, label)
                 self.edges.remove(e)            
 
     def node(self, id):
@@ -396,13 +434,13 @@ class graph(dict):
             return self[id]
         return None
     
-    def edge(self, id1, id2):
+    def edge(self, id1, id2, label):
         """ Returns the edge between the nodes with given id1 and id2.
         """
         if id1 in self and \
            id2 in self and \
            self[id2] in self[id1].links:
-            return self[id1].links.edge(id2)
+            return self[id1].links.edge(id2, label)
         return None
     
     def __getattr__(self, a):
