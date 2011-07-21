@@ -102,6 +102,15 @@ class GraphModel:
         pk.dump({'start_state': self.start_state, 'state_names': self.smach_states.keys()}, pickle_file)
         pickle_file.close()
 
+    def create_singleton_statemachine(self, smach_state):
+        if self.get_start_state() == None:
+            self.set_start_state(smach_state.name)
+        sm = self.create_state_machine()
+        temp_gm = GraphModel()
+        temp_gm.add_node(smach_state)
+        temp_gm.set_start_state(smach_state.name)
+        return temp_gm.create_state_machine(sm.userdata)
+
     def create_state_machine(self, userdata=None):
         print '>>>>>>>>>>>>>> create_state_machine', userdata
         sm = smach.StateMachine(outcomes=self.outcomes())
@@ -277,7 +286,7 @@ class GraphModel:
             raise RuntimeError('Already has node of the same name.  This case should not happen.')
 
         #if this is a regular singleton node
-        if not hasattr(smach_node, 'get_child_name'):
+        if not hasattr(smach_node, 'get_child_name') or not self.smach_states.has_key(smach_node.get_child_name()):
             #Link this node to all its outcomes
             self.gve.add_node(smach_node.name)
             self.smach_states[smach_node.name] = smach_node

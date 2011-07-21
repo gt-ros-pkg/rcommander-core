@@ -386,10 +386,10 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.selected_tool = tool
         #TODO: disable buttons
 
-    def create_and_run(self, graph_model):
+    def run_state_machine(self, sm):
         if self.current_sm_threads.has_key('run_sm'):
             raise RuntimeError('Only state machine execution thread maybe be active at a time.')
-        sm = graph_model.create_state_machine()
+        #sm = graph_model.create_state_machine()
         rthread = smtr.ThreadRunSM(self.document.get_name(), sm)
         rthread.start()
         self.current_sm_threads['run_sm'] = rthread
@@ -491,7 +491,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
             QMessageBox.information(self, str(self.objectName()), 'No start state set.  Select a state and click on \'Start State\' to set a new start state.')
         else:
             try:
-                self.create_and_run(self.graph_model)
+                self.run_state_machine(self.graph_model.create_state_machine())
             except RuntimeError, e:
                 QMessageBox.information(self, str(self.objectName()), 'RuntimeError: ' + e.message)
 
@@ -516,10 +516,8 @@ class RCommanderWindow(RNodeBoxBaseClass):
         try:
             tool_instance = self.tool_dict[self.selected_tool]['tool_obj']
             node = tool_instance.create_node(unique=False)
-            temp_gm = gm.GraphModel()
-            temp_gm.add_node(node)
-            temp_gm.set_start_state(node.name)
-            self.create_and_run(temp_gm)
+            singleton_sm = self.graph_model.create_singleton_statemachine(node)
+            self.run_state_machine(singleton_sm)
         except RuntimeError, e:
             QMessageBox.information(self, str(self.objectName()), 'RuntimeError: ' + e.message)
 
