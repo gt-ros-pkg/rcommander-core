@@ -191,6 +191,7 @@ class LinearMoveState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
         self.frame = frame
 
     def ros_goal(self, userdata, default_goal):
+        #print 'LinearMoveState: rosgoal called!!!!!!!!!!!!!!1'
         goal = ptp.LinearMovementGoal()
         if self.motion_type == 'relative':
             goal.relative = True
@@ -213,6 +214,7 @@ class LinearMoveState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
         goal.goal = stamp_pose(pose, frame)
         goal.trans_vel = self.vels[0]
         goal.rot_vel = self.vels[1]
+        #print 'returned goal'
         return goal
 
     def _set_angles(self, euler_angs):

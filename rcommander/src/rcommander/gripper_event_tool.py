@@ -11,6 +11,20 @@ import graph_model as gm
 import sm_thread_runner as smtr
 #import pr2_gripper_sensor_msgs.msg as PR2GripperEventDetectorCommand
 
+status_dict = {am.GoalStatus.PENDING   : 'PENDING',
+               am.GoalStatus.ACTIVE    : 'ACTIVE',   
+               am.GoalStatus.PREEMPTED : 'PREEMPTED',
+               am.GoalStatus.SUCCEEDED : 'SUCCEEDED',
+               am.GoalStatus.ABORTED   : 'ABORTED',  
+               am.GoalStatus.REJECTED  : 'REJECTED', 
+               am.GoalStatus.PREEMPTING: 'PREEMPTING',
+               am.GoalStatus.RECALLING : 'RECALLING',
+               am.GoalStatus.RECALLED  : 'RECALLED', 
+               am.GoalStatus.LOST      : 'LOST'}    
+
+def goal_status_to_string(status):
+    return status_dict[status]
+
 class GripperEventTool(tu.ToolBase):
 
     def __init__(self, rcommander):
@@ -101,6 +115,7 @@ class GripperEventState(smach.State, tu.StateBase):
         input_keys = list(self.child_smach_node.get_registered_input_keys())
         output_keys = list(self.child_smach_node.get_registered_output_keys())
         outcomes = list(self.child_smach_node.get_registered_outcomes()) + [GripperEventState.EVENT_OUTCOME]
+        #print 'GripperEventState init input keys', input_keys
         smach.State.__init__(self, outcomes = outcomes, input_keys = input_keys, output_keys = output_keys)
         self.remapping = self.child_smach_node.remapping
         #print '>> my registered outcomes', self.get_registered_outcomes()
@@ -117,6 +132,7 @@ class GripperEventState(smach.State, tu.StateBase):
 
     def _detected_event(self):
         state = self.action_client.get_state()
+        print 'GoalStatus', goal_status_to_string(state)
         gripper_event_detected = state not in [am.GoalStatus.ACTIVE, am.GoalStatus.PENDING]
         return gripper_event_detected
 
@@ -131,6 +147,9 @@ class GripperEventState(smach.State, tu.StateBase):
         self.__init_unpicklables__()
 
     def execute(self, userdata):
+        print '>> executing, got userdata:', userdata, 'keys', userdata.keys()
+        print 'input keys', self.get_registered_input_keys(), 'ud_keys', userdata._ud.keys()
+
         goal = gr.PR2GripperEventDetectorGoal()
         goal.command.acceleration_trigger_magnitude = self.accel
         goal.command.slip_trigger_magnitude = self.slip
@@ -141,7 +160,8 @@ class GripperEventState(smach.State, tu.StateBase):
         #Let state machine execute, but kill its thread if we detect an event
         #print 'ge: creating sm and running'
         child_gm = self.get_child()
-        sm = child_gm.create_state_machine(userdata=userdata)
+        #print dir(userdata)
+        sm = child_gm.create_state_machine(userdata=userdata._ud)
         rthread = smtr.ThreadRunSM(self.child_smach_node.get_name(), sm)
         rthread.start()
         
@@ -153,18 +173,23 @@ class GripperEventState(smach.State, tu.StateBase):
                 raise rthread.exception
 
             if rthread.outcome != None:
-                rospy.loginfo('child node finished with outcome ' + rthread.outcome)
+                rospy.loginfo('Gripper Event Tool: child node finished with outcome ' + rthread.outcome)
                 break
 
             if not rthread.isAlive():
-                rospy.loginfo('child node died')
+                rospy.loginfo('Gripper Event Tool: child node died')
                 break
 
             if self.preempt_requested():
+                rospy.loginfo('Gripper Event Tool: preempt requested')
                 self.service_preempt()
                 preempted = True
                 break
+
             event = self._detected_event() 
+            if event:
+                rospy.loginfo('Gripper Event Tool: DETECTED EVENT')
+
             r.sleep()
 
         #print 'ge: sm finished'

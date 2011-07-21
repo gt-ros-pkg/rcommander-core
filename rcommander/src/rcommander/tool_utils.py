@@ -307,7 +307,7 @@ class StateBase:
         #self.outcome_choices = choices
         self.remapping = remapping
         self.runnable = runnable
-        print name, 'toolname set to', self.tool_name
+        #print name, 'toolname set to', self.tool_name
 
     def source_for(self, var_name):
         return self.remapping[var_name]

@@ -748,6 +748,10 @@ class GraphView:
         cx = self.context
         g  = self.gve
 
+        debug = False
+        if debug:
+            print 'dr',
+
         for n in g.nodes:
             if properties_dict['selected_node'] == n.id:
                 self.set_node_style(n.id, 'selected')
@@ -760,6 +764,8 @@ class GraphView:
                 else:
                     self.set_node_style(n.id, 'marked')
 
+        if debug:
+            print 'aw',
         self.set_node_style(tu.InfoStateBase.GLOBAL_NAME, 'root')
 
         draw_func = None
@@ -794,7 +800,8 @@ class GraphView:
                 cx.drawpath(path)
             draw_func = draw_selected
         g.draw(directed=True, traffic=False, user_draw=draw_func)
-        #print 'drawing'
+        if debug:
+            print 'ing'
 
 
 #class GraphModel:
