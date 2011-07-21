@@ -132,7 +132,7 @@ class GripperEventState(smach.State, tu.StateBase):
 
     def _detected_event(self):
         state = self.action_client.get_state()
-        print 'GoalStatus', goal_status_to_string(state)
+        #print 'GoalStatus', goal_status_to_string(state)
         gripper_event_detected = state not in [am.GoalStatus.ACTIVE, am.GoalStatus.PENDING]
         return gripper_event_detected
 

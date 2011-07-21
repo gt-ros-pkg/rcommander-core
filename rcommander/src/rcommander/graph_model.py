@@ -103,15 +103,15 @@ class GraphModel:
         pickle_file.close()
 
     def create_singleton_statemachine(self, smach_state):
-        if self.get_start_state() == None:
-            self.set_start_state(smach_state.name)
-        sm = self.create_state_machine()
+        #if self.get_start_state() == None:
+        #    self.set_start_state(smach_state.name)
+        sm = self.create_state_machine(ignore_start_state=True)
         temp_gm = GraphModel()
         temp_gm.add_node(smach_state)
         temp_gm.set_start_state(smach_state.name)
         return temp_gm.create_state_machine(sm.userdata)
 
-    def create_state_machine(self, userdata=None):
+    def create_state_machine(self, userdata=None, ignore_start_state=False):
         print '>>>>>>>>>>>>>> create_state_machine', userdata
         sm = smach.StateMachine(outcomes=self.outcomes())
         print 'sm userdata', sm.userdata
@@ -155,6 +155,9 @@ class GraphModel:
                     remapping[input_key] = node.source_for(input_key)
                 print '>> node_name', node_name, 'transitions', transitions, 'remapping', remapping
                 smach.StateMachine.add(node_name, node, transitions=transitions, remapping=remapping)
+
+        if ignore_start_state:
+            return sm
 
         if self.start_state == None:
             raise RuntimeError('No start state set.')
