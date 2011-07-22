@@ -210,7 +210,11 @@ class PTPArmActionServer:
         tmax = tstart + self.time_out
         self.controller_manager = ControllerManager()
         rospy.loginfo('Goal is x %f y %f z %f in %s' % (goal_ps.pose.position.x, goal_ps.pose.position.y, goal_ps.pose.position.z, goal_ps.header.frame_id))
-        verbose = False
+
+        goal_torso = change_pose_stamped_frame(self.tf, goal_ps, 'torso_lift_link')
+        rospy.loginfo('Goal is x %f y %f z %f in %s' % (goal_torso.pose.position.x, goal_torso.pose.position.y, goal_torso.pose.position.z, goal_torso.header.frame_id))
+
+        verbose = True
 
         while True:
             #tfu.tf_as_matrix(self.tf.lookupTransform('base_link', self.tool_frame
@@ -249,7 +253,8 @@ class PTPArmActionServer:
             #Send controls
             clamped_target = self.clamp_pose(goal_ps, trans_vel, rot_vel, ref_pose=gripper_ps)
             if verbose:
-                print 'clamped_target', clamped_target.pose.position.x, clamped_target.pose.position.y, clamped_target.pose.position.z, '\n'
+                print 'clamped_target', clamped_target.pose.position.x, clamped_target.pose.position.y, 
+                print clamped_target.pose.position.z, clamped_target.header.frame_id, '\n'
             #return
             self.target_pub.publish(clamped_target)
             #if verbose:

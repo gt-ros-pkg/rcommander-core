@@ -7,7 +7,7 @@ from object_manipulator.convert_functions import *
 import tf.transformations as tr
 
 rospy.init_node('ptp_client')
-client = actionlib.SimpleActionClient('left_ptp', ptp.LinearMovementAction)
+client = actionlib.SimpleActionClient('right_ptp', ptp.LinearMovementAction)
 client.wait_for_server()
 
 #Construct goal
