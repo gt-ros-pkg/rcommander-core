@@ -27,15 +27,18 @@ class PoseStampedScriptedActionServer:
 
         #Setup ROS Action Server
         self._action_name = action_name
-        self._as = actionlib.SimpleActionServer(self._action_name, pim.PoseStampedScriptedAction, execute_cb=self.execute_cb)
+        self._as = actionlib.SimpleActionServer(self._action_name, pim.PoseStampedScriptedAction, execute_cb=self.execute_cb, auto_start=False)
         self._as.start()
 
         rospy.loginfo('%s server up!' % action_name)
 
     def execute_cb(self, goal):
         r = rospy.Rate(30)
-        position = [goal.pose_stamped.position.x, goal.pose_stamped.position.y, goal.pose_stamped.position.z]
+        position = [goal.pose_stamped.pose.position.x, 
+                goal.pose_stamped.pose.position.y, 
+                goal.pose_stamped.pose.position.z]
         frame = goal.pose_stamped.header.frame_id
+        print 'Position', position, 'frame', frame
 
         self.graph_model.get_smach_state(self.point_field_name).set_info((position, frame))
         state_machine = self.graph_model.create_state_machine()
