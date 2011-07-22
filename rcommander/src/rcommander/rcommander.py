@@ -35,6 +35,7 @@ import gripper_tool as gt
 import linear_move_tool as lmt
 import point_tool as ptl
 import gripper_event_tool as get
+import sleep_tool as st
 
 
 def split(num, factor):
@@ -1302,7 +1303,8 @@ rc.add_tools([['Misc', nt.NavigateTool(rc)],
               ['Misc', lmt.LinearMoveTool(rc)],
               ['Misc', get.GripperEventTool(rc)],
               ['Misc', ptl.Point3DTool(rc)],
-              ['Misc', gt.GripperTool(rc)]])
+              ['Misc', gt.GripperTool(rc)],
+              ['Misc', st.SleepTool(rc)]])
 rc.show()
 sys.exit(app.exec_())
 
