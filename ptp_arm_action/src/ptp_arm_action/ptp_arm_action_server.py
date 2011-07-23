@@ -26,7 +26,6 @@ class ControllerManager:
 
         # SwitchController
         self._switch_controller = rospy.ServiceProxy('pr2_controller_manager/switch_controller', pmm.SwitchController)
-        #self._list_controllers = rospy.ServiceProxy('pr2_controller_manager/list_controllers', pmm.ListControllers)
 
         self.joint_controllers = {}
         self.cart_controllers = {}

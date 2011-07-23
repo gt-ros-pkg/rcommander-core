@@ -36,6 +36,8 @@ import linear_move_tool as lmt
 import point_tool as ptl
 import gripper_event_tool as get
 import sleep_tool as st
+import speak_tool as skt
+import move_arm_tool as mat
 
 
 def split(num, factor):
@@ -1304,6 +1306,8 @@ rc.add_tools([['Misc', nt.NavigateTool(rc)],
               ['Misc', get.GripperEventTool(rc)],
               ['Misc', ptl.Point3DTool(rc)],
               ['Misc', gt.GripperTool(rc)],
+              ['Misc', mat.MoveArmTool(rc)],
+              ['Misc', skt.SpeakTool(rc)],
               ['Misc', st.SleepTool(rc)]])
 rc.show()
 sys.exit(app.exec_())

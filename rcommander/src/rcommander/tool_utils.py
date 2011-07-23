@@ -4,6 +4,20 @@ from PyQt4.QtCore import *
 import smach_ros
 import functools as ft
 
+status_dict = {am.GoalStatus.PENDING   : 'PENDING',
+               am.GoalStatus.ACTIVE    : 'ACTIVE',   
+               am.GoalStatus.PREEMPTED : 'PREEMPTED',
+               am.GoalStatus.SUCCEEDED : 'SUCCEEDED',
+               am.GoalStatus.ABORTED   : 'ABORTED',  
+               am.GoalStatus.REJECTED  : 'REJECTED', 
+               am.GoalStatus.PREEMPTING: 'PREEMPTING',
+               am.GoalStatus.RECALLING : 'RECALLING',
+               am.GoalStatus.RECALLED  : 'RECALLED', 
+               am.GoalStatus.LOST      : 'LOST'}    
+
+def goal_status_to_string(status):
+    return status_dict[status]
+
 def create_tool_button(name, container):
     button = QtGui.QToolButton(container)
     sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed)

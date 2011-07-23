@@ -11,20 +11,6 @@ import graph_model as gm
 import sm_thread_runner as smtr
 #import pr2_gripper_sensor_msgs.msg as PR2GripperEventDetectorCommand
 
-status_dict = {am.GoalStatus.PENDING   : 'PENDING',
-               am.GoalStatus.ACTIVE    : 'ACTIVE',   
-               am.GoalStatus.PREEMPTED : 'PREEMPTED',
-               am.GoalStatus.SUCCEEDED : 'SUCCEEDED',
-               am.GoalStatus.ABORTED   : 'ABORTED',  
-               am.GoalStatus.REJECTED  : 'REJECTED', 
-               am.GoalStatus.PREEMPTING: 'PREEMPTING',
-               am.GoalStatus.RECALLING : 'RECALLING',
-               am.GoalStatus.RECALLED  : 'RECALLED', 
-               am.GoalStatus.LOST      : 'LOST'}    
-
-def goal_status_to_string(status):
-    return status_dict[status]
-
 class GripperEventTool(tu.ToolBase):
 
     def __init__(self, rcommander):
