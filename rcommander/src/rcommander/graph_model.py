@@ -17,6 +17,10 @@ class GraphModel:
     #Misc information about graph itself
     NODES_FILE = 'nodes.graph'
 
+    NODE_RADIUS = 12
+
+    EDGE_LENGTH = 1.5
+
     def __init__(self):
         self.gve = graph.create(depth=True)
         self.smach_states = {}
@@ -68,7 +72,7 @@ class GraphModel:
         pickle_file.close()
         for node1, node2, n1_outcome in edges:
             #print node1, node2, n1_outcome
-            gm.gve.add_edge(node1, node2, label=n1_outcome)
+            gm.gve.add_edge(node1, node2, label=n1_outcome, length=GraphModel.EDGE_LENGTH)
             #eobject = gm.edge(node1, node2)
             #eobject.outcome = n1_outcome
 
@@ -208,18 +212,18 @@ class GraphModel:
         new_node_name = new_smach_node.get_name()
 
         if new_node_name != old_node_name:
-            self.gve.add_node(new_node_name)
+            self.gve.add_node(new_node_name, radius=self.NODES_FILE)
             for e in self.gve.node(old_node_name).edges:
                 #outcome = e.outcome
                 self.gve.remove_edge(e.node1.id, e.node2.id, label=e.label)
                 #print 'removing edge between', e.node1.id, e.node2.id, 'with label', e.label
                 if e.node1.id == old_node_name:
-                    self.gve.add_edge(new_node_name, e.node2.id, label=e.label)
+                    self.gve.add_edge(new_node_name, e.node2.id, label=e.label, length=GraphModel.EDGE_LENGTH)
                     #self.gve.edge(new_node_name, e.node2.id).outcome = outcome
                     #print 'adding edge between', new_node_name, e.node2.id, 'with label', e.label
                     #edges.append([new_node_name, e.node2.id])
                 else:
-                    self.gve.add_edge(e.node1.id, new_node_name, label=e.label)
+                    self.gve.add_edge(e.node1.id, new_node_name, label=e.label, length=GraphModel.EDGE_LENGTH)
                     #self.gve.edge(e.node1.id, new_node_name).outcome = outcome
                     #edges.append([e.node1.id, new_node_name])
                     #print 'adding edge between', e.node1.id, new_node_name
@@ -291,7 +295,7 @@ class GraphModel:
         #if this is a regular singleton node
         if not hasattr(smach_node, 'get_child_name') or not self.smach_states.has_key(smach_node.get_child_name()):
             #Link this node to all its outcomes
-            self.gve.add_node(smach_node.name)
+            self.gve.add_node(smach_node.name, radius=self.NODE_RADIUS)
             self.smach_states[smach_node.name] = smach_node
             #print 'adding node', smach_node.name, 'with outcomes', smach_node.get_registered_outcomes()
             for outcome in smach_node.get_registered_outcomes():
@@ -303,7 +307,7 @@ class GraphModel:
                     outcome_name = self._create_outcome_name(outcome)
                 #if not self.smach_states.has_key(outcome):
                 self.smach_states[outcome_name] = ot.EmptyState(outcome_name, temporary=True)
-                self.gve.add_node(outcome_name)
+                self.gve.add_node(outcome_name, radius=self.NODE_RADIUS)
                 #self.gve.add_edge(smach_node.name, outcome)
                 self._add_edge(smach_node.name, outcome_name, outcome)
                 print 'adding edge between', smach_node.name, 'and', outcome_name, 'with label', outcome
@@ -314,7 +318,7 @@ class GraphModel:
             self.restore_node_consistency(smach_node.name)
 
     def add_outcome(self, outcome_name):
-        self.gve.add_node(outcome_name)
+        self.gve.add_node(outcome_name, radius=self.NODE_RADIUS)
         self.smach_states[outcome_name] = ot.EmptyState(outcome_name, False)
 
     def delete_node(self, node_name):
@@ -374,7 +378,7 @@ class GraphModel:
                     if not self.is_modifiable(parent_outcome_node):
                         #connect this child node to parent
                         self.gve.remove_edge(parent_node_id, parent_outcome_node, label=node_outcome_name)
-                        self.gve.add_edge(parent_node_id, edge.node2.id, label=node_outcome_name)
+                        self.gve.add_edge(parent_node_id, edge.node2.id, label=node_outcome_name, length=GraphModel.EDGE_LENGTH)
                         #e = self.gve.edge(parent_node_id, node_outcome_name)
                         #e.outcome = node_outcome_name
                         #delete parent's temporary node if it is now unconnected
@@ -424,7 +428,7 @@ class GraphModel:
 
     def _add_temporary_outcome(self, outcome):
         self.smach_states[outcome] = ot.EmptyState(outcome, temporary=True)
-        self.gve.add_node(outcome)
+        self.gve.add_node(outcome, self.NODE_RADIUS)
 
     #def delete_node_old(self, node_name):
     #    #temporary nodes are only removable when the state transitions are linked to something else
@@ -510,7 +514,7 @@ class GraphModel:
         if n1_outcome == None and self.is_modifiable(n2):
             raise RuntimeError('Must specify outcome as goal node is not a temporary node.')
 
-        self.gve.add_edge(n1, n2, label=n1_outcome)
+        self.gve.add_edge(n1, n2, label=n1_outcome, length=GraphModel.EDGE_LENGTH)
         #print 'actually added edge'
         #self.gve.edge(n1, n2).outcome = n1_outcome
         return True
@@ -565,7 +569,7 @@ class GraphModel:
         if self.gve.node(new_node) == None:
             print 'recreated node', new_node
             self.smach_states[new_node] = ot.EmptyState(new_node, temporary=True)
-            self.gve.add_node(new_node)
+            self.gve.add_node(new_node, self.NODE_RADIUS)
         #print 'calling add_edge with a', node_name, 'b', new_node, 'outcome', outcome_name
         self._add_edge(node_name, new_node, outcome_name)
 

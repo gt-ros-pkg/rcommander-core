@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'RCommander.ui'
 #
-# Created: Mon Jul 25 00:34:44 2011
+# Created: Mon Jul 25 02:55:05 2011
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -66,41 +66,6 @@ class Ui_RCommanderWindow(object):
         self.delete_button.setAutoRaise(True)
         self.delete_button.setObjectName("delete_button")
         self.horizontalLayout.addWidget(self.delete_button)
-        self.zoom_widget = QtGui.QWidget(self.widget_3)
-        self.zoom_widget.setObjectName("zoom_widget")
-        self.horizontalLayout_5 = QtGui.QHBoxLayout(self.zoom_widget)
-        self.horizontalLayout_5.setObjectName("horizontalLayout_5")
-        self.zoomLevel = QtGui.QLabel(self.zoom_widget)
-        self.zoomLevel.setStyleSheet("font-size: 9px;")
-        self.zoomLevel.setAlignment(QtCore.Qt.AlignBottom|QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing)
-        self.zoomLevel.setObjectName("zoomLevel")
-        self.horizontalLayout_5.addWidget(self.zoomLevel)
-        self.zoomOutButton = QtGui.QToolButton(self.zoom_widget)
-        self.zoomOutButton.setStyleSheet("#zoomOutButton { image: url(\':/zoomsmall\'); border: 0; margin: 0; padding: 0; }\n"
-"#zoomOutButton:pressed { image: url(\':/zoomsmall_pressed\'); }")
-        self.zoomOutButton.setText("")
-        self.zoomOutButton.setObjectName("zoomOutButton")
-        self.horizontalLayout_5.addWidget(self.zoomOutButton)
-        self.zoomSlider = QtGui.QSlider(self.zoom_widget)
-        self.zoomSlider.setEnabled(True)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.zoomSlider.sizePolicy().hasHeightForWidth())
-        self.zoomSlider.setSizePolicy(sizePolicy)
-        self.zoomSlider.setStyleSheet("border: 0;")
-        self.zoomSlider.setMinimum(1)
-        self.zoomSlider.setMaximum(1000)
-        self.zoomSlider.setProperty("value", 100)
-        self.zoomSlider.setOrientation(QtCore.Qt.Horizontal)
-        self.zoomSlider.setObjectName("zoomSlider")
-        self.horizontalLayout_5.addWidget(self.zoomSlider)
-        self.zoomInButton = QtGui.QToolButton(self.zoom_widget)
-        self.zoomInButton.setStyleSheet("#zoomInButton { image: url(\':/zoombig\'); border: 0; margin: 0; padding: 0; }\n"
-"#zoomInButton:pressed { image: url(\':/zoombig_pressed\'); }")
-        self.zoomInButton.setObjectName("zoomInButton")
-        self.horizontalLayout_5.addWidget(self.zoomInButton)
-        self.horizontalLayout.addWidget(self.zoom_widget)
         spacerItem1 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem1)
         self.verticalLayout_2.addWidget(self.widget_3)
@@ -317,11 +282,6 @@ class Ui_RCommanderWindow(object):
         self.add_outcome_button.setText(QtGui.QApplication.translate("RCommanderWindow", "State Outcome", None, QtGui.QApplication.UnicodeUTF8))
         self.delete_button.setToolTip(QtGui.QApplication.translate("RCommanderWindow", "Delete Tool", None, QtGui.QApplication.UnicodeUTF8))
         self.delete_button.setText(QtGui.QApplication.translate("RCommanderWindow", "Delete", None, QtGui.QApplication.UnicodeUTF8))
-        self.zoomLevel.setToolTip(QtGui.QApplication.translate("RCommanderWindow", "Zoom to actual size.", None, QtGui.QApplication.UnicodeUTF8))
-        self.zoomLevel.setText(QtGui.QApplication.translate("RCommanderWindow", "100%", None, QtGui.QApplication.UnicodeUTF8))
-        self.zoomOutButton.setToolTip(QtGui.QApplication.translate("RCommanderWindow", "Zooms out.", None, QtGui.QApplication.UnicodeUTF8))
-        self.zoomSlider.setToolTip(QtGui.QApplication.translate("RCommanderWindow", "Sets the zoom level.", None, QtGui.QApplication.UnicodeUTF8))
-        self.zoomInButton.setToolTip(QtGui.QApplication.translate("RCommanderWindow", "Zooms in.", None, QtGui.QApplication.UnicodeUTF8))
         self.label.setText(QtGui.QApplication.translate("RCommanderWindow", "TextLabel", None, QtGui.QApplication.UnicodeUTF8))
         self.label_3.setText(QtGui.QApplication.translate("RCommanderWindow", "TextLabel", None, QtGui.QApplication.UnicodeUTF8))
         self.label_4.setText(QtGui.QApplication.translate("RCommanderWindow", "HelloText", None, QtGui.QApplication.UnicodeUTF8))

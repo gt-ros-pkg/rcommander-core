@@ -671,12 +671,42 @@ class RCommanderWindow(RNodeBoxBaseClass):
 
 
 class GraphView:
+
     def __init__(self, context, graph_model):
         self.graph_model = graph_model
         g = self.graph_model.gve
         self.gve = g
-
         self.context = context 
+
+        node_outlines = self.context.color(0.4, 0.4, 0.4, 1.)
+        text_color = self.context.color(0.3, 0.3, 0.3, 1.)
+        node_font_size = 11
+
+        #Customizations
+        g.styles.default.depth = True
+        g.styles.default.background = self.context.color(1., 1., 1., 1.)
+        g.styles.default.stroke = node_outlines
+        g.styles.default.text = text_color
+        g.styles.default.fontsize = node_font_size
+        g.styles.root.text = self.context.color(255/255., 153/255., 51/255., 1.)
+
+        g.styles.important.fontsize = node_font_size
+        g.styles.important.text = text_color
+        g.styles.important.stroke = node_outlines
+
+        g.styles.marked.fontsize = node_font_size
+        g.styles.marked.text = text_color
+        g.styles.marked.stroke = node_outlines
+        #g.styles.default.fontsize = 12
+        #g.styles.light.fontsize = 12
+        #g.styles.back.fontsize = 12
+        #g.styles.marked.fontsize = 12
+
+        #g.styles.dark.fontsize = 12
+        #g.styles.highlight.fontsize = 12
+        #g.styles.root.fontsize = 12
+
+
         self.refresh = self.gve.layout.refresh
         selected_style = g.styles.create('selected')
         normal_style   = g.styles.create('normal')
@@ -687,8 +717,11 @@ class GraphView:
         copy_style(g.styles.default, normal_style)
         copy_style(g.styles.default, normal_edge_style)
         copy_style(g.styles.default, selected_edge_style)
+
+        selected_style.text = text_color
         selected_edge_style.stroke = self.context.color(0.80, 0.00, 0.00, 0.75)
         selected_edge_style.strokewidth = 1.0
+    
 
         #g.node('start').style = 'marked'
 
