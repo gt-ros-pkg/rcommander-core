@@ -169,7 +169,7 @@ class JointSequenceTool(tu.ToolBase):
 
 class JointSequenceState(smach.State, tu.StateBase): 
 
-    TIME_OUT_FACTOR = 5.
+    TIME_OUT_FACTOR = 2.
 
     def __init__(self, name, arm, joint_waypoints):
         self.name = name
@@ -189,6 +189,8 @@ class JointSequenceState(smach.State, tu.StateBase):
 
         self.arm_obj.set_poses(np.column_stack(wps), np.cumsum(np.array(times)), block=False)
         client = self.arm_obj.client
+        state = client.get_state()
+        print 'goal status', tu.goal_status_to_string(state)
 
         #Monitor execution
         trajectory_time_out = JointSequenceState.TIME_OUT_FACTOR * np.sum(times)
@@ -196,7 +198,6 @@ class JointSequenceState(smach.State, tu.StateBase):
         preempted = False
         r = rospy.Rate(30)
         start_time = rospy.get_time()
-        state = client.get_state()
         while True:
             #we have been preempted
             if self.preempt_requested():
@@ -209,13 +210,16 @@ class JointSequenceState(smach.State, tu.StateBase):
             if (rospy.get_time() - start_time) > trajectory_time_out:
                 client.cancel_goal()
                 rospy.loginfo('JointSequenceState: timed out!')
+                succeeded = True
                 break
 
+            #print tu.goal_status_to_string(state)
             if (state not in [am.GoalStatus.ACTIVE, am.GoalStatus.PENDING]):
                 if state == am.GoalStatus.SUCCEEDED:
                     rospy.loginfo('JointSequenceState: Succeeded!')
                     succeeded = True
                 break
+
             r.sleep()
 
         if preempted:

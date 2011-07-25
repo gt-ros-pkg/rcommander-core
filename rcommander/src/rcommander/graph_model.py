@@ -57,14 +57,12 @@ class GraphModel:
             sname = pt.splitext(pt.split(fname)[1])[0]
             if not states_to_load.issuperset([sname]):
                 continue
+
             pickle_file = open(fname, 'r')
-            #if fname == tu.InfoStateBase.GLOBAL_NAME:
-            #    continue
             rospy.loginfo('Loading state %s' % sname)
             gm.smach_states[sname] = pk.load(pickle_file)
             gm.gve.add_node(sname, GraphModel.NODE_RADIUS)
             pickle_file.close()
-            #print '##', gm.smach_states[sname].name, gm.smach_states[sname].tool_name
 
         #Reconstruct graph
         graph_name = pt.join(name, GraphModel.EDGES_FILE)
@@ -213,7 +211,7 @@ class GraphModel:
         new_node_name = new_smach_node.get_name()
 
         if new_node_name != old_node_name:
-            self.gve.add_node(new_node_name, radius=self.NODES_FILE)
+            self.gve.add_node(new_node_name, radius=self.NODE_RADIUS)
             for e in self.gve.node(old_node_name).edges:
                 #outcome = e.outcome
                 self.gve.remove_edge(e.node1.id, e.node2.id, label=e.label)
