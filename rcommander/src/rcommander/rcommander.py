@@ -25,6 +25,7 @@ import os.path as pt
 import ctypes
 
 #Import tools
+import pr2_utils as pu
 import graph_model as gm
 import sm_thread_runner as smtr
 import tool_utils as tu
@@ -38,6 +39,7 @@ import gripper_event_tool as get
 import sleep_tool as st
 import speak_tool as skt
 import move_arm_tool as mat
+import move_tool as mt
 
 
 def split(num, factor):
@@ -289,6 +291,8 @@ class RCommanderWindow(RNodeBoxBaseClass):
         #ROS things
         rospy.init_node('rcommander', anonymous=True)
         self.tf_listener = tf.TransformListener()
+        self.left_arm, self.right_arm = pu.PR2Arm.create_arms(self.tf_listener, 'both')
+
 
     def status_bar_check(self):
         if self.current_sm_threads.has_key('run_sm'):
@@ -464,6 +468,11 @@ class RCommanderWindow(RNodeBoxBaseClass):
 
         return True
 
+    def _reconnect_smach_states(self):
+        for k in self.graph_model.smach_states:
+            if hasattr(self.graph_model.smach_states[k], 'set_arm'):
+                self.graph_model.smach_states[k].set_arm(self.left_arm, self.right_arm)
+
     def open_sm_cb(self):
         #prompt user if current document has not been saved
         if not self.check_current_document():
@@ -481,8 +490,11 @@ class RCommanderWindow(RNodeBoxBaseClass):
         if dialog.exec_():
             filenames = dialog.selectedFiles()
             filename = str(filenames[0])
+
             #Set this a the new model
             self._set_model(gm.GraphModel.load(filename))
+            self._reconnect_smach_states()
+
             #Reset state of GUI
             self.nothing_cb(None)
             self.document = FSMDocument(filename, modified=False, real_filename=True)
@@ -749,7 +761,7 @@ class GraphView:
         cx = self.context
         g  = self.gve
 
-        debug = False
+        debug = True
         if debug:
             print 'dr',
 
@@ -803,6 +815,82 @@ class GraphView:
         g.draw(directed=True, traffic=False, user_draw=draw_func)
         if debug:
             print 'ing'
+
+
+app = QtGui.QApplication(sys.argv)
+rc = RCommanderWindow()
+rc.add_tools([['Misc', nt.NavigateTool(rc)], 
+              ['Misc', tt.TuckTool(rc)],
+              ['Misc', lmt.LinearMoveTool(rc)],
+              ['Misc', get.GripperEventTool(rc)],
+              ['Misc', ptl.Point3DTool(rc)],
+              ['Misc', gt.GripperTool(rc)],
+              ['Misc', mat.SafeMoveArmTool(rc)],
+              ['Misc', mt.MoveArmTool(rc)],
+              #['Misc', skt.SpeakTool(rc)],
+              ['Misc', st.SleepTool(rc)]])
+rc.show()
+sys.exit(app.exec_())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #class GraphModel:
@@ -1296,34 +1384,6 @@ class GraphView:
 #            self.smach_states[new_outcome] = ot.EmptyState(new_outcome, temporary=True)
 #            self.gve.add_node(new_outcome)
 #        self._add_edge(node_name, new_outcome, outcome_name)
-
-
-app = QtGui.QApplication(sys.argv)
-rc = RCommanderWindow()
-rc.add_tools([['Misc', nt.NavigateTool(rc)], 
-              ['Misc', tt.TuckTool(rc)],
-              ['Misc', lmt.LinearMoveTool(rc)],
-              ['Misc', get.GripperEventTool(rc)],
-              ['Misc', ptl.Point3DTool(rc)],
-              ['Misc', gt.GripperTool(rc)],
-              ['Misc', mat.MoveArmTool(rc)],
-              ['Misc', skt.SpeakTool(rc)],
-              ['Misc', st.SleepTool(rc)]])
-rc.show()
-sys.exit(app.exec_())
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

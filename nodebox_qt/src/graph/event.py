@@ -79,11 +79,12 @@ class events:
                         self.pressed = n
                         break
 
-                if not self.pressed_edge and not self.pressed:
-                    for edge in self.graph.edges:
-                        if self.mouse in edge:
-                            self.pressed_edge = edge
-                            break
+                #Disable this since we're not using it
+                #if not self.pressed_edge and not self.pressed:
+                #    for edge in self.graph.edges:
+                #        if self.mouse in edge:
+                #            self.pressed_edge = edge
+                #            break
 
                 if not self.pressed_edge and not self.pressed:
                     self.pressed_nothing = self.mouse
@@ -106,12 +107,13 @@ class events:
             self.graph.layout.i = 2
             self.click(self.clicked)
 
-        # Mouse up and we clicked on an edge
-        elif self.pressed_edge and self.mouse in self.pressed_edge:
-            self.clicked_edge = self.pressed_edge
-            self.pressed_edge = None
-            self.graph.layout.i = 2
-            self.click_edge(self.clicked_edge)
+        #Disable this since we're not using it
+        ## Mouse up and we clicked on an edge
+        #elif self.pressed_edge and self.mouse in self.pressed_edge:
+        #    self.clicked_edge = self.pressed_edge
+        #    self.pressed_edge = None
+        #    self.graph.layout.i = 2
+        #    self.click_edge(self.clicked_edge)
 
         elif self.pressed_nothing:
             self.clicked_nothing = self.pressed_nothing

@@ -6,181 +6,10 @@ import numpy as np
 import functools as ft
 import sensor_msgs.msg as sm
 import std_msgs.msg as stdm
+import pr2_controllers_msgs.msg as pm
+import geometry_msgs.msg as gm
+import time
 
-
-class PR2Arm(Joint):
-
-    @staticmethod
-    def create_arms(tf_listener, arm):
-        jl = GenericListener('joint_state_listener', sm.JointState, 'joint_states', 100)
-        joint_provider = ft.partial(jl.read, allow_duplication=False, willing_to_wait=True, warn=False, quiet=True)
-
-        if arm == 'left'
-            left = PR2Arm(joint_provider, tf_listener, 'l', use_kinematics=False)
-            return left
-
-        if arm == 'right'
-            right = PR2Arm(joint_provider, tf_listener, 'r', use_kinematics=False)
-            return right
-
-        if arm == 'both'
-            return left, right
-
-    def __init__(self, joint_provider, tf_listener, arm, use_kinematics=True):
-        joint_controller_name = arm + '_arm_controller'
-        cart_controller_name = arm + '_cart'
-        Joint.__init__(self, joint_controller_name, joint_provider)
-        self.arm = arm
-        self.tf_listener = tf_listener
-        self.client = actionlib.SimpleActionClient('/%s/joint_trajectory_action' % joint_controller_name, pm.JointTrajectoryAction)
-        self.joint_controller_name = joint_controller_name
-
-        self.cart_posure_pub = rospy.Publisher("/%s/command_posture" % cart_controller_name, stdm.Float64MultiArray).publish
-        self.cart_pose_pub = rospy.Publisher("/%s/command_pose" % cart_controller_name, gm.PoseStamped).publish
-        if arm == 'l':
-            self.full_arm_name = 'left'
-        else:
-            self.full_arm_name = 'right'
-
-        if use_kinematics:
-            self.kinematics = pr2k.PR2ArmKinematics(self.full_arm_name, self.tf_listener)
-        #self.ik_utilities = iku.IKUtilities(self.full_arm_name, self.tf_listener) 
-
-        self.POSTURES = {
-            'off':          np.matrix([]),
-            'mantis':       np.matrix([0, 1, 0,  -1, 3.14, -1, 3.14]).T,
-            'elbowupr':     np.matrix([-0.79,0,-1.6,  9999, 9999, 9999, 9999]).T,
-            'elbowupl':     np.matrix([0.79,0,1.6 , 9999, 9999, 9999, 9999]).T,
-            'old_elbowupr': np.matrix([-0.79,0,-1.6, -0.79,3.14, -0.79,5.49]).T,
-            'old_elbowupl': np.matrix([0.79,0,1.6, -0.79,3.14, -0.79,5.49]).T,
-            'elbowdownr':   np.matrix([-0.028262077316910873, 1.2946342642324222, -0.25785640577652386, -1.5498884526859626]).T, 
-            'elbowdownl':   np.matrix([-0.0088195719039858515, 1.2834828245284853, 0.20338442004843196, -1.5565279256852611]).T
-            }
-
-    def set_posture(self, posture_mat):
-        self.cart_posure_pub(stdm.Float64MultiArray(data=posture_mat.A1.tolist()))
-
-    ##
-    # Send a cartesian pose to *_cart controllers
-    # @param trans len 3 list
-    # @param rot len 3 list
-    # @param frame string
-    # @param msg_time float
-    def set_cart_pose(self, trans, rot, frame, msg_time):
-        ps = gm.PoseStamped()
-        for i, field in enumerate(['x', 'y', 'z']):
-            exec('ps.pose.position.%s = trans[%d]' % (field, i))
-        for i, field in enumerate(['x', 'y', 'z', 'w']):
-            exec('ps.pose.orientation.%s = rot[%d]' % (field, i))
-        ps.header.frame_id = frame
-        ps.header.stamp = rospy.Time(msg_time)
-        self.cart_pose_pub(ps)
-
-    ##
-    # @param pos_mat column matrix of poses
-    # @param times array of times
-    def set_poses(self, pos_mat, times, vel_mat=None, block=True):
-        p = self.pose()
-        for i in range(pos_mat.shape[1]):
-            pos_mat[4,i] = unwrap2(p[4,0], pos_mat[4,i])
-            pos_mat[6,i] = unwrap2(p[6,0], pos_mat[6,i])
-            p = pos_mat[:,i]
-
-        joint_traj = Joint._create_trajectory(self, pos_mat, times, vel_mat)
-
-        #Create goal msg
-        joint_traj.header.stamp = rospy.get_rostime() + rospy.Duration(1.)
-        g = pm.JointTrajectoryGoal()
-        g.trajectory = joint_traj
-        self.client.send_goal(g)
-        if block:
-            return self.client.wait_for_result()
-        return self.client.get_state()
-
-    def stop_trajectory_execution(self):
-        self.client.cancel_all_goals()
-
-    def has_active_goal(self):
-        s = self.client.get_state()
-        if s == amsg.GoalStatus.ACTIVE or s == amsg.GoalStatus.PENDING:
-            return True
-        else:
-            return False
-
-    def set_poses_monitored(self, pos_mat, times, vel_mat=None, block=True, time_look_ahead=.050):
-        joint_traj = Joint._create_trajectory(self, pos_mat, times, vel_mat)
-
-        #Create goal msg
-        joint_traj.header.stamp = rospy.get_rostime() + rospy.Duration(1.)
-        g = pm.JointTrajectoryGoal()
-        g.trajectory = joint_traj
-        self.client.send_goal(g)
-        if block:
-            return self.client.wait_for_result()
-        return self.client.get_state()
-
-    def set_pose(self, pos, nsecs=5., block=True):
-        for i in range(2):
-            cpos = self.pose()
-        pos[4,0] = unwrap(cpos[4,0], pos[4,0])
-        pos[6,0] = unwrap(cpos[6,0], pos[6,0])
-        self.set_poses(np.column_stack([pos]), np.array([nsecs]), block=block)
-        #self.set_poses(np.column_stack([cpos, pos]), np.array([min_time, min_time+nsecs]), block=block)
-
-    def pose_cartesian(self, frame='base_link'):
-        gripper_tool_frame = self.arm + '_gripper_tool_frame'
-        return tfu.transform(frame, gripper_tool_frame, self.tf_listener)
-
-    def pose_cartesian_tf(self, frame='base_link'):
-        p, r = tfu.matrix_as_tf(self.pose_cartesian(frame))
-        return np.matrix(p).T, np.matrix(r).T
-
-
-class Joint:
-
-    def __init__(self, name, joint_provider):
-        self.joint_provider = joint_provider
-        self.joint_names = rospy.get_param('/%s/joints' % name)
-        self.pub = rospy.Publisher('%s/command' % name, tm.JointTrajectory)
-        self.names_index = None
-        self.zeros = [0 for j in range(len(self.joint_names))]
-
-    def pose(self, joint_states=None):
-        if joint_states == None:
-            joint_states = self.joint_provider()
-
-        if self.names_index == None:
-            self.names_index = {}
-            for i, n in enumerate(joint_states.name):
-                self.names_index[n] = i
-            self.joint_idx = [self.names_index[n] for n in self.joint_names]
-
-        return (np.matrix(joint_states.position).T)[self.joint_idx, 0]
-
-    def _create_trajectory(self, pos_mat, times, vel_mat=None):
-        #Make JointTrajectoryPoints
-        points = [tm.JointTrajectoryPoint() for i in range(pos_mat.shape[1])]
-        for i in range(pos_mat.shape[1]):
-            points[i].positions = pos_mat[:,i].A1.tolist()
-            points[i].accelerations = self.zeros
-            if vel_mat == None:
-                points[i].velocities = self.zeros
-            else:
-                points[i].velocities = vel_mat[:,i].A1.tolist()
-
-        for i in range(pos_mat.shape[1]):
-            points[i].time_from_start = rospy.Duration(times[i])
-
-        #Create JointTrajectory
-        jt = tm.JointTrajectory()
-        jt.joint_names = self.joint_names
-        jt.points = points
-        jt.header.stamp = rospy.get_rostime()
-        return jt
-
-    def set_poses(self, pos_mat, times):
-        joint_trajectory = self._create_trajectory(pos_mat, times)
-        self.pub.publish(joint_trajectory)
 
 
 ##
@@ -304,3 +133,180 @@ class GenericListener:
                         return self.message_extractor(reading['message'])
                     else:
                         return reading['message']
+
+
+class Joint:
+
+    def __init__(self, name, joint_provider):
+        self.joint_provider = joint_provider
+        self.joint_names = rospy.get_param('/%s/joints' % name)
+        self.pub = rospy.Publisher('%s/command' % name, tm.JointTrajectory)
+        self.names_index = None
+        self.zeros = [0 for j in range(len(self.joint_names))]
+
+    def pose(self, joint_states=None):
+        if joint_states == None:
+            joint_states = self.joint_provider()
+
+        if self.names_index == None:
+            self.names_index = {}
+            for i, n in enumerate(joint_states.name):
+                self.names_index[n] = i
+            self.joint_idx = [self.names_index[n] for n in self.joint_names]
+
+        return (np.matrix(joint_states.position).T)[self.joint_idx, 0]
+
+    def _create_trajectory(self, pos_mat, times, vel_mat=None):
+        #Make JointTrajectoryPoints
+        points = [tm.JointTrajectoryPoint() for i in range(pos_mat.shape[1])]
+        for i in range(pos_mat.shape[1]):
+            points[i].positions = pos_mat[:,i].A1.tolist()
+            points[i].accelerations = self.zeros
+            if vel_mat == None:
+                points[i].velocities = self.zeros
+            else:
+                points[i].velocities = vel_mat[:,i].A1.tolist()
+
+        for i in range(pos_mat.shape[1]):
+            points[i].time_from_start = rospy.Duration(times[i])
+
+        #Create JointTrajectory
+        jt = tm.JointTrajectory()
+        jt.joint_names = self.joint_names
+        jt.points = points
+        jt.header.stamp = rospy.get_rostime()
+        return jt
+
+    def set_poses(self, pos_mat, times):
+        joint_trajectory = self._create_trajectory(pos_mat, times)
+        self.pub.publish(joint_trajectory)
+
+
+class PR2Arm(Joint):
+
+    @staticmethod
+    def create_arms(tf_listener, arm):
+        jl = GenericListener('joint_state_listener', sm.JointState, 'joint_states', 100)
+        joint_provider = ft.partial(jl.read, allow_duplication=False, willing_to_wait=True, warn=False, quiet=True)
+
+        if arm == 'left':
+            left = PR2Arm(joint_provider, tf_listener, 'l', use_kinematics=False)
+            return left
+
+        if arm == 'right':
+            right = PR2Arm(joint_provider, tf_listener, 'r', use_kinematics=False)
+            return right
+
+        if arm == 'both':
+            left = PR2Arm(joint_provider, tf_listener, 'l', use_kinematics=False)
+            right = PR2Arm(joint_provider, tf_listener, 'r', use_kinematics=False)
+            return left, right
+
+    def __init__(self, joint_provider, tf_listener, arm, use_kinematics=True):
+        joint_controller_name = arm + '_arm_controller'
+        cart_controller_name = arm + '_cart'
+        Joint.__init__(self, joint_controller_name, joint_provider)
+        self.arm = arm
+        self.tf_listener = tf_listener
+        self.client = actionlib.SimpleActionClient('/%s/joint_trajectory_action' % joint_controller_name, pm.JointTrajectoryAction)
+        self.joint_controller_name = joint_controller_name
+
+        self.cart_posure_pub = rospy.Publisher("/%s/command_posture" % cart_controller_name, stdm.Float64MultiArray).publish
+        self.cart_pose_pub = rospy.Publisher("/%s/command_pose" % cart_controller_name, gm.PoseStamped).publish
+        if arm == 'l':
+            self.full_arm_name = 'left'
+        else:
+            self.full_arm_name = 'right'
+
+        if use_kinematics:
+            self.kinematics = pr2k.PR2ArmKinematics(self.full_arm_name, self.tf_listener)
+        #self.ik_utilities = iku.IKUtilities(self.full_arm_name, self.tf_listener) 
+
+        self.POSTURES = {
+            'off':          np.matrix([]),
+            'mantis':       np.matrix([0, 1, 0,  -1, 3.14, -1, 3.14]).T,
+            'elbowupr':     np.matrix([-0.79,0,-1.6,  9999, 9999, 9999, 9999]).T,
+            'elbowupl':     np.matrix([0.79,0,1.6 , 9999, 9999, 9999, 9999]).T,
+            'old_elbowupr': np.matrix([-0.79,0,-1.6, -0.79,3.14, -0.79,5.49]).T,
+            'old_elbowupl': np.matrix([0.79,0,1.6, -0.79,3.14, -0.79,5.49]).T,
+            'elbowdownr':   np.matrix([-0.028262077316910873, 1.2946342642324222, -0.25785640577652386, -1.5498884526859626]).T, 
+            'elbowdownl':   np.matrix([-0.0088195719039858515, 1.2834828245284853, 0.20338442004843196, -1.5565279256852611]).T
+            }
+
+    def set_posture(self, posture_mat):
+        self.cart_posure_pub(stdm.Float64MultiArray(data=posture_mat.A1.tolist()))
+
+    ##
+    # Send a cartesian pose to *_cart controllers
+    # @param trans len 3 list
+    # @param rot len 3 list
+    # @param frame string
+    # @param msg_time float
+    def set_cart_pose(self, trans, rot, frame, msg_time):
+        ps = gm.PoseStamped()
+        for i, field in enumerate(['x', 'y', 'z']):
+            exec('ps.pose.position.%s = trans[%d]' % (field, i))
+        for i, field in enumerate(['x', 'y', 'z', 'w']):
+            exec('ps.pose.orientation.%s = rot[%d]' % (field, i))
+        ps.header.frame_id = frame
+        ps.header.stamp = rospy.Time(msg_time)
+        self.cart_pose_pub(ps)
+
+    ##
+    # @param pos_mat column matrix of poses
+    # @param times array of times
+    def set_poses(self, pos_mat, times, vel_mat=None, block=True):
+        p = self.pose()
+        for i in range(pos_mat.shape[1]):
+            pos_mat[4,i] = unwrap2(p[4,0], pos_mat[4,i])
+            pos_mat[6,i] = unwrap2(p[6,0], pos_mat[6,i])
+            p = pos_mat[:,i]
+
+        joint_traj = Joint._create_trajectory(self, pos_mat, times, vel_mat)
+
+        #Create goal msg
+        joint_traj.header.stamp = rospy.get_rostime() + rospy.Duration(1.)
+        g = pm.JointTrajectoryGoal()
+        g.trajectory = joint_traj
+        self.client.send_goal(g)
+        if block:
+            return self.client.wait_for_result()
+        return self.client.get_state()
+
+    def stop_trajectory_execution(self):
+        self.client.cancel_all_goals()
+
+    def has_active_goal(self):
+        s = self.client.get_state()
+        if s == amsg.GoalStatus.ACTIVE or s == amsg.GoalStatus.PENDING:
+            return True
+        else:
+            return False
+
+    def set_poses_monitored(self, pos_mat, times, vel_mat=None, block=True, time_look_ahead=.050):
+        joint_traj = Joint._create_trajectory(self, pos_mat, times, vel_mat)
+
+        #Create goal msg
+        joint_traj.header.stamp = rospy.get_rostime() + rospy.Duration(1.)
+        g = pm.JointTrajectoryGoal()
+        g.trajectory = joint_traj
+        self.client.send_goal(g)
+        if block:
+            return self.client.wait_for_result()
+        return self.client.get_state()
+
+    def set_pose(self, pos, nsecs=5., block=True):
+        for i in range(2):
+            cpos = self.pose()
+        pos[4,0] = unwrap(cpos[4,0], pos[4,0])
+        pos[6,0] = unwrap(cpos[6,0], pos[6,0])
+        self.set_poses(np.column_stack([pos]), np.array([nsecs]), block=block)
+        #self.set_poses(np.column_stack([cpos, pos]), np.array([min_time, min_time+nsecs]), block=block)
+
+    def pose_cartesian(self, frame='base_link'):
+        gripper_tool_frame = self.arm + '_gripper_tool_frame'
+        return tfu.transform(frame, gripper_tool_frame, self.tf_listener)
+
+    def pose_cartesian_tf(self, frame='base_link'):
+        p, r = tfu.matrix_as_tf(self.pose_cartesian(frame))
+        return np.matrix(p).T, np.matrix(r).T

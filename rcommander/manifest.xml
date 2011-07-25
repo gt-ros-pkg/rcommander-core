@@ -22,6 +22,7 @@
   <depend package="ptp_arm_action"/>
   <depend package="pr2_interactive_manipulation"/>
   <depend package="sound_play"/>
+  <depend package="pr2_controllers_msgs"/>
 </package>
 
 
