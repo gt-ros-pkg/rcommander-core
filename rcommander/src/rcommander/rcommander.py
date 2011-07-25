@@ -102,7 +102,17 @@ class RNodeBoxBaseClass(QtGui.QMainWindow):
         self.animationTimer = QTimer(self)
         self.connect(self.animationTimer, SIGNAL("timeout()"), self.animation_cb)
         self.animationTimer.start(1000.0 / self.speed)
+        #self.connect(self.ui.graphicsSuperView, SIGNAL('resizeEvent(QResizeEvent*)'), self.resize_view_cb)
 
+    def resize_view_cb(self):
+        print 'resized'
+
+        #self.zoomLevel = self.ui.zoomLevel
+        #self.zoomSlider = self.ui.zoomSlider
+        #self.connect(self.ui.zoomSlider, SIGNAL('valueChanged(int)'), self.dragZoom)
+
+    def dragZoom(self):
+        self.graphicsView.dragZoom_(self.ui.zoomSlider.value())
 
     def _setup_draw(self, fn):
         #from fastRun
@@ -146,75 +156,6 @@ def copy_style(astyle, bstyle):
     bstyle.align       = astyle.align      
     bstyle.depth       = astyle.depth      
 
-
-#class ThreadRunSM(threading.Thread):
-#
-#    def __init__(self, sm_name, sm):
-#        threading.Thread.__init__(self)    
-#        self.sm = sm
-#        self.sm_name = sm_name
-#        self.outcome = None
-#        self.intro_server = None
-#        self.exception = None
-#
-#    def run(self):
-#        rospy.loginfo('ThreadRunSM started with %s' % self.sm_name)
-#        try:
-#            self.intro_server = smach_ros.IntrospectionServer(self.sm_name, self.sm, '/' + self.sm_name)
-#            self.intro_server.start()
-#            self.outcome = self.sm.execute()
-#        except smach.InvalidTransitionError, e:
-#            self.exception = e
-#        except UserStoppedException, e:
-#            self.exception = e
-#            rospy.loginfo('ThreadRunSM: execution stopped')
-#        rospy.loginfo('ThreadRunSM finished')
-#
-#    def except_stop(self):
-#        while self.isAlive():
-#            self._raise_exception()
-#            time.sleep(.1)
-#
-#    def _raise_exception(self):
-#        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(self.ident), ctypes.py_object(UserStoppedException))
-#        if res == 0:
-#            raise ValueError("Invalid thread ID")
-#        elif res != 1:
-#            # "if it returns a number greater than one, you're in trouble,
-#            # and you should call it again with exc=NULL to revert the effect"
-#            ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, 0)
-#            raise SystemError("PyThreadState_SetAsyncExc failed")
-
-###
-## Checks for errors and redraw status bar if needed
-###
-#class ThreadRunSMMonitor(threading.Thread):
-#
-#    def __init__(self, sm_thread, parent_window):
-#        threading.Thread.__init__(self)    
-#        self.sm_thread = sm_thread
-#        self.parent_window = parent_window
-#
-#    def run(self):
-#        print 'ThreadRunSMMonitor: started'
-#        r = rospy.Rate(10)
-#        while not rospy.is_shutdown():
-#
-#            if self.sm_thread.exception != None:
-#                m = self.sm_thread.exception.message
-#                self.parent_window.statusBar().showMessage('InvalidTransitionError: %s' % m, 15000)
-#                return
-#
-#            if self.sm_thread.outcome != None:
-#                self.parent_window.statusBar().showMessage('Finished with outcome: %s' % self.sm_thread.outcome, 15000)
-#                return
-#
-#            if not self.sm_thread.isAlive():
-#                self.parent_window.statusBar().showMessage('Error: SM thread unexpectedly died.', 15000)
-#                return
-#
-#            r.sleep()
-#        print 'ThreadRunSMMonitor: returned'
 
 
 class FSMDocument:
@@ -720,8 +661,12 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.graph_model.gve.events.click_nothing = self.nothing_cb
 
     def draw(self):
+        w = self.ui.graphicsSuperView.viewport().width()
+        h = self.ui.graphicsSuperView.viewport().height()
         properties_dict = {'selected_edge': self.selected_edge,
-                           'selected_node': self.selected_node}
+                           'selected_node': self.selected_node,
+                           'width': w,
+                           'height': h}
         self.graph_view.draw(properties_dict)
 
 
@@ -759,6 +704,8 @@ class GraphView:
         self.context.size(700, 700)
 
     def draw(self, properties_dict):
+        self.context.size(properties_dict['width'], properties_dict['height'])
+
         cx = self.context
         g  = self.gve
 
@@ -820,16 +767,18 @@ class GraphView:
 
 app = QtGui.QApplication(sys.argv)
 rc = RCommanderWindow()
-rc.add_tools([['Misc', nt.NavigateTool(rc)], 
-              ['Misc', tt.TuckTool(rc)],
-              ['Misc', lmt.LinearMoveTool(rc)],
-              ['Misc', get.GripperEventTool(rc)],
-              ['Misc', ptl.Point3DTool(rc)],
-              ['Misc', gt.GripperTool(rc)],
-              ['Misc', mat.SafeMoveArmTool(rc)],
-              ['Misc', mt.JointSequenceTool(rc)],
-              ['Misc', spt.SpineTool(rc)],
-              ['Misc', st.SleepTool(rc)]])
+rc.add_tools([
+              ['Manipulation', tt.TuckTool(rc)],
+              ['Manipulation', lmt.LinearMoveTool(rc)],
+              ['Manipulation', mat.SafeMoveArmTool(rc)],
+              ['Manipulation', mt.JointSequenceTool(rc)],
+              ['Manipulation', gt.GripperTool(rc)],
+              ['Perception', ptl.Point3DTool(rc)],
+              ['Perception', get.GripperEventTool(rc)],
+              ['Navigation and Misc', nt.NavigateTool(rc)], 
+              ['Navigation and Misc', spt.SpineTool(rc)],
+              ['Navigation and Misc', st.SleepTool(rc)]
+              ])
 rc.show()
 sys.exit(app.exec_())
 
@@ -892,6 +841,76 @@ sys.exit(app.exec_())
 
 
 
+
+
+#class ThreadRunSM(threading.Thread):
+#
+#    def __init__(self, sm_name, sm):
+#        threading.Thread.__init__(self)    
+#        self.sm = sm
+#        self.sm_name = sm_name
+#        self.outcome = None
+#        self.intro_server = None
+#        self.exception = None
+#
+#    def run(self):
+#        rospy.loginfo('ThreadRunSM started with %s' % self.sm_name)
+#        try:
+#            self.intro_server = smach_ros.IntrospectionServer(self.sm_name, self.sm, '/' + self.sm_name)
+#            self.intro_server.start()
+#            self.outcome = self.sm.execute()
+#        except smach.InvalidTransitionError, e:
+#            self.exception = e
+#        except UserStoppedException, e:
+#            self.exception = e
+#            rospy.loginfo('ThreadRunSM: execution stopped')
+#        rospy.loginfo('ThreadRunSM finished')
+#
+#    def except_stop(self):
+#        while self.isAlive():
+#            self._raise_exception()
+#            time.sleep(.1)
+#
+#    def _raise_exception(self):
+#        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(self.ident), ctypes.py_object(UserStoppedException))
+#        if res == 0:
+#            raise ValueError("Invalid thread ID")
+#        elif res != 1:
+#            # "if it returns a number greater than one, you're in trouble,
+#            # and you should call it again with exc=NULL to revert the effect"
+#            ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, 0)
+#            raise SystemError("PyThreadState_SetAsyncExc failed")
+
+###
+## Checks for errors and redraw status bar if needed
+###
+#class ThreadRunSMMonitor(threading.Thread):
+#
+#    def __init__(self, sm_thread, parent_window):
+#        threading.Thread.__init__(self)    
+#        self.sm_thread = sm_thread
+#        self.parent_window = parent_window
+#
+#    def run(self):
+#        print 'ThreadRunSMMonitor: started'
+#        r = rospy.Rate(10)
+#        while not rospy.is_shutdown():
+#
+#            if self.sm_thread.exception != None:
+#                m = self.sm_thread.exception.message
+#                self.parent_window.statusBar().showMessage('InvalidTransitionError: %s' % m, 15000)
+#                return
+#
+#            if self.sm_thread.outcome != None:
+#                self.parent_window.statusBar().showMessage('Finished with outcome: %s' % self.sm_thread.outcome, 15000)
+#                return
+#
+#            if not self.sm_thread.isAlive():
+#                self.parent_window.statusBar().showMessage('Error: SM thread unexpectedly died.', 15000)
+#                return
+#
+#            r.sleep()
+#        print 'ThreadRunSMMonitor: returned'
 
 
 #class GraphModel:

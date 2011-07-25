@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'RCommander.ui'
 #
-# Created: Fri Jun 24 11:46:25 2011
+# Created: Mon Jul 25 00:34:44 2011
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -120,8 +120,8 @@ class Ui_RCommanderWindow(object):
 "#main #graphicsSuperView[style=\"motif\"] { background-color: #e5e5e5; }\n"
 "#main #graphicsSuperView[style=\"windows\"] { background-color: #fafafa; }\n"
 "")
-        self.graphicsSuperView.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
-        self.graphicsSuperView.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        self.graphicsSuperView.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.graphicsSuperView.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.graphicsSuperView.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignTop)
         self.graphicsSuperView.setRenderHints(QtGui.QPainter.Antialiasing|QtGui.QPainter.HighQualityAntialiasing|QtGui.QPainter.SmoothPixmapTransform|QtGui.QPainter.TextAntialiasing)
         self.graphicsSuperView.setOptimizationFlags(QtGui.QGraphicsView.DontAdjustForAntialiasing|QtGui.QGraphicsView.DontClipPainter|QtGui.QGraphicsView.DontSavePainterState)
