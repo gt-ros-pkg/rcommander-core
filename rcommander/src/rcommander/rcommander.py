@@ -594,6 +594,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.deselect_tool_buttons()
 
     def node_cb(self, node):
+        print self.pr2.torso.pose()
         #print node.id
         self.set_selected_node(node.id)
         self.set_selected_edge(None, None, None)

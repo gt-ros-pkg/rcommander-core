@@ -62,6 +62,7 @@ class GraphModel:
             #    continue
             rospy.loginfo('Loading state %s' % sname)
             gm.smach_states[sname] = pk.load(pickle_file)
+            gm.gve.add_node(sname, GraphModel.NODE_RADIUS)
             pickle_file.close()
             #print '##', gm.smach_states[sname].name, gm.smach_states[sname].tool_name
 

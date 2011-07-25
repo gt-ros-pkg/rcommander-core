@@ -10,6 +10,12 @@ import pr2_controllers_msgs.msg as pm
 import geometry_msgs.msg as gm
 import time
 
+#Test this
+def unwrap2(cpos, npos):
+    two_pi = 2*np.pi
+    nin = npos % two_pi
+    n_multiples_2pi = np.floor(cpos/two_pi)
+    return nin + n_multiples_2pi*two_pi
 
 
 ##

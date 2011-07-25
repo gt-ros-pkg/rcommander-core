@@ -14,7 +14,7 @@ class SpineTool(tu.ToolBase):
 
     def fill_property_box(self, pbox):
         formlayout = pbox.layout()
-        self.spine_box = tu.SliderBox(pbox, 15., 30.3, 0., .05, 'spine', units='cm')
+        self.spine_box = tu.SliderBox(pbox, 15., 29.5, 1., .05, 'spine', units='cm')
         formlayout.addRow('&Height', self.spine_box.container)
         pbox.update()
 
@@ -23,10 +23,10 @@ class SpineTool(tu.ToolBase):
             nname = self.name + str(self.counter)
         else:
             nname = name
-        return SpineState(nname, self.spine_box.value())
+        return SpineState(nname, self.spine_box.value()/100.)
 
     def _node_selected(self, my_node):
-        self.spine_box.set_value(my_node.position)
+        self.spine_box.set_value(my_node.position*100.)
 
     def reset(self):
         self.spine_box.set_value(15.)

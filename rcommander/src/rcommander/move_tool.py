@@ -65,7 +65,7 @@ class JointSequenceTool(tu.ToolBase):
         self.reset()
 
     def get_current_joint_angles(self):
-        if ('Left' == str(self.arm_box.currentText())):
+        if ('left' == str(self.arm_box.currentText())):
             arm_obj = self.rcommander.pr2.left
         else:
             arm_obj = self.rcommander.pr2.right
@@ -169,10 +169,11 @@ class JointSequenceTool(tu.ToolBase):
 
 class JointSequenceState(smach.State, tu.StateBase): 
 
-    TIME_OUT_FACTOR = 2.
+    TIME_OUT_FACTOR = 5.
 
     def __init__(self, name, arm, joint_waypoints):
         self.name = name
+        tu.StateBase.__init__(self, self.name)
         self.arm = arm
         self.joint_waypoints = joint_waypoints
         self.arm_obj = None
@@ -233,17 +234,17 @@ class JointSequenceState(smach.State, tu.StateBase):
             self.arm_obj = pr2.right
 
     def __init_unpicklables__(self):
-        tu.StateBase.__init__(self, self.name)
         smach.State.__init__(self, outcomes = ['succeeded', 'preempted', 'failed'], input_keys = [], output_keys = [])
 
     def __getstate__(self):
         state = tu.StateBase.__getstate__(self)
-        my_state = [self.name, self.arm, self.joint_waypoints] #Change this
+        my_state = [self.name, self.arm, self.joint_waypoints] 
         return {'state_base': state, 'self': my_state}
 
     def __setstate__(self, state):
         tu.StateBase.__setstate__(self, state['state_base'])
-        self.name, self.arm, self.joint_waypoints = state['self'][0] #Change this
+        self.name, self.arm, self.joint_waypoints = state['self']
         self.__init_unpicklables__()
+        print '@@ TOOL NAME', self.tool_name
 
 
