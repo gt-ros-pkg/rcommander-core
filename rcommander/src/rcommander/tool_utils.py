@@ -82,9 +82,9 @@ class SliderBox:
         slider.setSliderPosition(tick_size)
         slider.setValue(tick_pos)
 
-        hlayout = QHBoxLayout(container)
-        hlayout.addWidget(disp)
+        hlayout = QVBoxLayout(container)
         hlayout.addWidget(slider)
+        hlayout.addWidget(disp)
 
         def slider_moved_cb(disp, value):
             cv = self._slider_to_units(value)

@@ -40,6 +40,7 @@ import sleep_tool as st
 import speak_tool as skt
 import move_arm_tool as mat
 import move_tool as mt
+import spine_tool as spt
 
 
 def split(num, factor):
@@ -291,7 +292,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
         #ROS things
         rospy.init_node('rcommander', anonymous=True)
         self.tf_listener = tf.TransformListener()
-        self.left_arm, self.right_arm = pu.PR2Arm.create_arms(self.tf_listener, 'both')
+        self.pr2 = pu.PR2(self.tf_listener)
 
 
     def status_bar_check(self):
@@ -470,8 +471,8 @@ class RCommanderWindow(RNodeBoxBaseClass):
 
     def _reconnect_smach_states(self):
         for k in self.graph_model.smach_states:
-            if hasattr(self.graph_model.smach_states[k], 'set_arm'):
-                self.graph_model.smach_states[k].set_arm(self.left_arm, self.right_arm)
+            if hasattr(self.graph_model.smach_states[k], 'set_robot'):
+                self.graph_model.smach_states[k].set_robot(self.pr2)
 
     def open_sm_cb(self):
         #prompt user if current document has not been saved
@@ -761,7 +762,7 @@ class GraphView:
         cx = self.context
         g  = self.gve
 
-        debug = True
+        debug = False
         if debug:
             print 'dr',
 
@@ -826,8 +827,8 @@ rc.add_tools([['Misc', nt.NavigateTool(rc)],
               ['Misc', ptl.Point3DTool(rc)],
               ['Misc', gt.GripperTool(rc)],
               ['Misc', mat.SafeMoveArmTool(rc)],
-              ['Misc', mt.MoveArmTool(rc)],
-              #['Misc', skt.SpeakTool(rc)],
+              ['Misc', mt.JointSequenceTool(rc)],
+              ['Misc', spt.SpineTool(rc)],
               ['Misc', st.SleepTool(rc)]])
 rc.show()
 sys.exit(app.exec_())

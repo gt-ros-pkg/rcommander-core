@@ -184,23 +184,7 @@ class Joint:
 
 class PR2Arm(Joint):
 
-    @staticmethod
-    def create_arms(tf_listener, arm):
-        jl = GenericListener('joint_state_listener', sm.JointState, 'joint_states', 100)
-        joint_provider = ft.partial(jl.read, allow_duplication=False, willing_to_wait=True, warn=False, quiet=True)
 
-        if arm == 'left':
-            left = PR2Arm(joint_provider, tf_listener, 'l', use_kinematics=False)
-            return left
-
-        if arm == 'right':
-            right = PR2Arm(joint_provider, tf_listener, 'r', use_kinematics=False)
-            return right
-
-        if arm == 'both':
-            left = PR2Arm(joint_provider, tf_listener, 'l', use_kinematics=False)
-            right = PR2Arm(joint_provider, tf_listener, 'r', use_kinematics=False)
-            return left, right
 
     def __init__(self, joint_provider, tf_listener, arm, use_kinematics=True):
         joint_controller_name = arm + '_arm_controller'
@@ -310,3 +294,29 @@ class PR2Arm(Joint):
     def pose_cartesian_tf(self, frame='base_link'):
         p, r = tfu.matrix_as_tf(self.pose_cartesian(frame))
         return np.matrix(p).T, np.matrix(r).T
+
+
+class PR2Torso(Joint):
+
+    def __init__(self, joint_provider):
+        Joint.__init__(self, 'torso_controller', joint_provider)
+        self.torso = actionlib.SimpleActionClient('torso_controller/position_joint_action', pm.SingleJointPositionAction)
+        rospy.loginfo('waiting for torso_controller')
+        self.torso.wait_for_server()
+
+    def set_pose(self, p, block=True):
+        self.torso.send_goal(pm.SingleJointPositionGoal(position = p))
+        if block:
+            self.torso.wait_for_result()
+        return self.torso.get_state()
+
+
+class PR2:
+
+    def __init__(self, tf_listener):
+        jl = GenericListener('joint_state_listener', sm.JointState, 'joint_states', 100)
+        joint_provider = ft.partial(jl.read, allow_duplication=False, willing_to_wait=True, warn=False, quiet=True)
+
+        self.left = PR2Arm(joint_provider, tf_listener, 'l', use_kinematics=False)
+        self.right = PR2Arm(joint_provider, tf_listener, 'r', use_kinematics=False)
+        self.torso = PR2Torso(joint_provider)
