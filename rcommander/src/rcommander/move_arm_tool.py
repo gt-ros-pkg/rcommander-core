@@ -169,13 +169,13 @@ class SafeMoveArmState(smach.State, tu.StateBase):
 
     def __getstate__(self):
         state = tu.StateBase.__getstate__(self)
-        my_state = [self.name] #Change this
+        my_state = [self.name, self.arm, self.joints] #Change this
         return {'state_base': state, 'self': my_state}
 
 
     def __setstate__(self, state):
         tu.StateBase.__setstate__(self, state['state_base'])
-        self.name = state['self'][0] #Change this
+        self.name, self.arm, self.joints = state['self']
         self.__init_unpicklables__()
 
 

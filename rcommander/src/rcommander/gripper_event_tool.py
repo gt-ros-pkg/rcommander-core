@@ -135,7 +135,7 @@ class GripperEventState(smach.State, tu.StateBase):
     def execute(self, userdata):
         print '>> executing, got userdata:', userdata, 'keys', userdata.keys()
         print 'input keys', self.get_registered_input_keys(), 'ud_keys', userdata._ud.keys()
-        rospy.sleep(5)
+        rospy.sleep(2)
 
         goal = gr.PR2GripperEventDetectorGoal()
         goal.command.acceleration_trigger_magnitude = self.accel
