@@ -3,7 +3,7 @@ import tool_utils as tu
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 import rospy
-import hrl_lib.tf_utils as tfu
+import tf_utils as tfu
 import tf.transformations as tr
 import move_base_msgs.msg as mm
 import math

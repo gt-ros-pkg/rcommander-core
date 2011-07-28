@@ -19,6 +19,8 @@ class SpeakTool(tu.ToolBase):
         formlayout = pbox.layout()
         self.text = QLineEdit(pbox)
         self.text.setText(SpeakTool.DEFAULT_TEXT)
+        formlayout.addRow('&Say', self.text)
+        
 
     def _create_node(self, name=None):
         if name == None:
@@ -43,7 +45,7 @@ class SpeakNode(smach.State, tu.StateBase):
         self.__init_unpicklables__()
 
     def execute(self, userdata):
-        self.sound.say(self.text)
+        self.sound_client.say(self.text, 'voice_kal_diphone')
         return 'done'
 
     def __init_unpicklables__(self):

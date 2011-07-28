@@ -559,18 +559,25 @@ class GraphModel:
         #remove the old connection
         self.gve.remove_edge(node_name, old_edge.node2.id, label=old_edge.label)
         #remove the old node if it's temporary 
-        if not self.is_modifiable(old_edge.node2.id) and old_edge.node2.id != 'start':
+        #print 'The old edge is named', old_edge.node2.id, not self.is_modifiable(old_edge.node2.id)
+        if not self.is_modifiable(old_edge.node2.id):
             #and not connected
+            #print 'it has this many edges', len(self.gve.node(old_edge.node2.id).edges)
             if len(self.gve.node(old_edge.node2.id).edges) <= 0:
                 self.gve.remove_node(old_edge.node2.id)
+                self.smach_states.pop(old_edge.node2.id)
 
         #add new connection
         if self.gve.node(new_node) == None:
-            print 'recreated node', new_node
+            #print 'recreated node', new_node
             self.smach_states[new_node] = ot.EmptyState(new_node, temporary=True)
             self.gve.add_node(new_node, self.NODE_RADIUS)
         #print 'calling add_edge with a', node_name, 'b', new_node, 'outcome', outcome_name
         self._add_edge(node_name, new_node, outcome_name)
+
+        #print 'THE KEYS ARE'
+        #for k in self.smach_states.keys():
+        #    print k
 
         #print 'OUR NEW EDGES ARE'
         #for e in self.gve.node(node_name).edges:

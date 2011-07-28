@@ -104,8 +104,8 @@ class RNodeBoxBaseClass(QtGui.QMainWindow):
         self.animationTimer.start(1000.0 / self.speed)
         #self.connect(self.ui.graphicsSuperView, SIGNAL('resizeEvent(QResizeEvent*)'), self.resize_view_cb)
 
-    def resize_view_cb(self):
-        print 'resized'
+    #def resize_view_cb(self):
+    #    print 'resized'
 
         #self.zoomLevel = self.ui.zoomLevel
         #self.zoomSlider = self.ui.zoomSlider
@@ -116,6 +116,7 @@ class RNodeBoxBaseClass(QtGui.QMainWindow):
 
     def _setup_draw(self, fn):
         #from fastRun
+        #print 'se',
         self.canvas.clear()
         pos = self.currentView.mousePosition
         mx, my = pos.x(), pos.y()
@@ -128,11 +129,14 @@ class RNodeBoxBaseClass(QtGui.QMainWindow):
         self.namespace["wheeldelta"] = self.currentView.wheeldelta
         self.namespace['PAGENUM'] = self._pageNumber
         self.namespace['FRAME'] = self._frame
+        print 't',
         for k in self.namespace.keys():
             exec "global %s\n" % (k)
             exec "%s = self.namespace['%s']" % (k, k)
         fn()
+        #print 'u',
         self.currentView.canvas = self.canvas
+        #print 'p'
 
     def animation_cb(self):
         self._setup_draw(self.draw)
@@ -736,8 +740,14 @@ class GraphView:
     def setup(self):
         self.context.speed(30.)
         self.context.size(700, 700)
+        self.times = {}
+        self.times['draw'] = 0.
+        self.times['check'] = 0.
+        self.times['iter'] = 0
 
     def draw(self, properties_dict):
+        START_TIME = time.time()
+
         self.context.size(properties_dict['width'], properties_dict['height'])
 
         cx = self.context
@@ -794,7 +804,20 @@ class GraphView:
                 gs.edge_arrow(g.styles[edge.node1.style], path, edge, radius=10)
                 cx.drawpath(path)
             draw_func = draw_selected
+
+        CHECK_TIME = time.time()
+
         g.draw(directed=True, traffic=False, user_draw=draw_func)
+
+        DRAW_TIME = time.time()
+
+        total_draw = DRAW_TIME - CHECK_TIME
+        total_check = CHECK_TIME - START_TIME
+        self.times['draw'] += total_draw
+        self.times['check'] +- total_check
+        self.times['iter'] += 1
+        #print 'draw', (1000.* self.times['draw'] / self.times['iter']), 'check', (1000.* self.times['check'] / self.times['iter'])
+
         if debug:
             print 'ing'
 
@@ -811,7 +834,8 @@ rc.add_tools([
               ['Perception', get.GripperEventTool(rc)],
               ['Navigation and Misc', nt.NavigateTool(rc)], 
               ['Navigation and Misc', spt.SpineTool(rc)],
-              ['Navigation and Misc', st.SleepTool(rc)]
+              ['Navigation and Misc', st.SleepTool(rc)],
+              ['Navigation and Misc', skt.SpeakTool(rc)]
               ])
 rc.show()
 sys.exit(app.exec_())

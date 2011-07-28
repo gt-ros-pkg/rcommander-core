@@ -13,7 +13,6 @@
   <depend package="smach"/>
   <depend package="smach_ros"/>
   <depend package="tf"/>
-  <depend package="hrl_lib"/>
 
   <depend package="move_base_msgs"/>
   <depend package="pr2_common_action_msgs"/>
