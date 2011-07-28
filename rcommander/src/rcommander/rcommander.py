@@ -103,6 +103,10 @@ class RNodeBoxBaseClass(QtGui.QMainWindow):
         self.connect(self.animationTimer, SIGNAL("timeout()"), self.animation_cb)
         self.animationTimer.start(1000.0 / self.speed)
         #self.connect(self.ui.graphicsSuperView, SIGNAL('resizeEvent(QResizeEvent*)'), self.resize_view_cb)
+        #self.connect(self.graphicsView, SIGNAL("mousePressEvent(QMouseEvent *)"), self.mouse_pressed_cb)
+
+    #def mouse_pressed_cb(self, event):
+    #    print 'Got called!'
 
     #def resize_view_cb(self):
     #    print 'resized'
@@ -116,12 +120,13 @@ class RNodeBoxBaseClass(QtGui.QMainWindow):
 
     def _setup_draw(self, fn):
         #from fastRun
-        #print 'se',
+        print 'se',
         self.canvas.clear()
         pos = self.currentView.mousePosition
         mx, my = pos.x(), pos.y()
         self.namespace["MOUSEX"], self.namespace["MOUSEY"] = mx, my
         self.namespace["mousedown"] = self.currentView.mousedown
+        self.namespace["rightdown"] = self.currentView.rightdown
         self.namespace["keydown"] = self.currentView.keydown
         self.namespace["key"] = self.currentView.key
         self.namespace["keycode"] = self.currentView.keycode
@@ -129,17 +134,20 @@ class RNodeBoxBaseClass(QtGui.QMainWindow):
         self.namespace["wheeldelta"] = self.currentView.wheeldelta
         self.namespace['PAGENUM'] = self._pageNumber
         self.namespace['FRAME'] = self._frame
+        self.currentView.scrollwheel = False
+        self.currentView.wheeldelta = 0
         print 't',
         for k in self.namespace.keys():
             exec "global %s\n" % (k)
             exec "%s = self.namespace['%s']" % (k, k)
         fn()
-        #print 'u',
+        print 'u',
         self.currentView.canvas = self.canvas
-        #print 'p'
+        print 'p',
 
     def animation_cb(self):
         self._setup_draw(self.draw)
+        print 'ed'
         
     def stop(self):
         if self.animationTimer is not None:
@@ -589,6 +597,8 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.document.modified = True
         self.nothing_cb(None)
 
+
+
     def nothing_cb(self, pt):
         self.set_selected_node(None)
         self.set_selected_edge(None, None, None)
@@ -664,6 +674,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.graph_model.gve.events.click = self.node_cb
         self.graph_model.gve.events.click_edge = self.edge_cb
         self.graph_model.gve.events.click_nothing = self.nothing_cb
+        #self.graph_model.gve.events.right_drag = self.graph_view.drag_background_cb
 
     def draw(self):
         w = self.ui.graphicsSuperView.viewport().width()
@@ -726,8 +737,12 @@ class GraphView:
         selected_style.text = text_color
         selected_edge_style.stroke = self.context.color(0.80, 0.00, 0.00, 0.75)
         selected_edge_style.strokewidth = 1.0
-    
 
+        self.right_clicked = None
+        self.dx = 0.
+        self.dy = 0.
+        self.tx = 0.
+        self.ty = 0.
         #g.node('start').style = 'marked'
 
     def set_node_style(self, node_name, style):
@@ -736,6 +751,19 @@ class GraphView:
 
     def get_node_style(self, node_name):
         return self.gve.node(node_name).style
+    
+    #def drag_background_cb(self, s, e):
+    #    #print start_click.x, start_click.y
+    #    #print curr_pos.x, curr_pos.y
+
+    #    #transform.scale(self.zoom, self.zoom)
+    #    self.dx = e.x - s.x
+    #    self.dy = e.y - s.y
+    #    #print dx, dy
+    #    #transform = QTransform()
+    #    ##transform.scale(abs(dx), abs(dy))
+    #    #transform.translate(dx, dy)
+    #    #self.graphicsView.superView.setTransform(transform)
 
     def setup(self):
         self.context.speed(30.)
@@ -745,11 +773,44 @@ class GraphView:
         self.times['check'] = 0.
         self.times['iter'] = 0
 
+    def _background_drag(self):
+        mouse_pose = self.context._ns['MOUSEX'], self.context._ns['MOUSEY']
+
+        if self.context._ns['rightdown']:
+            if not self.right_clicked:
+                self.right_clicked = mouse_pose
+            else:
+                self.tx = mouse_pose[0] - self.right_clicked[0]
+                self.ty = mouse_pose[1] - self.right_clicked[1]
+        else:
+            #Commit transform
+            self.right_clicked = None
+            self.dx += self.tx
+            self.dy += self.ty
+            self.ty = 0.
+            self.tx = 0.
+
+
+        #if self._ctx._ns["rightdown"]:
+        #    #Make sure we're not in any nodes
+        #    in_nodes = False
+        #    for n in self.graph.nodes:
+        #        if self.mouse in n:
+        #            in_nodes = True
+        #            break
+
+        #    #Set pose first time
+        #    if not in_nodes and not self.right_clicked:
+        #        self.right_clicked = self.mouse
+        #    else:
+        #        self.right_drag(self.right_clicked, self.mouse)
+
+        #else:
+        #    self.right_clicked = None
+
     def draw(self, properties_dict):
         START_TIME = time.time()
-
         self.context.size(properties_dict['width'], properties_dict['height'])
-
         cx = self.context
         g  = self.gve
 
@@ -807,7 +868,12 @@ class GraphView:
 
         CHECK_TIME = time.time()
 
-        g.draw(directed=True, traffic=False, user_draw=draw_func)
+        self._background_drag()
+        self.context._ns['MOUSEX'] -= self.dx+self.tx
+        self.context._ns['MOUSEY'] -= self.dy+self.ty
+        #print 'scrollwheel', self.context._ns['scrollwheel']
+        #print 'wheeldata', self.context._ns['wheeldelta']
+        g.draw(dx=self.dx+self.tx, dy=self.dy+self.ty, directed=True, traffic=False, user_draw=draw_func)
 
         DRAW_TIME = time.time()
 

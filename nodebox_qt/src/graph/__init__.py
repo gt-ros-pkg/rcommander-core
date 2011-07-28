@@ -499,6 +499,7 @@ class graph(dict):
                 self.layout.iterate()
         
         # Calculate the absolute center of the graph.
+        #if self.alpha < .9:
         min_, max = self.layout.bounds
         self.x = _ctx.WIDTH - max.x*self.d - min_.x*self.d
         self.y = _ctx.HEIGHT - max.y*self.d - min_.y*self.d
@@ -601,27 +602,21 @@ class graph(dict):
         self.events.update()
         NODE_IDS_TIME = time.time()
 
-        self.times['node_ids'] += NODE_IDS_TIME - EVENTS_TIME
-        self.times['path']     += EVENTS_TIME - PATHS_TIME
-        self.times['events']   += PATHS_TIME - NODES_TIME
-        self.times['nodes']    += NODES_TIME - EDGES_TIME
-        self.times['edges']    += EDGES_TIME - OTHER_TIME
-        self.times['other']    += OTHER_TIME - START_TIME
-        self.times['iter']     += 1
+        #self.times['node_ids'] += NODE_IDS_TIME - EVENTS_TIME
+        #self.times['path']     += EVENTS_TIME - PATHS_TIME
+        #self.times['events']   += PATHS_TIME - NODES_TIME
+        #self.times['nodes']    += NODES_TIME - EDGES_TIME
+        #self.times['edges']    += EDGES_TIME - OTHER_TIME
+        #self.times['other']    += OTHER_TIME - START_TIME
+        #self.times['iter']     += 1
 
-        print 'node_ids',1000.0 * (self.times['node_ids'] / self.times['iter']),
-        print 'path',    1000.0 * (self.times['path']     / self.times['iter']),
-        print 'events',  1000.0 * (self.times['events']   / self.times['iter']),
-        print 'nodes',   1000.0 * (self.times['nodes']    / self.times['iter']),
-        print 'edges',   1000.0 * (self.times['edges']    / self.times['iter']),
-        print 'other',   1000.0 * (self.times['other']    / self.times['iter'])
+        #print 'node_ids',1000.0 * (self.times['node_ids'] / self.times['iter']),
+        #print 'path',    1000.0 * (self.times['path']     / self.times['iter']),
+        #print 'events',  1000.0 * (self.times['events']   / self.times['iter']),
+        #print 'nodes',   1000.0 * (self.times['nodes']    / self.times['iter']),
+        #print 'edges',   1000.0 * (self.times['edges']    / self.times['iter']),
+        #print 'other',   1000.0 * (self.times['other']    / self.times['iter'])
 
-
-
-
-
-
-        
         _ctx.pop()
     
     def prune(self, depth=0):

@@ -32,6 +32,8 @@ class events:
         self.pressed_edge = None
         self.clicked_edge = None
         self.pressed_nothing = None
+
+        #self.right_clicked = None
         
         # Displays when hovering over a node.
         self.popup = False
@@ -73,7 +75,7 @@ class events:
     
         if self.mousedown:
             # When not pressing or dragging, check each node.
-            if not self.pressed and not self.dragged:
+            if not self.pressed and not self.dragged and not self.pressed_nothing:
                 for n in self.graph.nodes:
                     if self.mouse in n:
                         self.pressed = n
@@ -99,6 +101,9 @@ class events:
                 self.drag(self.dragged)
                 self.graph.layout.i = min(100, max(2, self.graph.layout.n-100))
 
+            #elif self.pressed_nothing:
+            #    self.drag_background(self.mouse)
+            #    self.graph.layout.i = min(100, max(2, self.graph.layout.n-100))
         
         # Mouse up and we clicked on a node
         elif self.pressed and self.mouse in self.pressed:
@@ -134,6 +139,25 @@ class events:
                     self.hovered = n
                     self.hover(n)
                     break
+
+        #right mouse button clicked
+        #if self._ctx._ns["rightdown"]:
+        #    #Make sure we're not in any nodes
+        #    in_nodes = False
+        #    for n in self.graph.nodes:
+        #        if self.mouse in n:
+        #            in_nodes = True
+        #            break
+
+        #    #Set pose first time
+        #    if not in_nodes and not self.right_clicked:
+        #        self.right_clicked = self.mouse
+        #    else:
+        #        self.right_drag(self.right_clicked, self.mouse)
+
+        #else:
+        #    self.right_clicked = None
+
     
     def drag(self, node):
 
@@ -191,6 +215,10 @@ class events:
     def click_nothing(self, pt):
 
         pass
+
+    #def drag_background(self, mouse):
+
+    #    pass
 
 ### POPUP ############################################################################################   
 
