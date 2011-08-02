@@ -526,7 +526,7 @@ class graph(dict):
         y = self.y + node.y - _ctx.HEIGHT/2
         return x, y
     
-    def draw(self, dx=0, dy=0, weighted=False, directed=False, highlight=[], traffic=None, user_draw=None):
+    def draw(self, dx=0, dy=0, weighted=False, directed=False, highlight=[], traffic=None, user_draw_final=None, user_draw_start=None):
         
         """ Layout the graph incrementally.
         
@@ -561,6 +561,9 @@ class graph(dict):
         #        if s.graph_traffic:
         #            s.graph_traffic(s, n, self.alpha)        
 
+        if user_draw_start != None:
+            user_draw_start()
+
 
         # Draw the edges and their labels.
         s = self.styles.default
@@ -593,8 +596,8 @@ class graph(dict):
                 s.node_label(s, n, self.alpha)
         EVENTS_TIME = time.time()
 
-        if user_draw != None:
-            user_draw()
+        if user_draw_final != None:
+            user_draw_final()
         
         # Events for clicked and dragged nodes.
         # Nodes will resist being dragged by attraction and repulsion,
@@ -602,13 +605,13 @@ class graph(dict):
         self.events.update()
         NODE_IDS_TIME = time.time()
 
-        #self.times['node_ids'] += NODE_IDS_TIME - EVENTS_TIME
-        #self.times['path']     += EVENTS_TIME - PATHS_TIME
-        #self.times['events']   += PATHS_TIME - NODES_TIME
-        #self.times['nodes']    += NODES_TIME - EDGES_TIME
-        #self.times['edges']    += EDGES_TIME - OTHER_TIME
-        #self.times['other']    += OTHER_TIME - START_TIME
-        #self.times['iter']     += 1
+        self.times['node_ids'] += NODE_IDS_TIME - EVENTS_TIME
+        self.times['path']     += EVENTS_TIME - PATHS_TIME
+        self.times['events']   += PATHS_TIME - NODES_TIME
+        self.times['nodes']    += NODES_TIME - EDGES_TIME
+        self.times['edges']    += EDGES_TIME - OTHER_TIME
+        self.times['other']    += OTHER_TIME - START_TIME
+        self.times['iter']     += 1
 
         #print 'node_ids',1000.0 * (self.times['node_ids'] / self.times['iter']),
         #print 'path',    1000.0 * (self.times['path']     / self.times['iter']),

@@ -22,7 +22,8 @@ from rcommander_auto import Ui_RCommanderWindow
 import os.path as pt
 #import os
 #import glob
-import ctypes
+#import ctypes
+import numpy as np
 
 #Import tools
 import pr2_utils as pu
@@ -120,11 +121,17 @@ class RNodeBoxBaseClass(QtGui.QMainWindow):
 
     def _setup_draw(self, fn):
         #from fastRun
-        print 'se',
+        #print 'se',
         self.canvas.clear()
         pos = self.currentView.mousePosition
         mx, my = pos.x(), pos.y()
+
+        #dclick_pos = self.currentView.mouseDCPosition
+        #dcx, dcy = dclick_pos.x(), dclick_pos.y()
         self.namespace["MOUSEX"], self.namespace["MOUSEY"] = mx, my
+        #self.namespace["MOUSEDX"], self.namespace["MOUSEDY"] = dcx, dcy
+        self.namespace["mousedoubleclick"] = self.currentView.mousedoubleclick
+        self.currentView.mousedoubleclick = False
         self.namespace["mousedown"] = self.currentView.mousedown
         self.namespace["rightdown"] = self.currentView.rightdown
         self.namespace["keydown"] = self.currentView.keydown
@@ -136,18 +143,18 @@ class RNodeBoxBaseClass(QtGui.QMainWindow):
         self.namespace['FRAME'] = self._frame
         self.currentView.scrollwheel = False
         self.currentView.wheeldelta = 0
-        print 't',
+        #print 't',
         for k in self.namespace.keys():
             exec "global %s\n" % (k)
             exec "%s = self.namespace['%s']" % (k, k)
         fn()
-        print 'u',
+        #print 'u',
         self.currentView.canvas = self.canvas
-        print 'p',
+        #print 'p',
 
     def animation_cb(self):
         self._setup_draw(self.draw)
-        print 'ed'
+        #print 'ed'
         
     def stop(self):
         if self.animationTimer is not None:
@@ -195,6 +202,12 @@ class FSMDocument:
     def has_real_filename(self):
         return self.real_filename
 
+class FSMStackElement:
+    def __init__(self, model, view, doc):
+        self.mode = model
+        self.view = view
+        self.doc = doc
+
 ##
 # keeps track of smach state machine, makes sure it is consistent with (G,V) representation
 # model at this level has (V,E) reprentation
@@ -232,8 +245,9 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.selected_edge = None
         #self.tool_dict['add_edge'] = {}
 
+        self.fsm_stack = []
         self.document = FSMDocument.new_document()
-        self.current_sm_threads = {}
+        #self.current_sm_threads = {}
         #self.current_graph_name = 'untitled_fsm'
 
         self.status_bar_timer = QTimer()
@@ -249,34 +263,34 @@ class RCommanderWindow(RNodeBoxBaseClass):
 
 
     def status_bar_check(self):
-        if self.current_sm_threads.has_key('run_sm'):
-            sm_thread = self.current_sm_threads['run_sm']
+        if self.graph_model.current_sm_threads.has_key('run_sm'):
+            sm_thread = self.graph_model.current_sm_threads['run_sm']
 
             if sm_thread.exception != None:
                 m = sm_thread.exception.message
                 self.statusBar().showMessage('%s: %s' % (sm_thread.exception.__class__, m), 15000)
-                self.current_sm_threads.pop('run_sm')
-                self.current_sm_threads.pop('preempted')
+                self.graph_model.current_sm_threads.pop('run_sm')
+                self.graph_model.current_sm_threads.pop('preempted')
                 return
 
             if sm_thread.outcome != None:
                 self.statusBar().showMessage('Finished with outcome: %s' % sm_thread.outcome, 15000)
-                self.current_sm_threads.pop('run_sm')
-                self.current_sm_threads.pop('preempted')
+                self.graph_model.current_sm_threads.pop('run_sm')
+                self.graph_model.current_sm_threads.pop('preempted')
                 return
 
             if not sm_thread.isAlive():
                 self.statusBar().showMessage('Error: SM thread unexpectedly died.', 15000)
-                self.current_sm_threads.pop('run_sm')
-                self.current_sm_threads.pop('preempted')
+                self.graph_model.current_sm_threads.pop('run_sm')
+                self.graph_model.current_sm_threads.pop('preempted')
                 return
 
-            if self.current_sm_threads['preempted'] != None and (time.time() - self.current_sm_threads['preempted'] > 5.):
+            if self.graph_model.current_sm_threads['preempted'] != None and (time.time() - self.graph_model.current_sm_threads['preempted'] > 5.):
                 rospy.loginfo('Thread took too long to terminate.  Escallating and using exception exit.')
-                self.current_sm_threads['run_sm'].except_preempt()
+                self.graph_model.current_sm_threads['run_sm'].except_preempt()
                 rospy.loginfo('Thread terminated.')
-                self.current_sm_threads.pop('run_sm')
-                self.current_sm_threads.pop('preempted')
+                self.graph_model.current_sm_threads.pop('run_sm')
+                self.graph_model.current_sm_threads.pop('preempted')
 
             rstring = 'Running...'
             if str(self.statusBar().currentMessage()) != rstring:
@@ -348,16 +362,15 @@ class RCommanderWindow(RNodeBoxBaseClass):
         #TODO: disable buttons
 
     def run_state_machine(self, sm):
-        if self.current_sm_threads.has_key('run_sm'):
+        if self.graph_model.current_sm_threads.has_key('run_sm'):
             raise RuntimeError('Only state machine execution thread maybe be active at a time.')
+        self.graph_model.run(self.document.get_name())
         #sm = graph_model.create_state_machine()
-        rthread = smtr.ThreadRunSM(self.document.get_name(), sm)
-        rthread.start()
-        self.current_sm_threads['run_sm'] = rthread
-        self.current_sm_threads['preempted'] = None
-
-        #time.sleep(3)
-        #rthread.stop()
+        #self.graph_model.run()
+        #rthread = smtr.ThreadRunSM(self.document.get_name(), sm)
+        #rthread.start()
+        #self.current_sm_threads['run_sm'] = rthread
+        #self.current_sm_threads['preempted'] = None
 
     #####################################################################
     # Callbacks
@@ -431,12 +444,6 @@ class RCommanderWindow(RNodeBoxBaseClass):
         #prompt user if current document has not been saved
         if not self.check_current_document():
             return
-        #if self.document.modified:
-        #    if self.ask_to_save():
-        #    if ret == QMessageBox.Yes:
-        #        self.save_sm_cb()
-        #    elif ret == QMessageBox.Cancel:
-        #        return
 
         dialog = QFileDialog(self, 'Open State Machine', '~')
         dialog.setFileMode(QFileDialog.Directory)
@@ -597,8 +604,6 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.document.modified = True
         self.nothing_cb(None)
 
-
-
     def nothing_cb(self, pt):
         self.set_selected_node(None)
         self.set_selected_edge(None, None, None)
@@ -608,25 +613,10 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.deselect_tool_buttons()
 
     def node_cb(self, node):
-        #print self.pr2.torso.pose()
-        #print node.id
         self.set_selected_node(node.id)
         self.set_selected_edge(None, None, None)
-
-        #if self.graph_model.get_smach_state(node.id).__class__ != ot.EmptyState:
         smach_state = self.graph_model.get_smach_state(node.id)
-        #for k in self.graph_model.smach_states.keys():
-        #    sstate = self.graph_model.smach_states[k]
-        #    print sstate.name, sstate.tool_name, sstate.runnable
 
-        #self.name = name
-        #self.tool_name = tool
-        ##self.outcome_choices = choices
-        #self.remapping = remapping
-        #self.runnable = runnable
-
-
-        #print 'smach-state.tool_name', smach_state, smach_state.name, smach_state.tool_name, smach_state.runnable
         tool = self.tool_dict[smach_state.tool_name]['tool_obj']
         tool.button.setChecked(True)
         tool.activate_cb(smach_state.get_name())
@@ -640,24 +630,26 @@ class RCommanderWindow(RNodeBoxBaseClass):
             self.ui.run_button.setDisabled(False)
         else:
             self.ui.run_button.setDisabled(True)
-        #else:
-        #    self.empty_properties_box()
-        #    self.disable_buttons()
 
     def edge_cb(self, edge):
         self.set_selected_edge(edge.node1.id, edge.node2.id, edge.label)
         self.set_selected_node(None)
         self.disable_buttons()
 
-    #def add_edge_cb(self):
-    #    print 'IGNORED. remove/rethink this tool.'
-    #    #if self.ui.add_edge_button.isChecked():
-    #    #    self.selected_graph_tool = 'add_edge'
-    #    #    self.set_selected_node(None)
-    #    #else:
-    #    #    self.selected_graph_tool = None
 
-    #    #print 'Tool selected:', self.selected_graph_tool
+    def dclick_cb(self, node):
+        print 'double clicked on', node.id
+        snode = self.graph_model.get_smach_state(node.id)
+        if gm.is_container(snode):
+            print 'node is a container'
+            self.fsm_stack.append(FSMStackElement(self.graph_model, self.graph_view, self.document))
+            clicked_on_gm = snode.get_child()
+            self._set_model(clicked_on_gm)
+            self._reconnect_smach_states()
+            self.nothing_cb(None)
+            #self.document = FSMDocument.new_document() #Fix this
+            self.document = FSMDocument(snode.get_name(), modified=False, real_filename=False)
+
 
     #####################################################################
     # Drawing
@@ -674,15 +666,18 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.graph_model.gve.events.click = self.node_cb
         self.graph_model.gve.events.click_edge = self.edge_cb
         self.graph_model.gve.events.click_nothing = self.nothing_cb
+        self.graph_model.gve.events.dclick = self.dclick_cb
         #self.graph_model.gve.events.right_drag = self.graph_view.drag_background_cb
 
     def draw(self):
         w = self.ui.graphicsSuperView.viewport().width()
         h = self.ui.graphicsSuperView.viewport().height()
+        n = self.document.get_name()
         properties_dict = {'selected_edge': self.selected_edge,
                            'selected_node': self.selected_node,
                            'width': w,
-                           'height': h}
+                           'height': h,
+                           'name': n}
         self.graph_view.draw(properties_dict)
 
 
@@ -728,11 +723,30 @@ class GraphView:
         normal_style   = g.styles.create('normal')
         normal_edge_style   = g.styles.create('normal_edge')
         selected_edge_style = g.styles.create('selected_edge')
+        graph_circle = g.styles.create('graph_circle')
+        container = g.styles.create('container')
+        container_selected = g.styles.create('container_selected')
 
         copy_style(g.styles.important, selected_style)
         copy_style(g.styles.default, normal_style)
         copy_style(g.styles.default, normal_edge_style)
         copy_style(g.styles.default, selected_edge_style)
+        copy_style(g.styles.default, graph_circle)
+        copy_style(g.styles.default, container)
+        copy_style(g.styles.default, container_selected)
+
+        graph_circle.fill = self.context.color(.96, .96, .96, .96)
+        graph_circle.stroke = self.context.color(.8, .8, .8, 1.)
+        graph_circle.strokewidth = 3
+        graph_circle.fontsize = 24
+        graph_circle.textwidth = 800
+        graph_circle.text = self.context.color(.5, .5, .5, 1.)
+
+        container.fill          = self.context.color(255./255, 204./255, 102./255., .4)
+        container.node = g.styles.important.node
+
+        container_selected.fill = self.context.color(255./255, 204./255, 102./255., 1.)
+        container_selected.node = g.styles.important.node
 
         selected_style.text = text_color
         selected_edge_style.stroke = self.context.color(0.80, 0.00, 0.00, 0.75)
@@ -830,50 +844,98 @@ class GraphView:
                 else:
                     self.set_node_style(n.id, 'marked')
 
+            if hasattr(self.graph_model.get_smach_state(n.id), 'get_child_name'):
+                if self.get_node_style(n.id) == 'selected':
+                    self.set_node_style(n.id, 'container_selected')
+                else:
+                    self.set_node_style(n.id, 'container')
+
         if debug:
             print 'aw',
         self.set_node_style(tu.InfoStateBase.GLOBAL_NAME, 'root')
 
         draw_func = None
-        if properties_dict['selected_edge'] != None:
-            def draw_selected():
-                cx = self.context
-                g  = self.gve
-                #edge = self.selected_edge 
-                edge = properties_dict['selected_edge']
-                x0, y0 = edge.node1.x, edge.node1.y
-                x1, y1 = edge.node2.x, edge.node2.y
-                coordinates = lambda x, y, d, a: (x+math.cos(math.radians(a))*d, y+math.sin(math.radians(a))*d)
+        #if properties_dict['selected_edge'] != None:
 
-                # Find the edge's angle based on node1 and node2 position.
-                a = math.degrees(math.atan2(y1-y0, x1-x0))
-                # draw line from node's edge instead of it's center.
-                r = edge.node2.r
-                d = math.sqrt(pow(x1-x0, 2) + pow(y1-y0, 2))
-                x00, y00 = coordinates(x0, y0, r+1, a)
-                x01, y01 = coordinates(x0, y0, d-r-1, a)
+        def draw_selected():
+            if properties_dict['selected_edge'] == None:
+                return
+            cx = self.context
+            g  = self.gve
+            #edge = self.selected_edge 
+            edge = properties_dict['selected_edge']
+            x0, y0 = edge.node1.x, edge.node1.y
+            x1, y1 = edge.node2.x, edge.node2.y
+            coordinates = lambda x, y, d, a: (x+math.cos(math.radians(a))*d, y+math.sin(math.radians(a))*d)
 
-                # draw
-                p1 = [x00, y00]
-                p2 = [x01, y01]
-                cx.fill()
-                cx.strokewidth(1.0)
-                cx.stroke(1., 153./255., 0, .75)
-                cx.beginpath(p1[0], p1[1])
-                cx.lineto(p2[0], p2[1])
-                path = cx.endpath(False)
-                gs.edge_arrow(g.styles[edge.node1.style], path, edge, radius=10)
-                cx.drawpath(path)
-            draw_func = draw_selected
+            # Find the edge's angle based on node1 and node2 position.
+            a = math.degrees(math.atan2(y1-y0, x1-x0))
+            # draw line from node's edge instead of it's center.
+            r = edge.node2.r
+            d = math.sqrt(pow(x1-x0, 2) + pow(y1-y0, 2))
+            x00, y00 = coordinates(x0, y0, r+1, a)
+            x01, y01 = coordinates(x0, y0, d-r-1, a)
+
+            # draw
+            p1 = [x00, y00]
+            p2 = [x01, y01]
+            cx.fill()
+            cx.strokewidth(1.0)
+            cx.stroke(1., 153./255., 0, .75)
+            cx.beginpath(p1[0], p1[1])
+            cx.lineto(p2[0], p2[1])
+            path = cx.endpath(False)
+            gs.edge_arrow(g.styles[edge.node1.style], path, edge, radius=10)
+            cx.drawpath(path)
+
+        def draw_doc():
+            g = self.gve
+            coords = []
+            [coords.append([n.x, n.y]) for n in g.nodes]
+            coords = np.matrix(coords).T
+            centroid = np.median(coords, 1)
+            radius = np.max(np.power(np.sum(np.power((coords - centroid), 2), 0), .5)) + gm.GraphModel.NODE_RADIUS*2
+            radius = max(radius, 200.)
+            graph_name_node = graph.node(g, radius=radius, id = properties_dict['name'])
+            graph_name_node.x = centroid[0,0]
+            graph_name_node.y = centroid[1,0]
+            container_style = g.styles.graph_circle
+
+            gs.node(container_style, graph_name_node, g.alpha)
+
+            graph_name_node.y -= radius 
+            gs.node_label(container_style, graph_name_node, g.alpha)
+
+
+        #def draw_all():
+        #        draw_selected()
+        #    draw_doc()
+        #draw_func = draw_all
 
         CHECK_TIME = time.time()
 
         self._background_drag()
         self.context._ns['MOUSEX'] -= self.dx+self.tx
         self.context._ns['MOUSEY'] -= self.dy+self.ty
+        #self.context._ns['MOUSEDX'] -= self.dx+self.tx
+        #self.context._ns['MOUSEDY'] -= self.dy+self.ty
         #print 'scrollwheel', self.context._ns['scrollwheel']
         #print 'wheeldata', self.context._ns['wheeldelta']
-        g.draw(dx=self.dx+self.tx, dy=self.dy+self.ty, directed=True, traffic=False, user_draw=draw_func)
+        g.draw(dx=self.dx+self.tx, dy=self.dy+self.ty, directed=True, traffic=False, user_draw_start=draw_doc, user_draw_final=draw_selected)
+
+        ##
+        #Draw circle with graph name on it
+        # self.context.push()
+        # #self.context.translate(self.dx, self.dy)
+        # mn, mx = g.layout.bounds
+        # d = max(mx.x - mn.x, mx.y - mn.y)
+        # print 'radius is', d/2., mx.x, mx.y, mn.x, mn.y
+        # graph_name_node = graph.node(g, radius=d/2.+gm.GraphModel.NODE_RADIUS, id = properties_dict['name'])
+        # graph_name_node.x, graph_name_node.y = g.x, g.y
+        # container_style = g.styles.default
+        # gs.node(container_style, graph_name_node)
+        # self.context.pop()
+
 
         DRAW_TIME = time.time()
 

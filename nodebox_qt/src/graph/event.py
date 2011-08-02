@@ -58,7 +58,6 @@ class events:
     mouse = property(_mouse)
  
     def _mousedown(self):
-        
         if self._ctx._ns["mousedown"]:
             return True
         else:
@@ -72,91 +71,98 @@ class events:
         Hovering a node fires the callback function events.hover().
         Clicking a node fires the callback function events.click().
         """
-    
-        if self.mousedown:
-            # When not pressing or dragging, check each node.
-            if not self.pressed and not self.dragged and not self.pressed_nothing:
-                for n in self.graph.nodes:
-                    if self.mouse in n:
-                        self.pressed = n
-                        break
-
-                #Disable this since we're not using it
-                #if not self.pressed_edge and not self.pressed:
-                #    for edge in self.graph.edges:
-                #        if self.mouse in edge:
-                #            self.pressed_edge = edge
-                #            break
-
-                if not self.pressed_edge and not self.pressed:
-                    self.pressed_nothing = self.mouse
-
-            # If a node is pressed, check if a drag is started.
-            elif self.pressed and not self.mouse in self.pressed:
-                self.dragged = self.pressed
-                self.pressed = None
-            
-            # Drag the node (right now only for springgraphs).
-            elif self.dragged and self.graph.layout.type == "spring":
-                self.drag(self.dragged)
-                self.graph.layout.i = min(100, max(2, self.graph.layout.n-100))
-
-            #elif self.pressed_nothing:
-            #    self.drag_background(self.mouse)
-            #    self.graph.layout.i = min(100, max(2, self.graph.layout.n-100))
-        
-        # Mouse up and we clicked on a node
-        elif self.pressed and self.mouse in self.pressed:
-            self.clicked = self.pressed
-            self.pressed = None
-            self.graph.layout.i = 2
-            self.click(self.clicked)
-
-        #Disable this since we're not using it
-        ## Mouse up and we clicked on an edge
-        #elif self.pressed_edge and self.mouse in self.pressed_edge:
-        #    self.clicked_edge = self.pressed_edge
-        #    self.pressed_edge = None
-        #    self.graph.layout.i = 2
-        #    self.click_edge(self.clicked_edge)
-
-        elif self.pressed_nothing:
-            self.clicked_nothing = self.pressed_nothing
-            self.pressed_nothing = None
-            self.click_nothing(self.clicked_nothing)
-    
-        # Mouse up but nothing clicked on
-        else:
-            self.hovered = None
-            self.pressed = None
-            self.dragged = None
-            self.pressed_edge = None
-            self.pressed_nothing = None
-        
-            # Hovering over a node?
+        if self._ctx._ns['mousedoubleclick']:
+            #print 'Mouse double clicked'
+            #p = Point(self._ctx._ns['MOUSEDX'], self._ctx._ns['MOUSEDX'])
             for n in self.graph.nodes:
                 if self.mouse in n:
-                    self.hovered = n
-                    self.hover(n)
+                    self.dclick(n)
                     break
+        else:
+            if self.mousedown:
+                # When not pressing or dragging, check each node.
+                if not self.pressed and not self.dragged and not self.pressed_nothing:
+                    for n in self.graph.nodes:
+                        if self.mouse in n:
+                            self.pressed = n
+                            break
 
-        #right mouse button clicked
-        #if self._ctx._ns["rightdown"]:
-        #    #Make sure we're not in any nodes
-        #    in_nodes = False
-        #    for n in self.graph.nodes:
-        #        if self.mouse in n:
-        #            in_nodes = True
-        #            break
+                    #Disable this since we're not using it
+                    #if not self.pressed_edge and not self.pressed:
+                    #    for edge in self.graph.edges:
+                    #        if self.mouse in edge:
+                    #            self.pressed_edge = edge
+                    #            break
 
-        #    #Set pose first time
-        #    if not in_nodes and not self.right_clicked:
-        #        self.right_clicked = self.mouse
-        #    else:
-        #        self.right_drag(self.right_clicked, self.mouse)
+                    if not self.pressed_edge and not self.pressed:
+                        self.pressed_nothing = self.mouse
 
-        #else:
-        #    self.right_clicked = None
+                # If a node is pressed, check if a drag is started.
+                elif self.pressed and not self.mouse in self.pressed:
+                    self.dragged = self.pressed
+                    self.pressed = None
+                
+                # Drag the node (right now only for springgraphs).
+                elif self.dragged and self.graph.layout.type == "spring":
+                    self.drag(self.dragged)
+                    self.graph.layout.i = min(100, max(2, self.graph.layout.n-100))
+
+                #elif self.pressed_nothing:
+                #    self.drag_background(self.mouse)
+                #    self.graph.layout.i = min(100, max(2, self.graph.layout.n-100))
+            
+            # Mouse up and we clicked on a node
+            elif self.pressed and self.mouse in self.pressed:
+                self.clicked = self.pressed
+                self.pressed = None
+                self.graph.layout.i = 2
+                self.click(self.clicked)
+
+            #Disable this since we're not using it
+            ## Mouse up and we clicked on an edge
+            #elif self.pressed_edge and self.mouse in self.pressed_edge:
+            #    self.clicked_edge = self.pressed_edge
+            #    self.pressed_edge = None
+            #    self.graph.layout.i = 2
+            #    self.click_edge(self.clicked_edge)
+
+            elif self.pressed_nothing:
+                self.clicked_nothing = self.pressed_nothing
+                self.pressed_nothing = None
+                self.click_nothing(self.clicked_nothing)
+    
+            # Mouse up but nothing clicked on
+            else:
+                self.hovered = None
+                self.pressed = None
+                self.dragged = None
+                self.pressed_edge = None
+                self.pressed_nothing = None
+            
+                # Hovering over a node?
+                for n in self.graph.nodes:
+                    if self.mouse in n:
+                        self.hovered = n
+                        self.hover(n)
+                        break
+
+            #right mouse button clicked
+            #if self._ctx._ns["rightdown"]:
+            #    #Make sure we're not in any nodes
+            #    in_nodes = False
+            #    for n in self.graph.nodes:
+            #        if self.mouse in n:
+            #            in_nodes = True
+            #            break
+
+            #    #Set pose first time
+            #    if not in_nodes and not self.right_clicked:
+            #        self.right_clicked = self.mouse
+            #    else:
+            #        self.right_drag(self.right_clicked, self.mouse)
+
+            #else:
+            #    self.right_clicked = None
 
     
     def drag(self, node):
@@ -213,6 +219,10 @@ class events:
         pass
 
     def click_nothing(self, pt):
+
+        pass
+
+    def dclick(self, node):
 
         pass
 

@@ -57,6 +57,8 @@ class NodeBoxGraphicsView(QGraphicsWidget):
         self.mousedown = False
         self.rightdown = False
         self.mousePosition = QPointF(0, 0)
+        self.mouseDCPosition = QPointF(0, 0)
+        self.mousedoubleclick = False
         self.keydown = False
         self.key = None
         self.keycode = None        
@@ -201,6 +203,12 @@ class NodeBoxGraphicsView(QGraphicsWidget):
 
         if event.button() == Qt.RightButton:
             self.rightdown = True
+            self.setFocus()
+
+    def mouseDoubleClickEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            #self.mouseDCPosition = event.scenePos()
+            self.mousedoubleclick = True
             self.setFocus()
 
     def mouseMoveEvent(self, event):

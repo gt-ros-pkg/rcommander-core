@@ -8,6 +8,10 @@ import os
 import smach
 import outcome_tool as ot
 import graph
+import sm_thread_runner as smtr
+
+def is_container(node):
+    return hasattr(node, 'get_child_name') 
 
 class GraphModel:
 
@@ -28,6 +32,7 @@ class GraphModel:
         self.node = self.gve.node
         self.edge = self.gve.edge
 
+        self.current_sm_threads = {}
         self.add_outcome(tu.InfoStateBase.GLOBAL_NAME)
 
     def get_start_state(self):
@@ -113,6 +118,13 @@ class GraphModel:
         temp_gm.add_node(smach_state)
         temp_gm.set_start_state(smach_state.name)
         return temp_gm.create_state_machine(sm.userdata)
+
+    def run(self, name=""):
+        sm = child_gm.create_state_machine(userdata=userdata._ud)
+        rthread = smtr.ThreadRunSM(name, sm)
+        self.current_sm_threads['run_sm'] = rthread
+        self.current_sm_threads['preempted'] = None
+        rthread.start()
 
     def create_state_machine(self, userdata=None, ignore_start_state=False):
         print '>>>>>>>>>>>>>> create_state_machine', userdata

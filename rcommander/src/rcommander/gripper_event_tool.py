@@ -94,6 +94,7 @@ class GripperEventState(smach.State, tu.StateBase):
         self.event_type = event_type
         self.accel = accel
         self.slip = slip
+        self.child = None
         self.__init_unpicklables__() 
 
     def __init_unpicklables__(self):
@@ -116,12 +117,6 @@ class GripperEventState(smach.State, tu.StateBase):
         evd_name = a + '_gripper_sensor_controller/event_detector'
         self.action_client = actionlib.SimpleActionClient(evd_name, gr.PR2GripperEventDetectorAction)
 
-    def _detected_event(self):
-        state = self.action_client.get_state()
-        #print 'GoalStatus', goal_status_to_string(state)
-        gripper_event_detected = state not in [am.GoalStatus.ACTIVE, am.GoalStatus.PENDING]
-        return gripper_event_detected
-
     def __getstate__(self):
         state = tu.StateBase.__getstate__(self)
         my_state = [self.name, self.child_smach_node, self.arm, self.event_type, self.accel, self.slip]
@@ -130,7 +125,28 @@ class GripperEventState(smach.State, tu.StateBase):
     def __setstate__(self, state):
         tu.StateBase.__setstate__(self, state['state_base'])
         self.name, self.child_smach_node, self.arm, self.event_type, self.accel, self.slip = state['self']
+        self.child = None
         self.__init_unpicklables__()
+        
+    def get_child(self):
+        if self.child != None:
+            return self.child
+        else:
+            child = gm.GraphModel()
+            child.add_node(self.child_smach_node)
+            child.set_start_state(self.child_smach_node.name)
+            return child
+
+    def get_child_name(self):
+        return self.child_smach_node.get_name()
+
+    def _detected_event(self):
+        state = self.action_client.get_state()
+        #print 'GoalStatus', goal_status_to_string(state)
+        gripper_event_detected = state not in [am.GoalStatus.ACTIVE, am.GoalStatus.PENDING]
+        return gripper_event_detected
+
+
 
     def execute(self, userdata):
         print '>> executing, got userdata:', userdata, 'keys', userdata.keys()
@@ -147,6 +163,7 @@ class GripperEventState(smach.State, tu.StateBase):
         #Let state machine execute, but kill its thread if we detect an event
         #print 'ge: creating sm and running'
         child_gm = self.get_child()
+        self.child = child_gm
         #print dir(userdata)
         sm = child_gm.create_state_machine(userdata=userdata._ud)
         rthread = smtr.ThreadRunSM(self.child_smach_node.get_name(), sm)
@@ -184,6 +201,7 @@ class GripperEventState(smach.State, tu.StateBase):
         #send preempt to whatever is executing
         rthread.preempt()
         rthread.except_preempt()
+        self.child = None
 
         if preempted:
             return 'preempted'
@@ -198,14 +216,6 @@ class GripperEventState(smach.State, tu.StateBase):
             #if not found just return what we have
             return rthread.outcome
 
-    def get_child(self):
-        child = gm.GraphModel()
-        child.add_node(self.child_smach_node)
-        child.set_start_state(self.child_smach_node.name)
-        return child
-
-    def get_child_name(self):
-        return self.child_smach_node.get_name()
 
 
 
