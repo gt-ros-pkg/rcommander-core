@@ -112,7 +112,7 @@ class node:
         
         """ True if pt.x, pt.y is inside the node's absolute position.
         """
-        
+
         if abs(self.graph.x+self.x-pt.x) < self.r*2 and \
            abs(self.graph.y+self.y-pt.y) < self.r*2:
             return True

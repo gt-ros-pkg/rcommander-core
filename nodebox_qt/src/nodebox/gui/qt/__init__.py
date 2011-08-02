@@ -65,7 +65,9 @@ class NodeBoxGraphicsView(QGraphicsWidget):
         self.scrollwheel = False
         self.wheeldelta = 0.0
         self._zoom = 1.0
-        
+        #self.setMouseTracking(True)
+        #print self.hasMouseTracking()
+
     def boundingRect(self):
         return self._rect
 
@@ -199,11 +201,11 @@ class NodeBoxGraphicsView(QGraphicsWidget):
 
         if event.button() == Qt.LeftButton:
             self.mousedown = True 
-            self.setFocus()
 
         if event.button() == Qt.RightButton:
             self.rightdown = True
-            self.setFocus()
+
+        self.setFocus()
 
     def mouseDoubleClickEvent(self, event):
         if event.button() == Qt.LeftButton:

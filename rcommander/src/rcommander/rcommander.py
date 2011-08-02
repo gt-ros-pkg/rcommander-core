@@ -11,6 +11,7 @@ from nodebox import graphics
 from nodebox.graphics.qt import *
 import graph
 import graph.style as gs
+import graph.layout as gl
 import math
 #import pdb
 import tf
@@ -23,6 +24,7 @@ import os.path as pt
 #import os
 #import glob
 #import ctypes
+import copy
 import numpy as np
 
 #Import tools
@@ -202,11 +204,15 @@ class FSMDocument:
     def has_real_filename(self):
         return self.real_filename
 
+
 class FSMStackElement:
+
     def __init__(self, model, view, doc):
-        self.mode = model
+        self.model = model
         self.view = view
-        self.doc = doc
+        self.document = doc
+        self.graph_node = None
+
 
 ##
 # keeps track of smach state machine, makes sure it is consistent with (G,V) representation
@@ -636,20 +642,23 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.set_selected_node(None)
         self.disable_buttons()
 
-
+    #Handler for double clicking on a node
     def dclick_cb(self, node):
-        print 'double clicked on', node.id
         snode = self.graph_model.get_smach_state(node.id)
         if gm.is_container(snode):
-            print 'node is a container'
             self.fsm_stack.append(FSMStackElement(self.graph_model, self.graph_view, self.document))
-            clicked_on_gm = snode.get_child()
-            self._set_model(clicked_on_gm)
+
+            self._set_model(snode.get_child())
             self._reconnect_smach_states()
             self.nothing_cb(None)
-            #self.document = FSMDocument.new_document() #Fix this
             self.document = FSMDocument(snode.get_name(), modified=False, real_filename=False)
 
+    def dclick_container_cb(self, fsm_stack_element):
+        self.fsm_stack = self.fsm_stack[:self.fsm_stack.index(fsm_stack_element)]
+        self._set_model(fsm_stack_element.model, view=fsm_stack_element.view)
+        self._reconnect_smach_states()
+        self.nothing_cb(None)
+        self.document = fsm_stack_element.document
 
     #####################################################################
     # Drawing
@@ -658,15 +667,19 @@ class RCommanderWindow(RNodeBoxBaseClass):
         graph._ctx = self.context
         self._set_model(gm.GraphModel())
 
-    def _set_model(self, model):
+    def _set_model(self, model, view=None):
         self.graph_model = model
-        self.graph_view = GraphView(self.context, self.graph_model)
-        self.graph_view.setup()
+        if view == None:
+            self.graph_view = GraphView(self.context, self.graph_model)
+            self.graph_view.setup()
+        else:
+            self.graph_view = view
 
         self.graph_model.gve.events.click = self.node_cb
         self.graph_model.gve.events.click_edge = self.edge_cb
         self.graph_model.gve.events.click_nothing = self.nothing_cb
         self.graph_model.gve.events.dclick = self.dclick_cb
+        self.graph_view.fsm_dclick_cb = self.dclick_container_cb
         #self.graph_model.gve.events.right_drag = self.graph_view.drag_background_cb
 
     def draw(self):
@@ -677,7 +690,8 @@ class RCommanderWindow(RNodeBoxBaseClass):
                            'selected_node': self.selected_node,
                            'width': w,
                            'height': h,
-                           'name': n}
+                           'name': n, 
+                           'fsm_stack': self.fsm_stack}
         self.graph_view.draw(properties_dict)
 
 
@@ -751,6 +765,13 @@ class GraphView:
         selected_style.text = text_color
         selected_edge_style.stroke = self.context.color(0.80, 0.00, 0.00, 0.75)
         selected_edge_style.strokewidth = 1.0
+
+        self.radii_increment = 150
+        self.fsm_start_color = 1.
+        self.fsm_end_color = .96
+        self.fsm_stroke_color = .85
+        self.fsm_current_context_node = None
+        self.fsm_dclick_cb = None
 
         self.right_clicked = None
         self.dx = 0.
@@ -888,54 +909,97 @@ class GraphView:
             gs.edge_arrow(g.styles[edge.node1.style], path, edge, radius=10)
             cx.drawpath(path)
 
-        def draw_doc():
+        def draw_fsm_circles():
             g = self.gve
+
+            #figure out where centroids should be
             coords = []
             [coords.append([n.x, n.y]) for n in g.nodes]
             coords = np.matrix(coords).T
             centroid = np.median(coords, 1)
+
+            #calculate where radii should be
             radius = np.max(np.power(np.sum(np.power((coords - centroid), 2), 0), .5)) + gm.GraphModel.NODE_RADIUS*2
             radius = max(radius, 200.)
-            graph_name_node = graph.node(g, radius=radius, id = properties_dict['name'])
-            graph_name_node.x = centroid[0,0]
-            graph_name_node.y = centroid[1,0]
             container_style = g.styles.graph_circle
+            container_stroke = container_style.stroke
+            
+            ##
+            #Draw fsm_stack
+            stack = copy.copy(properties_dict['fsm_stack'])
+            stack.reverse()
+            smallest_radii  = radius
+            color           = self.fsm_start_color
+            if len(stack) > 0:
+                color_incre     = (self.fsm_start_color - self.fsm_end_color) / len(stack)
 
+            #draw stack
+            for el in stack:
+                smallest_radii = radius + self.radii_increment
+                name = el.document.get_name()
+
+                #Draw node
+                stack_node = graph.node(g, radius = smallest_radii, id = name)
+                stack_node.x, stack_node.y = centroid[0,0], centroid[1,0]
+                el.graph_node = stack_node
+                container_style.fill = self.context.color(color, color, color, 1.)
+                container_style.stroke = self.context.color(self.fsm_stroke_color, self.fsm_stroke_color, 1.)
+                gs.node(container_style, stack_node, g.alpha)
+
+                #Draw label
+                node_label_node_ = graph.node(g, radius = smallest_radii, id = name)
+                node_label_node_.x, node_label_node_.y = centroid[0,0], centroid[1,0] - smallest_radii
+                gs.node_label(container_style, node_label_node_, g.alpha)
+                color -= color_incre
+
+            ##
+            #Draw node
+
+            #Draw node circle
+            graph_name_node = graph.node(g, radius=radius, id = properties_dict['name'])
+            graph_name_node.x, graph_name_node.y = centroid[0,0], centroid[1,0]
+            self.fsm_current_context_node = graph_name_node
+            container_style.fill = self.context.color(self.fsm_end_color, self.fsm_end_color, self.fsm_end_color, 1.)
+            container_style.stroke = container_stroke
             gs.node(container_style, graph_name_node, g.alpha)
 
-            graph_name_node.y -= radius 
-            gs.node_label(container_style, graph_name_node, g.alpha)
+            #draw node label
+            node_label_node = graph.node(g, radius=radius, id = properties_dict['name'])
+            node_label_node.x, node_label_node.y = centroid[0,0], centroid[1,0] - radius
+            gs.node_label(container_style, node_label_node, g.alpha)
 
 
-        #def draw_all():
-        #        draw_selected()
-        #    draw_doc()
-        #draw_func = draw_all
+        def detect_fsm_click():
+            def in_node(x, y, n):
+                return (abs(x - n.x) < n.r) and (abs(y - n.y) < n.r)
+
+            mousex_g = self.context._ns['MOUSEX'] - self.gve.x
+            mousey_g = self.context._ns['MOUSEY'] - self.gve.y
+            if self.context._ns['mousedoubleclick'] and len(properties_dict['fsm_stack']) > 0:
+                if not in_node(mousex_g, mousey_g, self.fsm_current_context_node):
+                    stack = copy.copy(properties_dict['fsm_stack'])
+                    stack.reverse()
+                    selected_el = None
+                    for el in stack:
+                        if in_node(mousex_g, mousey_g, el.graph_node):
+                        #if p in el.graph_node:
+                            selected_el = el
+                            break
+
+                    #selected something so load it
+                    if selected_el != None and self.fsm_dclick_cb != None:
+                        self.fsm_dclick_cb(selected_el)
+
+        def final_func():
+            draw_selected()
+            detect_fsm_click()
 
         CHECK_TIME = time.time()
-
         self._background_drag()
         self.context._ns['MOUSEX'] -= self.dx+self.tx
         self.context._ns['MOUSEY'] -= self.dy+self.ty
-        #self.context._ns['MOUSEDX'] -= self.dx+self.tx
-        #self.context._ns['MOUSEDY'] -= self.dy+self.ty
-        #print 'scrollwheel', self.context._ns['scrollwheel']
-        #print 'wheeldata', self.context._ns['wheeldelta']
-        g.draw(dx=self.dx+self.tx, dy=self.dy+self.ty, directed=True, traffic=False, user_draw_start=draw_doc, user_draw_final=draw_selected)
 
-        ##
-        #Draw circle with graph name on it
-        # self.context.push()
-        # #self.context.translate(self.dx, self.dy)
-        # mn, mx = g.layout.bounds
-        # d = max(mx.x - mn.x, mx.y - mn.y)
-        # print 'radius is', d/2., mx.x, mx.y, mn.x, mn.y
-        # graph_name_node = graph.node(g, radius=d/2.+gm.GraphModel.NODE_RADIUS, id = properties_dict['name'])
-        # graph_name_node.x, graph_name_node.y = g.x, g.y
-        # container_style = g.styles.default
-        # gs.node(container_style, graph_name_node)
-        # self.context.pop()
-
+        g.draw(dx=self.dx+self.tx, dy=self.dy+self.ty, directed=True, traffic=False, user_draw_start=draw_fsm_circles, user_draw_final=final_func)
 
         DRAW_TIME = time.time()
 
