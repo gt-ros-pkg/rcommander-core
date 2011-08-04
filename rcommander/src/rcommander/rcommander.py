@@ -959,19 +959,20 @@ class GraphView:
             ##
             #Draw fsm_stack
             stack = copy.copy(properties_dict['fsm_stack'])
-            stack.reverse()
-            smallest_radii  = radius
-            color           = self.fsm_start_color
+            #stack.reverse()
+            #smallest_radii = radius
+            largest_radii = radius + len(stack) * self.radii_increment
+            color = self.fsm_start_color
             if len(stack) > 0:
-                color_incre     = (self.fsm_start_color - self.fsm_end_color) / len(stack)
+                color_incre = (self.fsm_start_color - self.fsm_end_color) / len(stack)
 
             #draw stack
             for el in stack:
-                smallest_radii = radius + self.radii_increment
+                #smallest_radii = smallest_radii + self.radii_increment
                 name = el.model.document.get_name()#el.document.get_name()
 
                 #Draw node
-                stack_node = graph.node(g, radius = smallest_radii, id = name)
+                stack_node = graph.node(g, radius = largest_radii, id = name)
                 stack_node.x, stack_node.y = centroid[0,0], centroid[1,0]
                 el.graph_node = stack_node
                 container_style.fill = self.context.color(color, color, color, 1.)
@@ -979,10 +980,12 @@ class GraphView:
                 gs.node(container_style, stack_node, g.alpha)
 
                 #Draw label
-                node_label_node_ = graph.node(g, radius = smallest_radii, id = name)
-                node_label_node_.x, node_label_node_.y = centroid[0,0], centroid[1,0] - smallest_radii
+                node_label_node_ = graph.node(g, radius = largest_radii, id = name)
+                node_label_node_.x, node_label_node_.y = centroid[0,0], centroid[1,0] - largest_radii
                 gs.node_label(container_style, node_label_node_, g.alpha)
+
                 color -= color_incre
+                largest_radii -= self.radii_increment
 
             ##
             #Draw node

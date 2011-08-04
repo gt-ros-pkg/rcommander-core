@@ -128,6 +128,9 @@ class StateMachineNode(smach.State, tu.EmbeddableState):
         else:
             return rthread.outcome
 
+    def recreate(self, graph_model):
+        return StateMachineNode(graph_model.document.get_name(), graph_model)
+
     def __getstate__(self):
         state = tu.EmbeddableState.__getstate__(self)
         return {'state_base': state}

@@ -395,7 +395,7 @@ class EmbeddableState(StateBase):
     def get_child_name(self):
         return self.child_gm.get_start_state()
 
-    def recreate(self):
+    def recreate(self, graph_model):
         raise RuntimeError('Unimplemented!!')
 
     def __getstate__(self):
