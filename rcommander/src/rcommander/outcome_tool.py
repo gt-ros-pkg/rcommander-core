@@ -28,6 +28,9 @@ class OutcomeTool(tu.ToolBase):
         self.button = button
         self.rcommander.connect(self.button, SIGNAL('clicked()'), self.activate_cb)
 
+    def get_smach_class(self):
+        return EmptyState
+
     def activate_cb(self, loaded_node_name=None):
         tu.ToolBase.activate_cb(self, loaded_node_name)
         self.outcome_mode()

@@ -49,6 +49,8 @@ class Point3DTool(tu.ToolBase):
         self.zline.setText(str(0.))
         self.frameline.setText(self.default_frame)
 
+    def get_smach_class(self):
+        return Point3DState
 
 class Point3DState(tu.InfoStateBase):
     

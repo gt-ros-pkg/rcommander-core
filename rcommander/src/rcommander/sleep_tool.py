@@ -32,6 +32,9 @@ class SleepTool(tu.ToolBase):
     def reset(self):
         self.time_box.setValue(3.)
 
+    def get_smach_class(self):
+        return SleepState
+
 class SleepState(smach.State, tu.StateBase): 
 
     def __init__(self, name, sleep_time):

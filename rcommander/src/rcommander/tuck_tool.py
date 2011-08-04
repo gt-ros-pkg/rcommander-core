@@ -42,6 +42,9 @@ class TuckTool(tu.ToolBase):
         self.tuck_left.setCurrentIndex(self.tuck_left.findText('True'))
         self.tuck_right.setCurrentIndex(self.tuck_right.findText('True'))
 
+    def get_smach_class(self):
+        return TuckState
+
 
 class TuckState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
     def __init__(self, name, tuck_left, tuck_right):

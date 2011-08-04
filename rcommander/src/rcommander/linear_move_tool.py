@@ -164,6 +164,10 @@ class LinearMoveTool(tu.ToolBase):
         self.trans_vel_line.setText(str(.02))
         self.rot_vel_line.setText(str(.16))
 
+    def get_smach_class(self):
+        return LinearMoveState
+
+
 #
 # name maps to tool used to create it
 # model

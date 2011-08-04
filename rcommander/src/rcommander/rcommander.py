@@ -2,7 +2,7 @@ import roslib; roslib.load_manifest('rcommander')
 import rospy
 import sys
 import time
-
+print 'here'
 from PyQt4 import QtGui
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
@@ -45,6 +45,7 @@ import move_arm_tool as mat
 import move_tool as mt
 import spine_tool as spt
 
+print 'there'
 
 def split(num, factor):
     num1 = int(round(num * factor))
@@ -178,40 +179,13 @@ def copy_style(astyle, bstyle):
     bstyle.depth       = astyle.depth      
 
 
-
-class FSMDocument:
-    count = 0
-    @staticmethod
-    def new_document():
-        d = FSMDocument('untitled' + str(FSMDocument.count), False, False)
-        FSMDocument.count = FSMDocument.count + 1
-        return d
-
-    def __init__(self, filename, modified, real_filename=False):
-        self.filename = filename
-        self.modified = modified
-        self.real_filename = real_filename
-
-    def get_name(self):
-        return pt.split(self.filename)[1]
-
-    def get_filename(self):
-        return self.filename
-
-    def set_filename(self, fn):
-        self.filename = fn
-
-    def has_real_filename(self):
-        return self.real_filename
-
-
 class FSMStackElement:
 
-    def __init__(self, model, view, doc):
+    def __init__(self, model, view, node):
         self.model = model
         self.view = view
-        self.document = doc
         self.graph_node = None
+        self.node = node
 
 
 ##
@@ -252,7 +226,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
         #self.tool_dict['add_edge'] = {}
 
         self.fsm_stack = []
-        self.document = FSMDocument.new_document()
+        #self.document = gm.FSMDocument.new_document()
         #self.current_sm_threads = {}
         #self.current_graph_name = 'untitled_fsm'
 
@@ -263,40 +237,44 @@ class RCommanderWindow(RNodeBoxBaseClass):
         #self.node_cb(self.graph_model.node('start'))
         
         #ROS things
+        print 'ros things'
         rospy.init_node('rcommander', anonymous=True)
+        print 'tf'
         self.tf_listener = tf.TransformListener()
+        print 'pr2'
         self.pr2 = pu.PR2(self.tf_listener)
+        print 'don pr2'
 
 
     def status_bar_check(self):
-        if self.graph_model.current_sm_threads.has_key('run_sm'):
-            sm_thread = self.graph_model.current_sm_threads['run_sm']
+        if self.graph_model.sm_thread.has_key('run_sm'):
+            sm_thread = self.graph_model.sm_thread['run_sm']
 
             if sm_thread.exception != None:
                 m = sm_thread.exception.message
                 self.statusBar().showMessage('%s: %s' % (sm_thread.exception.__class__, m), 15000)
-                self.graph_model.current_sm_threads.pop('run_sm')
-                self.graph_model.current_sm_threads.pop('preempted')
+                self.graph_model.sm_thread.pop('run_sm')
+                self.graph_model.sm_thread.pop('preempted')
                 return
 
             if sm_thread.outcome != None:
                 self.statusBar().showMessage('Finished with outcome: %s' % sm_thread.outcome, 15000)
-                self.graph_model.current_sm_threads.pop('run_sm')
-                self.graph_model.current_sm_threads.pop('preempted')
+                self.graph_model.sm_thread.pop('run_sm')
+                self.graph_model.sm_thread.pop('preempted')
                 return
 
             if not sm_thread.isAlive():
                 self.statusBar().showMessage('Error: SM thread unexpectedly died.', 15000)
-                self.graph_model.current_sm_threads.pop('run_sm')
-                self.graph_model.current_sm_threads.pop('preempted')
+                self.graph_model.sm_thread.pop('run_sm')
+                self.graph_model.sm_thread.pop('preempted')
                 return
 
-            if self.graph_model.current_sm_threads['preempted'] != None and (time.time() - self.graph_model.current_sm_threads['preempted'] > 5.):
+            if self.graph_model.sm_thread['preempted'] != None and (time.time() - self.graph_model.sm_thread['preempted'] > 5.):
                 rospy.loginfo('Thread took too long to terminate.  Escallating and using exception exit.')
-                self.graph_model.current_sm_threads['run_sm'].except_preempt()
+                self.graph_model.sm_thread['run_sm'].except_preempt()
                 rospy.loginfo('Thread terminated.')
-                self.graph_model.current_sm_threads.pop('run_sm')
-                self.graph_model.current_sm_threads.pop('preempted')
+                self.graph_model.sm_thread.pop('run_sm')
+                self.graph_model.sm_thread.pop('preempted')
 
             rstring = 'Running...'
             if str(self.statusBar().currentMessage()) != rstring:
@@ -322,7 +300,8 @@ class RCommanderWindow(RNodeBoxBaseClass):
                 self._create_tab(tab_name)
             tab_widget = self.tabs[tab_name]
             self.button_group_tab.addButton(tool.create_button(tab_widget))
-            self.tool_dict[tool.get_name()] = {'tool_obj': tool}
+            #self.tool_dict[tool.get_name()] = {'tool_obj': tool}
+            self.tool_dict[tool.get_smach_class()] = {'tool_obj': tool}
 
         for tname in self.tabs.keys():
             self.tabs[tname].update()
@@ -330,7 +309,16 @@ class RCommanderWindow(RNodeBoxBaseClass):
         #Outcome tool is a specialized built in tool
         self.button_group_tab.addButton(self.ui.add_outcome_button)
         outcome_tool = ot.OutcomeTool(self.ui.add_outcome_button, self)
-        self.tool_dict[outcome_tool.get_name()] = {'tool_obj': outcome_tool}
+        #self.tool_dict[outcome_tool.get_name()] = {'tool_obj': outcome_tool}
+        self.tool_dict[outcome_tool.get_smach_class()] = {'tool_obj': outcome_tool}
+
+
+        #print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
+        #print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
+        #for k in self.tool_dict.keys():
+        #    print k
+        #print '22222222222222222222222222222222222222222'
+        #print '22222222222222222222222222222222222222222'
 
     def current_children_of(self, node_name):
         return self.graph_model.current_children_of(node_name)
@@ -363,27 +351,27 @@ class RCommanderWindow(RNodeBoxBaseClass):
         formlayout.invalidate()
         pbox.update()
 
-    def set_selected_tool(self, tool):
-        self.selected_tool = tool
+    def set_selected_tool(self, tool_name):
+        self.selected_tool = tool_name
         #TODO: disable buttons
 
     def run_state_machine(self, sm):
-        if self.graph_model.current_sm_threads.has_key('run_sm'):
+        if self.graph_model.sm_thread.has_key('run_sm'):
             raise RuntimeError('Only state machine execution thread maybe be active at a time.')
-        self.graph_model.run(self.document.get_name())
+        self.graph_model.run(self.graph_model.document.get_name(), state_machine=sm)
         #sm = graph_model.create_state_machine()
         #self.graph_model.run()
         #rthread = smtr.ThreadRunSM(self.document.get_name(), sm)
         #rthread.start()
-        #self.current_sm_threads['run_sm'] = rthread
-        #self.current_sm_threads['preempted'] = None
+        #self.sm_thread['run_sm'] = rthread
+        #self.sm_thread['preempted'] = None
 
     #####################################################################
     # Callbacks
     #####################################################################
     def save_as_sm_cb(self):
         #popup file dialog
-        filename = str(QFileDialog.getSaveFileName(self, 'Save As', self.document.get_filename()))
+        filename = str(QFileDialog.getSaveFileName(self, 'Save As', self.graph_model.document.get_filename()))
 
         #user canceled
         if len(filename) == 0:
@@ -401,16 +389,15 @@ class RCommanderWindow(RNodeBoxBaseClass):
                 return False
 
         self.graph_model.save(filename)
-        self.document.set_filename(filename)
-        self.document.real_filename = True
-        self.document.modified = False
+        self.graph_model.document.set_filename(filename)
+        self.graph_model.document.real_filename = True
+        self.graph_model.document.modified = False
         return True
 
     def save_sm_cb(self):
         #print 'has real filename?', self.document.has_real_filename()
-        if self.document.has_real_filename():
-            self.graph_model.save(self.document.get_filename())
-            self.document.modified = False
+        if self.graph_model.document.has_real_filename():
+            self.graph_model.save(self.graph_model.document.get_filename())
             return True
         else:
             return self.save_as_sm_cb()
@@ -422,10 +409,10 @@ class RCommanderWindow(RNodeBoxBaseClass):
 
         self._set_model(gm.GraphModel())
         self.nothing_cb(None)
-        self.document = FSMDocument.new_document()
+        #self.document = FSMDocument.new_document()
 
     def check_current_document(self):
-        if self.document.modified:
+        if self.graph_model.document.modified:
             msg_box = QMessageBox()
             msg_box.setText('Current state machine has not been saved.')
             msg_box.setInformativeText('Do you want to save it first?')
@@ -464,7 +451,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
 
             #Reset state of GUI
             self.nothing_cb(None)
-            self.document = FSMDocument(filename, modified=False, real_filename=True)
+            #self.document = FSMDocument(filename, modified=False, real_filename=True)
 
     def run_sm_cb(self, checked):
         #TODO Disable all buttons.
@@ -478,9 +465,9 @@ class RCommanderWindow(RNodeBoxBaseClass):
                 QMessageBox.information(self, str(self.objectName()), 'RuntimeError: ' + e.message)
 
     def stop_sm_cb(self):
-        if self.current_sm_threads.has_key('run_sm'):
-            self.current_sm_threads['run_sm'].preempt()
-            self.current_sm_threads['preempted'] = time.time()
+        if self.graph_model.sm_thread.has_key('run_sm'):
+            self.graph_model.sm_thread['run_sm'].preempt()
+            self.graph_model.sm_thread['preempted'] = time.time()
     
     ##################
     # Behavior tools
@@ -524,11 +511,12 @@ class RCommanderWindow(RNodeBoxBaseClass):
             if snode != None:
                 self.node_cb(snode)
             else:
-                self.selected_node = None
+                self.nothing_cb(None)
+                #self.selected_node = None
 
         self.tool_dict[self.selected_tool]['tool_obj'].refresh_connections_box()
         self.graph_view.refresh()
-        self.document.modified = True
+        self.graph_model.document.modified = True
 
     def reset_cb(self):
         if self.selected_tool == None:
@@ -548,11 +536,11 @@ class RCommanderWindow(RNodeBoxBaseClass):
 
         # connection changes are made instantly (so don't worry about them)
         # only saving of internal node parameters must be implemented by client tools
-        self.document.modified = True
+        self.graph_model.document.modified = True
 
     def connection_changed(self, node_name, outcome_name, new_outcome):
         self.graph_model.connection_changed(node_name, outcome_name, new_outcome)
-        self.document.modified = True
+        self.graph_model.document.modified = True
 
     ##################
     # Graph tools
@@ -607,7 +595,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
         #    self.set_selected_edge(None, None)
         #    self.graph_model.delete_edge(se)
         #    self.graph_view.refresh()
-        self.document.modified = True
+        self.graph_model.document.modified = True
         self.nothing_cb(None)
 
     def nothing_cb(self, pt):
@@ -619,15 +607,22 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.deselect_tool_buttons()
 
     def node_cb(self, node):
+        #print '================================= NODECB'
         self.set_selected_node(node.id)
         self.set_selected_edge(None, None, None)
         smach_state = self.graph_model.get_smach_state(node.id)
 
-        tool = self.tool_dict[smach_state.tool_name]['tool_obj']
+        #tool = self.tool_dict[smach_state.tool_name]['tool_obj']
+        tool = self.tool_dict[smach_state.__class__]['tool_obj']
         tool.button.setChecked(True)
-        tool.activate_cb(smach_state.get_name())
 
-        self.set_selected_tool(smach_state.tool_name)
+        #print '??????????'
+        tool.activate_cb(smach_state.get_name())
+        #print '??????????'
+
+        #self.set_selected_tool(smach_state.tool_name)
+        self.set_selected_tool(smach_state.__class__)
+
         self.edit_mode()
         self.enable_buttons()
         tool.node_selected(smach_state)
@@ -636,29 +631,67 @@ class RCommanderWindow(RNodeBoxBaseClass):
             self.ui.run_button.setDisabled(False)
         else:
             self.ui.run_button.setDisabled(True)
+        #print '--------------------------------- NODECB'
 
     def edge_cb(self, edge):
         self.set_selected_edge(edge.node1.id, edge.node2.id, edge.label)
         self.set_selected_node(None)
         self.disable_buttons()
 
-    #Handler for double clicking on a node
+    #Handler for double clicking on a node, descending a level
     def dclick_cb(self, node):
         snode = self.graph_model.get_smach_state(node.id)
         if gm.is_container(snode):
-            self.fsm_stack.append(FSMStackElement(self.graph_model, self.graph_view, self.document))
-
+            self.fsm_stack.append(FSMStackElement(self.graph_model, self.graph_view, snode))
             self._set_model(snode.get_child())
             self._reconnect_smach_states()
             self.nothing_cb(None)
-            self.document = FSMDocument(snode.get_name(), modified=False, real_filename=False)
 
+    #Handler for double clicing on circle, ascending a level
     def dclick_container_cb(self, fsm_stack_element):
+
+        #Store current model
+        last_fsm_el = self.fsm_stack[-1]
+        #last_fsm_el.node.set_child(self.graph_model)
+
+        ######
+        #recreate the old node with this new model as a child
+        #each node need a function that lets you recreate it
+        # what to call this? recreate? update?
+        #       input: old node
+        #       output: new node
+        new_smach_node = last_fsm_el.node.recreate(self.graph_model)
+        
+        #replace old node in the graph, reserving links which exist
+        # replace_node (fix it so that it works with new nodes of the same name)
+        # restore_consistency
+        last_fsm_el.model.replace_node(new_smach_node, last_fsm_el.node.get_name())
+
+        #Shorten the stack to the element selected
         self.fsm_stack = self.fsm_stack[:self.fsm_stack.index(fsm_stack_element)]
+
+        #Load the element we're given
         self._set_model(fsm_stack_element.model, view=fsm_stack_element.view)
         self._reconnect_smach_states()
         self.nothing_cb(None)
-        self.document = fsm_stack_element.document
+        #self.document = fsm_stack_element.document
+
+        
+
+        #Look up where the current level came from and save state
+        #find the smach node that we expanded
+        #give it back the graph model
+
+        #node is container              (in memory)
+        #node is a wrapper of some sort (in memory, but has constraints)
+        #   containers need to be picklable, if has more than one nodes inside...
+        #   maybe it would be a good idea to make subfolders for things with containers so that loading them
+        #   would load subcomponents to
+
+        #node is loaded state machine   (has file on disk)
+
+        #Constraint: we can't save graph model objects with pickling, has to occur through 'load' and 'save'
+
 
     #####################################################################
     # Drawing
@@ -685,7 +718,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
     def draw(self):
         w = self.ui.graphicsSuperView.viewport().width()
         h = self.ui.graphicsSuperView.viewport().height()
-        n = self.document.get_name()
+        n = self.graph_model.document.get_name()
         properties_dict = {'selected_edge': self.selected_edge,
                            'selected_node': self.selected_node,
                            'width': w,
@@ -865,7 +898,7 @@ class GraphView:
                 else:
                     self.set_node_style(n.id, 'marked')
 
-            if hasattr(self.graph_model.get_smach_state(n.id), 'get_child_name'):
+            if hasattr(self.graph_model.get_smach_state(n.id), 'get_child'):
                 if self.get_node_style(n.id) == 'selected':
                     self.set_node_style(n.id, 'container_selected')
                 else:
@@ -936,7 +969,7 @@ class GraphView:
             #draw stack
             for el in stack:
                 smallest_radii = radius + self.radii_increment
-                name = el.document.get_name()
+                name = el.model.document.get_name()#el.document.get_name()
 
                 #Draw node
                 stack_node = graph.node(g, radius = smallest_radii, id = name)
@@ -1014,8 +1047,10 @@ class GraphView:
             print 'ing'
 
 
+print 'down here'
 app = QtGui.QApplication(sys.argv)
 rc = RCommanderWindow()
+print 'yeppers'
 rc.add_tools([
               ['Manipulation', tt.TuckTool(rc)],
               ['Manipulation', lmt.LinearMoveTool(rc)],
@@ -1026,9 +1061,10 @@ rc.add_tools([
               ['Perception', get.GripperEventTool(rc)],
               ['Navigation and Misc', nt.NavigateTool(rc)], 
               ['Navigation and Misc', spt.SpineTool(rc)],
-              ['Navigation and Misc', st.SleepTool(rc)],
-              ['Navigation and Misc', skt.SpeakTool(rc)]
+              ['Navigation and Misc', st.SleepTool(rc)]
+              #['Navigation and Misc', skt.SpeakTool(rc)]
               ])
+print 'almost there'
 rc.show()
 sys.exit(app.exec_())
 

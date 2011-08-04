@@ -125,8 +125,8 @@ class ToolBase:
         #self.combo_box_cbs = {}
         self.counter = 0
 
-    def get_name(self):
-        return self.name
+    #def get_name(self):
+    #    return self.name
 
     def create_button(self, container):
         self.button = create_tool_button(self.button_name, container)
@@ -143,12 +143,14 @@ class ToolBase:
         if self.button.isChecked():
             self.fill_property_box(self.properties_box)
             self.fill_connections_box(self.connections_box)
-            self.rcommander.set_selected_tool(self.get_name())
+            #self.rcommander.set_selected_tool(self.get_name())
+            #print 'setting selected tool to', self.get_smach_class()
+            self.rcommander.set_selected_tool(self.get_smach_class())
         else:
             self.rcommander.set_selected_tool(None)
 
-    def get_outcomes(self):
-        return self._create_node().get_registered_outcomes()
+    #def get_outcomes(self):
+    #    return self._create_node().get_registered_outcomes()
 
     def _get_outcome_choices(self):
         outcome_choices = {}
@@ -186,14 +188,19 @@ class ToolBase:
                 smach_state = self.rcommander.graph_model.get_smach_state(self.rcommander.selected_node)
                 self.set_child_node(smach_state)
 
-        current_node = self._create_node()
+        if self.get_current_node_name() == None:
+            current_node = self._create_node()
+        else:
+            current_node = self.rcommander.graph_model.get_smach_state(self.get_current_node_name())
+
         current_node_name = current_node.get_name()
         self.name_input = QLineEdit()
         self.name_input.setText(current_node_name)
         formlayout.addRow('Name', self.name_input)
 
         if not issubclass(current_node.__class__, InfoStateBase):
-            for outcome in self.get_outcomes():
+            #for outcome in self.get_outcomes():
+            for outcome in current_node.get_registered_outcomes(): #self.get_outcomes():
                 #Make a new combobox and add available choices to it
                 input_box = QComboBox(pbox)
                 nodes = self.rcommander.connectable_nodes(self.get_current_node_name(), outcome)
@@ -218,7 +225,6 @@ class ToolBase:
                 outcome_cb = ft.partial(cb, outcome)
                 self.rcommander.connect(input_box, SIGNAL('currentIndexChanged(int)'), outcome_cb)
 
-                #self.combo_box_cbs[outcome] = outcome_cb
 
     def set_loaded_node_name(self, name):
         self.loaded_node_name = name
@@ -230,7 +236,7 @@ class ToolBase:
         if unique:
             self.counter = self.counter + 1
         n = self._create_node(str(self.name_input.text()))
-        n.tool_name = self.get_name()
+        #n.tool_name = self.get_name()
         #n.outcome_choices = self._get_outcome_choices()
         return n
 
@@ -257,6 +263,9 @@ class ToolBase:
         self.set_loaded_node_name(node.get_name())
         self.loaded_node_name = node.get_name()
         self._node_selected(node)
+
+    def get_smach_class(self):
+        raise RuntimeError('Unimplemented!')
 
     ##
     # @param pbox a QT widget using a FormLayout that can be filled with
@@ -288,7 +297,7 @@ class StateBase:
 
     def __init__(self, name):
         self.name = name
-        self.tool_name = None
+        #self.tool_name = None
         #self.outcome_choices = []
         self.remapping = {}
         self.runnable = True
@@ -310,19 +319,20 @@ class StateBase:
 
     def __getstate__(self):
         #r = [self.name, self.tool_name, self.outcome_choices, self.remapping]
-        r = [self.name, self.tool_name, self.remapping, self.runnable]
+        r = [self.name, self.remapping, self.runnable]
         return r
 
     def __setstate__(self, state):
         #print 'state base', state
         #print state
-        name, tool, remapping, runnable = state
+        #name, tool, remapping, runnable = state
+        name, remapping, runnable = state
         self.name = name
-        self.tool_name = tool
+        #self.tool_name = tool
         #self.outcome_choices = choices
         self.remapping = remapping
         self.runnable = runnable
-        print '>>>>', name, 'toolname set to', self.tool_name
+        #print '>>>>', name, 'toolname set to', self.tool_name
 
     def source_for(self, var_name):
         return self.remapping[var_name]

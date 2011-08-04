@@ -85,7 +85,8 @@ class NavigateTool(tu.ToolBase):
         self.tline.setText('0.')
         self.frameline.setText(self.default_frame)
 
-
+    def get_smach_class(self):
+        return NavigateState
 #
 # name maps to tool used to create it
 # model

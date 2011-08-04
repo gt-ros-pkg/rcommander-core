@@ -36,6 +36,10 @@ class SpeakTool(tu.ToolBase):
         self.text.setText(SpeakTool.DEFAULT_TEXT)
 
 
+    def get_smach_class(self):
+        return SpeakNode
+
+
 class SpeakNode(smach.State, tu.StateBase): 
 
     def __init__(self, name, text, sound_client=None):

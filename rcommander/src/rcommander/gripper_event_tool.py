@@ -9,16 +9,23 @@ import tool_utils as tu
 import smach
 import graph_model as gm
 import sm_thread_runner as smtr
+import os.path as pt
 #import pr2_gripper_sensor_msgs.msg as PR2GripperEventDetectorCommand
 
 class GripperEventTool(tu.ToolBase):
 
     def __init__(self, rcommander):
         tu.ToolBase.__init__(self, rcommander, 'gripper_event', 'Gripper Event')
-        self.child_node = None
+        self.child_gm = None
 
-    def set_child_node(self, child):
-        self.child_node = child
+    def get_smach_class(self):
+        return GripperEventState
+
+    def set_child_node(self, child_smach):
+        self.child_gm = gm.GraphModel()
+        self.child_gm.add_node(child_smach)
+        self.child_gm.set_start_state(child_smach.get_name())
+        self.child_gm.set_document(gm.FSMDocument(child_smach.get_name(), modified=False, real_filename=False))
 
     def fill_property_box(self, pbox):
         formlayout = pbox.layout()
@@ -37,7 +44,7 @@ class GripperEventTool(tu.ToolBase):
         pbox.update()
 
     def _create_node(self, name=None):
-        if self.child_node == None:
+        if self.child_gm == None:
             raise RuntimeError('No child node!')
         selected_arm = None
         for r in self.gripper_radio_buttons:
@@ -55,7 +62,7 @@ class GripperEventTool(tu.ToolBase):
         else:
             nname = name
 
-        return GripperEventState(nname, self.child_node, selected_arm, event_type, accel_val, slip_val)
+        return GripperEventState(nname, self.child_gm, selected_arm, event_type, accel_val, slip_val)
     
     def _node_selected(self, gripper_event_state):
         if gripper_event_state.arm == 'left':
@@ -66,7 +73,8 @@ class GripperEventTool(tu.ToolBase):
         self.event_box.setCurrentIndex(self.event_box.findText(gripper_event_state.event_type))
         self.accel_box.set_value(gripper_event_state.accel)
         self.slip_box.set_value(gripper_event_state.slip)
-        self.child_node = gripper_event_state.child_smach_node
+        self.child_gm = gripper_event_state.child_gm
+
         #self.child_node = gripper_event_state.get_child()
 
     def reset(self):
@@ -86,25 +94,46 @@ class GripperEventState(smach.State, tu.StateBase):
                    'finger side impact, slip or acceleration': gr.PR2GripperEventDetectorCommand.FINGER_SIDE_IMPACT_OR_SLIP_OR_ACC}
     EVENT_OUTCOME = 'detected_event'
 
-    def __init__(self, name, child_smach_node, arm, event_type, accel, slip):
+    def __init__(self, name, child_gm, arm, event_type, accel, slip):
+        print 'GripperEventState CONSTRUCTOR CALLED'
         self.name = name
         tu.StateBase.__init__(self, self.name)
-        self.child_smach_node = child_smach_node
+        #self.child_smach_node = child_smach_node
         self.arm = arm
         self.event_type = event_type
         self.accel = accel
         self.slip = slip
-        self.child = None
+        self.child_gm = child_gm
+        self.document = child_gm.document
+
+        #self.child = None
+        #self.child = gm.GraphModel()
+        #self.child.add_node(child_smach_node)
+        #self.child.set_start_state(child_smach_node.get_name())
+
         self.__init_unpicklables__() 
 
     def __init_unpicklables__(self):
         #Init smach stuff
-        input_keys = list(self.child_smach_node.get_registered_input_keys())
-        output_keys = list(self.child_smach_node.get_registered_output_keys())
-        outcomes = list(self.child_smach_node.get_registered_outcomes()) + [GripperEventState.EVENT_OUTCOME]
+
+        input_keys = []
+        output_keys = []
+        outcomes = []
+
+        if self.get_child() != None:
+            sm = self.get_child().create_state_machine()
+            input_keys = list(sm.get_registered_input_keys())
+            output_keys = list(sm.get_registered_output_keys())
+            outcomes = list(sm.get_registered_outcomes()) + [GripperEventState.EVENT_OUTCOME]
+            print 'embedded state machine outcomes', outcomes
+
         #print 'GripperEventState init input keys', input_keys
         smach.State.__init__(self, outcomes = outcomes, input_keys = input_keys, output_keys = output_keys)
-        self.remapping = self.child_smach_node.remapping
+
+        #???????????????????????????????????????????????????????????????????????????
+        #self.remapping = self.child_smach_node.remapping?????????
+        #???????????????????????????????????????????????????????????????????????????
+
         #print '>> my registered outcomes', self.get_registered_outcomes()
 
         #Setup our action server
@@ -117,36 +146,58 @@ class GripperEventState(smach.State, tu.StateBase):
         evd_name = a + '_gripper_sensor_controller/event_detector'
         self.action_client = actionlib.SimpleActionClient(evd_name, gr.PR2GripperEventDetectorAction)
 
+    #Can't pickle graph models, have to have other mechanisms saving it
     def __getstate__(self):
         state = tu.StateBase.__getstate__(self)
-        my_state = [self.name, self.child_smach_node, self.arm, self.event_type, self.accel, self.slip]
+        my_state = [self.name, self.arm, self.event_type, self.accel, self.slip, self.document]
         return {'state_base': state, 'self': my_state}
 
+    #Can't pickle graph models, have to have other mechanisms saving it
     def __setstate__(self, state):
         tu.StateBase.__setstate__(self, state['state_base'])
-        self.name, self.child_smach_node, self.arm, self.event_type, self.accel, self.slip = state['self']
-        self.child = None
+        self.name,  self.arm, self.event_type, self.accel, self.slip, self.document = state['self']
+        self.child_gm = None
         self.__init_unpicklables__()
         
+    #must implement in embeddable nodes
     def get_child(self):
-        if self.child != None:
-            return self.child
-        else:
-            child = gm.GraphModel()
-            child.add_node(self.child_smach_node)
-            child.set_start_state(self.child_smach_node.name)
-            return child
+        #if self.child == None:
+        #    self.child = gm.GraphModel()
+        #    self.child.add_node(self.child_smach_node)
+        #    self.child.set_start_state(self.child_smach_node.name)
+        return self.child_gm
 
+    #must implement in embedable nodes
+    #def set_child(self, child_gm):
+    #    self.child_gm = child_gm
+    def save_child(self, base_path=""):
+        child_gm = self.get_child()
+        # if this container has a path, save it to that path
+        if child_gm.document.has_real_filename():
+            child_gm.save(child_gm.document.get_filename())
+        # if this container does not have a path
+        else:
+            fname = pt.join(base_path, self.get_child_name())
+            child_gm.save(fname)
+        self.document = child_gm.document
+
+    def load_and_recreate(self):
+        child_gm = gm.GraphModel.load(self.document.get_filename())
+        return self.recreate(child_gm)
+
+    #must implement in embeddable nodes
     def get_child_name(self):
-        return self.child_smach_node.get_name()
+        return self.child_gm.get_start_state()
+
+    #must implement in embeddable nodes
+    def recreate(self, new_graph_model):
+        return GripperEventState(self.name, new_graph_model, self.arm, self.event_type, self.accel, self.slip)
 
     def _detected_event(self):
         state = self.action_client.get_state()
         #print 'GoalStatus', goal_status_to_string(state)
         gripper_event_detected = state not in [am.GoalStatus.ACTIVE, am.GoalStatus.PENDING]
         return gripper_event_detected
-
-
 
     def execute(self, userdata):
         print '>> executing, got userdata:', userdata, 'keys', userdata.keys()
@@ -163,11 +214,17 @@ class GripperEventState(smach.State, tu.StateBase):
         #Let state machine execute, but kill its thread if we detect an event
         #print 'ge: creating sm and running'
         child_gm = self.get_child()
-        self.child = child_gm
+        #self.child = child_gm
+
         #print dir(userdata)
         sm = child_gm.create_state_machine(userdata=userdata._ud)
-        rthread = smtr.ThreadRunSM(self.child_smach_node.get_name(), sm)
-        rthread.start()
+        #child_gm.run(self.child_smach_node.get_name(), state_machine=sm)
+        child_gm.run(self.child_gm.get_start_state(), state_machine=sm)
+        rthread = child_gm.sm_thread['run_sm']
+
+        #rthread = smtr.ThreadRunSM(self.child_smach_node.get_name(), sm)
+        #rthread.start()
+
         
         event = self._detected_event()
         preempted = False
@@ -201,7 +258,8 @@ class GripperEventState(smach.State, tu.StateBase):
         #send preempt to whatever is executing
         rthread.preempt()
         rthread.except_preempt()
-        self.child = None
+        #self.child_gm = None
+        child_gm.sm_thread = {} #Reset sm thread dict
 
         if preempted:
             return 'preempted'
@@ -210,7 +268,9 @@ class GripperEventState(smach.State, tu.StateBase):
             return self.EVENT_OUTCOME
         else:
             #reverse look up child outcome
-            for outcome, outcome_rename in child_gm.current_children_of(self.child_smach_node.name):
+            #for outcome, outcome_rename in child_gm.current_children_of(self.child_smach_node.name):
+            #TODO look at this
+            for outcome, outcome_rename in child_gm.current_children_of(self.get_child_name()):
                 if outcome_rename == rthread.outcome:
                     return outcome
             #if not found just return what we have

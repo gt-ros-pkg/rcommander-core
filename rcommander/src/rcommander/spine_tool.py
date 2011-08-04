@@ -31,6 +31,9 @@ class SpineTool(tu.ToolBase):
     def reset(self):
         self.spine_box.set_value(15.)
 
+    def get_smach_class(self):
+        return SpineState
+
 class SpineState(tu.SimpleStateBase): 
 
     def __init__(self, name, position):

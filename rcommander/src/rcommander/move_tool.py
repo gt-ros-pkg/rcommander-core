@@ -166,6 +166,9 @@ class JointSequenceTool(tu.ToolBase):
         for name in self.joint_name_fields:
             exec('self.%s.setText(str(0.))' % name)
 
+    def get_smach_class(self):
+        return JointSequenceState
+
 
 class JointSequenceState(smach.State, tu.StateBase): 
 

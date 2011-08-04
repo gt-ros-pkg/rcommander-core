@@ -12,6 +12,9 @@ class GripperTool(tu.ToolBase):
     def __init__(self, rcommander):
         tu.ToolBase.__init__(self, rcommander, 'gripper', 'Gripper')
 
+    def get_smach_class(self):
+        return GripperState
+
     def fill_property_box(self, pbox):
         formlayout = pbox.layout()
         #Left or right
