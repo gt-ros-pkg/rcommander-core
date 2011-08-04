@@ -16,9 +16,11 @@ class GripperEventTool(tu.ToolBase):
         tu.ToolBase.__init__(self, rcommander, 'gripper_event', 'Gripper Event')
         self.child_gm = None
 
+    #NEED TO IMPLEMENT
     def get_smach_class(self):
         return GripperEventState
 
+    #NEED TO IMPLEMENT
     def set_child_node(self, child_smach):
         self.child_gm = gm.GraphModel()
         self.child_gm.add_node(child_smach)
@@ -80,6 +82,7 @@ class GripperEventTool(tu.ToolBase):
         self.event_box.setCurrentIndex(self.event_box.findText(GripperEventState.EVENT_LIST[0]))
         self.accel_box.set_value(8.25)
         self.slip_box.set_value(.01)
+        self.child_gm = None
 
 
 class GripperEventState(smach.State, tu.EmbeddableState): 
@@ -126,7 +129,6 @@ class GripperEventState(smach.State, tu.EmbeddableState):
     #Can't pickle graph models, have to have other mechanisms saving it
     def __getstate__(self):
         state = tu.EmbeddableState.__getstate__(self)
-        #state = tu.StateBase.__getstate__(self)
         my_state = [self.arm, self.event_type, self.accel, self.slip]
         return {'embeddable': state, 'self': my_state}
 
@@ -216,9 +218,9 @@ class GripperEventState(smach.State, tu.EmbeddableState):
             #reverse look up child outcome
             #for outcome, outcome_rename in child_gm.current_children_of(self.child_smach_node.name):
             #TODO look at this
-            for outcome, outcome_rename in child_gm.current_children_of(self.get_child_name()):
-                if outcome_rename == rthread.outcome:
-                    return outcome
+            #for outcome, outcome_rename in child_gm.current_children_of(self.get_child_name()):
+            #    if outcome_rename == rthread.outcome:
+            #        return outcome
             #if not found just return what we have
             return rthread.outcome
 

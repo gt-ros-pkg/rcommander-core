@@ -43,6 +43,7 @@ import speak_tool as skt
 import move_arm_tool as mat
 import move_tool as mt
 import spine_tool as spt
+import state_machine_tool as smt
 
 
 def split(num, factor):
@@ -1057,6 +1058,7 @@ rc.add_tools([
               ['Perception', get.GripperEventTool(rc)],
               ['Navigation and Misc', nt.NavigateTool(rc)], 
               ['Navigation and Misc', spt.SpineTool(rc)],
+              ['Navigation and Misc', smt.StateMachineTool(rc)],
               ['Navigation and Misc', st.SleepTool(rc)]
               #['Navigation and Misc', skt.SpeakTool(rc)]
               ])

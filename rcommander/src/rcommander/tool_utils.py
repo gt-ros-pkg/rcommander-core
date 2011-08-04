@@ -365,14 +365,16 @@ class EmbeddableState(StateBase):
     def __init__(self, name, child_gm):
         StateBase.__init__(self, name)
         self.child_gm = child_gm
-        self.document = child_gm.document
+        self.document = None #child_gm.document
 
         #Look inside state machine and look for things with remaps
-        for node_name in child_gm.smach_states.keys():
-            mapping = child_gm.get_smach_state(node_name).remapping
-            for input_key in mapping.keys():
-                source = mapping[input_key]
-                self.set_source_for(source, source)
+        if child_gm != None:
+            self.document = child_gm.document
+            for node_name in child_gm.smach_states.keys():
+                mapping = child_gm.get_smach_state(node_name).remapping
+                for input_key in mapping.keys():
+                    source = mapping[input_key]
+                    self.set_source_for(source, source)
 
     def get_child(self):
         return self.child_gm
