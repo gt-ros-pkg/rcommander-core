@@ -4,6 +4,8 @@ from PyQt4.QtCore import *
 import smach_ros
 import functools as ft
 import actionlib_msgs.msg as am
+import os.path as pt
+import graph_model as gm
 
 status_dict = {am.GoalStatus.PENDING   : 'PENDING',
                am.GoalStatus.ACTIVE    : 'ACTIVE',   
@@ -359,6 +361,52 @@ class InfoStateBase(StateBase):
         return [InfoStateBase.GLOBAL_NAME]
 
 
+class EmbeddableState(StateBase):
+    def __init__(self, name, child_gm):
+        StateBase.__init__(self, name)
+        self.child_gm = child_gm
+        self.document = child_gm.document
+
+        #Look inside state machine and look for things with remaps
+        for node_name in child_gm.smach_states.keys():
+            mapping = child_gm.get_smach_state(node_name).remapping
+            for input_key in mapping.keys():
+                source = mapping[input_key]
+                self.set_source_for(source, source)
+
+    def get_child(self):
+        return self.child_gm
+
+    def save_child(self, base_path=""):
+        child_gm = self.get_child()
+        if child_gm.document.has_real_filename():
+            child_gm.save(child_gm.document.get_filename())
+        else:
+            fname = pt.join(base_path, self.get_child_name())
+            child_gm.save(fname)
+        self.document = child_gm.document
+
+    def load_and_recreate(self):
+        child_gm = gm.GraphModel.load(self.document.get_filename())
+        return self.recreate(child_gm)
+
+    def get_child_name(self):
+        return self.child_gm.get_start_state()
+
+    def recreate(self):
+        raise RuntimeError('Unimplemented!!')
+
+    def __getstate__(self):
+        state = StateBase.__getstate__(self)
+        my_state = [self.document]
+        return {'state_base': state, 'self': my_state}
+
+    def __setstate__(self, state):
+        StateBase.__setstate__(self, state['state_base'])
+        self.document = state['self'][0]
+        self.child_gm = None
+
+
 class SimpleStateCB:
 
     def __init__(self, cb_func, input_keys, output_keys):
@@ -380,6 +428,7 @@ class SimpleStateCB:
 
 
 class SimpleStateBase(smach_ros.SimpleActionState, StateBase):
+
     def __init__(self, name, action_name, action_type, goal_cb_str, input_keys=[]):
         #func = eval('self.%s' % goal_cb_str)
         #print dir(func)
@@ -411,7 +460,6 @@ class SimpleStateBase(smach_ros.SimpleActionState, StateBase):
         self.input_keys  = state['input_keys']
         smach_ros.SimpleActionState.__init__(self, self.action_name, self.action_type, goal_cb = SimpleStateCB(eval('self.%s' % self.goal_cb_str), self.input_keys, []))
                
-
 
 
 

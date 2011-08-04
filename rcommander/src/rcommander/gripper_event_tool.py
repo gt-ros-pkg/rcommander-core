@@ -9,8 +9,6 @@ import tool_utils as tu
 import smach
 import graph_model as gm
 import sm_thread_runner as smtr
-import os.path as pt
-#import pr2_gripper_sensor_msgs.msg as PR2GripperEventDetectorCommand
 
 class GripperEventTool(tu.ToolBase):
 
@@ -84,7 +82,7 @@ class GripperEventTool(tu.ToolBase):
         self.slip_box.set_value(.01)
 
 
-class GripperEventState(smach.State, tu.StateBase): 
+class GripperEventState(smach.State, tu.EmbeddableState): 
 
     EVENT_LIST = ['acceleration', 'slip', 'finger side impact or acceleration', 'slip and acceleration', 'finger side impact, slip or acceleration']
     EVENT_CODES = {'acceleration':                             gr.PR2GripperEventDetectorCommand.ACC,
@@ -95,27 +93,15 @@ class GripperEventState(smach.State, tu.StateBase):
     EVENT_OUTCOME = 'detected_event'
 
     def __init__(self, name, child_gm, arm, event_type, accel, slip):
-        print 'GripperEventState CONSTRUCTOR CALLED'
-        self.name = name
-        tu.StateBase.__init__(self, self.name)
-        #self.child_smach_node = child_smach_node
+        tu.EmbeddableState.__init__(self, name, child_gm)
         self.arm = arm
         self.event_type = event_type
         self.accel = accel
         self.slip = slip
-        self.child_gm = child_gm
-        self.document = child_gm.document
-
-        #self.child = None
-        #self.child = gm.GraphModel()
-        #self.child.add_node(child_smach_node)
-        #self.child.set_start_state(child_smach_node.get_name())
-
         self.__init_unpicklables__() 
 
     def __init_unpicklables__(self):
         #Init smach stuff
-
         input_keys = []
         output_keys = []
         outcomes = []
@@ -125,16 +111,7 @@ class GripperEventState(smach.State, tu.StateBase):
             input_keys = list(sm.get_registered_input_keys())
             output_keys = list(sm.get_registered_output_keys())
             outcomes = list(sm.get_registered_outcomes()) + [GripperEventState.EVENT_OUTCOME]
-            print 'embedded state machine outcomes', outcomes
-
-        #print 'GripperEventState init input keys', input_keys
         smach.State.__init__(self, outcomes = outcomes, input_keys = input_keys, output_keys = output_keys)
-
-        #???????????????????????????????????????????????????????????????????????????
-        #self.remapping = self.child_smach_node.remapping?????????
-        #???????????????????????????????????????????????????????????????????????????
-
-        #print '>> my registered outcomes', self.get_registered_outcomes()
 
         #Setup our action server
         if self.arm == 'left':
@@ -148,46 +125,16 @@ class GripperEventState(smach.State, tu.StateBase):
 
     #Can't pickle graph models, have to have other mechanisms saving it
     def __getstate__(self):
-        state = tu.StateBase.__getstate__(self)
-        my_state = [self.name, self.arm, self.event_type, self.accel, self.slip, self.document]
-        return {'state_base': state, 'self': my_state}
+        state = tu.EmbeddableState.__getstate__(self)
+        #state = tu.StateBase.__getstate__(self)
+        my_state = [self.arm, self.event_type, self.accel, self.slip]
+        return {'embeddable': state, 'self': my_state}
 
     #Can't pickle graph models, have to have other mechanisms saving it
     def __setstate__(self, state):
-        tu.StateBase.__setstate__(self, state['state_base'])
-        self.name,  self.arm, self.event_type, self.accel, self.slip, self.document = state['self']
-        self.child_gm = None
+        tu.EmbeddableState.__setstate__(self, state['embeddable'])
+        self.arm, self.event_type, self.accel, self.slip = state['self']
         self.__init_unpicklables__()
-        
-    #must implement in embeddable nodes
-    def get_child(self):
-        #if self.child == None:
-        #    self.child = gm.GraphModel()
-        #    self.child.add_node(self.child_smach_node)
-        #    self.child.set_start_state(self.child_smach_node.name)
-        return self.child_gm
-
-    #must implement in embedable nodes
-    #def set_child(self, child_gm):
-    #    self.child_gm = child_gm
-    def save_child(self, base_path=""):
-        child_gm = self.get_child()
-        # if this container has a path, save it to that path
-        if child_gm.document.has_real_filename():
-            child_gm.save(child_gm.document.get_filename())
-        # if this container does not have a path
-        else:
-            fname = pt.join(base_path, self.get_child_name())
-            child_gm.save(fname)
-        self.document = child_gm.document
-
-    def load_and_recreate(self):
-        child_gm = gm.GraphModel.load(self.document.get_filename())
-        return self.recreate(child_gm)
-
-    #must implement in embeddable nodes
-    def get_child_name(self):
-        return self.child_gm.get_start_state()
 
     #must implement in embeddable nodes
     def recreate(self, new_graph_model):
@@ -195,7 +142,6 @@ class GripperEventState(smach.State, tu.StateBase):
 
     def _detected_event(self):
         state = self.action_client.get_state()
-        #print 'GoalStatus', goal_status_to_string(state)
         gripper_event_detected = state not in [am.GoalStatus.ACTIVE, am.GoalStatus.PENDING]
         return gripper_event_detected
 

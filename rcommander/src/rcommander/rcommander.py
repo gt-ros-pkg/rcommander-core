@@ -2,7 +2,6 @@ import roslib; roslib.load_manifest('rcommander')
 import rospy
 import sys
 import time
-print 'here'
 from PyQt4 import QtGui
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
@@ -45,7 +44,6 @@ import move_arm_tool as mat
 import move_tool as mt
 import spine_tool as spt
 
-print 'there'
 
 def split(num, factor):
     num1 = int(round(num * factor))
@@ -1047,10 +1045,8 @@ class GraphView:
             print 'ing'
 
 
-print 'down here'
 app = QtGui.QApplication(sys.argv)
 rc = RCommanderWindow()
-print 'yeppers'
 rc.add_tools([
               ['Manipulation', tt.TuckTool(rc)],
               ['Manipulation', lmt.LinearMoveTool(rc)],
@@ -1064,7 +1060,6 @@ rc.add_tools([
               ['Navigation and Misc', st.SleepTool(rc)]
               #['Navigation and Misc', skt.SpeakTool(rc)]
               ])
-print 'almost there'
 rc.show()
 sys.exit(app.exec_())
 
