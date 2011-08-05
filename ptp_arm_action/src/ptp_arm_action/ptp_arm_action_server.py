@@ -14,6 +14,8 @@ import numpy as np
 #import scipy
 import math
 import tf
+import tf.transformations as tr
+
 
 class ControllerManager:
 
@@ -129,32 +131,89 @@ class PTPArmActionServer:
 
         if relative_movement:
             rospy.loginfo('Received relative motion.')
+
             #Motion we want in given reference frame
-            ref_T_pose = pose_to_mat(goal_ps.pose)
-            rospy.loginfo('Motion we want in given reference frame\n' + str(ref_T_pose[:,3].T))
+            #ref_T_pose = pose_to_mat(goal_ps.pose)
+            #rospy.loginfo('Motion we want in given reference frame\n' + str(ref_T_pose[:,3].T))
 
-            #Rotation that converts it from that random reference frame to the arm's tool frame
-            tip_T_ref = tfu.tf_as_matrix(self.tf.lookupTransform(self.tool_frame, goal_ps.header.frame_id, rospy.Time(0)))
-            tip_R_ref = tip_T_ref
-            tip_R_ref[0:3,3] = 0
+            ##Rotation that converts it from that random reference frame to the arm's tool frame
+            #tip_T_ref = tfu.tf_as_matrix(self.tf.lookupTransform(self.tool_frame, goal_ps.header.frame_id, rospy.Time(0)))
+            ##tip_T_ref = tfu.tf_as_matrix(self.tf.lookupTransform(goal_ps.header.frame_id, self.tool_frame, rospy.Time(0)))
+            #tip_R_ref = tip_T_ref.copy()
+            #tip_R_ref[0:3,3] = 0
 
-            #Motion we want in tool frame
-            tip_T_pose = tip_R_ref * ref_T_pose
-            rospy.loginfo('Motion we want in tool frame %.3f %.3f %.3f\n' % (tip_T_pose[0,3], tip_T_pose[1,3], tip_T_pose[2,3]))
-            #Current position of tool frame in torso_lift_link frame 
-            # (this choice is arbitrary, but affects behavior of cartesian controller)
-            tll_T_tip  = tfu.tf_as_matrix(self.tf.lookupTransform('torso_lift_link', self.tool_frame, rospy.Time(0)))
-            rospy.loginfo('Current position of tool frame in torso_lift_link frame\n' + str(tll_T_tip[:,3].T))
 
-            tll_T_pose = tll_T_tip * tip_T_pose
-            rospy.loginfo('New position in torso lift link' + str(tll_T_pose[:,3].T))
-            goal_ps = stamp_pose(mat_to_pose(tll_T_pose), 'torso_lift_link')
+            ##Motion we want in tool frame
+            #tip_T_pose = tip_R_ref * ref_T_pose
+            #print 'tip_R_ref pos %.2f %.2f %.2f'  % tuple([np.degrees(l) for l in tr.euler_from_quaternion(tr.quaternion_from_matrix(tip_R_ref))])
+            #print 'ref_T_pose pos %.2f %.2f %.2f' % tuple([np.degrees(l) for l in tr.euler_from_quaternion(tr.quaternion_from_matrix(ref_T_pose))])
+            #print 'tip_T_pose pos %.2f %.2f %.2f' % tuple([np.degrees(l) for l in tr.euler_from_quaternion(tr.quaternion_from_matrix(tip_T_pose))])
+
+            #rospy.loginfo('Motion we want in tool frame %.3f %.3f %.3f\n' % (tip_T_pose[0,3], tip_T_pose[1,3], tip_T_pose[2,3]))
+            ##Current position of tool frame in torso_lift_link frame 
+            ## (this choice is arbitrary, but affects behavior of cartesian controller)
+            #tll_T_tip  = tfu.tf_as_matrix(self.tf.lookupTransform('torso_lift_link', self.tool_frame, rospy.Time(0)))
+            ##tll_T_tip  = tfu.tf_as_matrix(self.tf.lookupTransform(self.tool_frame, 'torso_lift_link', rospy.Time(0)))
+            #rospy.loginfo('Current position of tool frame in torso_lift_link frame\n' + str(tll_T_tip[:,3].T))
+
+            #tll_T_pose = tll_T_tip * tip_T_pose
+            #print 'tll_T_tip %.2f %.2f %.2f' %  tuple([np.degrees(l) for l in tr.euler_from_quaternion(tr.quaternion_from_matrix(tll_T_tip))])
+            #print 'tip_T_pose  pose %.2f %.2f %.2f' %  tuple([np.degrees(l) for l in tr.euler_from_quaternion(tr.quaternion_from_matrix(tip_T_pose))])
+            #print 'tll_T_pose  pose %.2f %.2f %.2f' % tuple([np.degrees(l) for l in tr.euler_from_quaternion(tr.quaternion_from_matrix(tll_T_pose))])
+    
+	    ############################################
+	    ############################################
+	    ############################################
+
+            ref_T_tip = tfu.tf_as_matrix(self.tf.lookupTransform(goal_ps.header.frame_id, self.tool_frame, rospy.Time(0)))
+            tll_T_ref = tfu.tf_as_matrix(self.tf.lookupTransform('torso_lift_link', goal_ps.header.frame_id, rospy.Time(0)))
+
+            tip_R_tp  = pose_to_mat(goal_ps.pose)
+            ref_T_tp  = ref_T_tip * tip_R_tp
+            tll_T_tp  = tll_T_ref * ref_T_tp
+            #print 'tll_T_ref\n', tll_T_ref
+            #print 'ref_T_tp \n', ref_T_tp
+            #print 'result\n', tll_T_tp
+
+            #print '>>>>'
+            #print 'ref_T_tip rot %.2f %.2f %.2f' % tuple([np.degrees(l) for l in tr.euler_from_quaternion(tr.quaternion_from_matrix(ref_T_tip))])
+            #print 'tip_R_tp rot %.2f %.2f %.2f' % tuple([np.degrees(l) for l in tr.euler_from_quaternion(tr.quaternion_from_matrix(tip_R_tp))])
+            #print 'ref_T_tp rot %.2f %.2f %.2f' % tuple([np.degrees(l) for l in tr.euler_from_quaternion(tr.quaternion_from_matrix(ref_T_tp))])
+            #print ''
+            #print 'tll_T_ref rot %.2f %.2f %.2f' % tuple([np.degrees(l) for l in tr.euler_from_quaternion(tr.quaternion_from_matrix(tll_T_ref))])
+            #print '* tll_T_tp rot %.2f %.2f %.2f' % tuple([np.degrees(l) for l in tr.euler_from_quaternion(tr.quaternion_from_matrix(tll_T_tp))])
+            #print '* tll_T_tp tr', tll_T_tp[0:3,3].T
+            #print '* tll_T_pose', tll_T_pose[0:3,3]
+            #print '>>>>'
+
+	    ############################################
+	    ############################################
+	    ############################################
+
+            #print '>>>>'
+            #tll_T_tip  = tfu.tf_as_matrix(self.tf.lookupTransform('torso_lift_link', self.tool_frame, rospy.Time(0)))
+            #bl_T_tip  = tfu.tf_as_matrix(self.tf.lookupTransform('base_link', self.tool_frame, rospy.Time(0)))
+            #print 'tll_T_tip  pose %.2f %.2f %.2f' % tuple([np.degrees(l) for l in tr.euler_from_quaternion(tr.quaternion_from_matrix(tll_T_tip))])
+            #print 'bl_T_tip  pose %.2f %.2f %.2f' % tuple([np.degrees(l) for l in tr.euler_from_quaternion(tr.quaternion_from_matrix(bl_T_tip))])
+            #print '>>>>'
+
+            #Translation that we want
+            #goal_trans = tll_T_pose[:,3]
+            #rospy.loginfo('New position in torso lift link' + str(tll_T_pose[:,3].T))
+            #goal_ps = stamp_pose(mat_to_pose(tll_T_pose), 'torso_lift_link')
+
+            goal_ps = stamp_pose(mat_to_pose(tll_T_tp), 'torso_lift_link')
+            #self.linear_movement_as.set_aborted(ptp.LinearMovementResult(gm.Vector3(0,0,0)))
 
         tstart = rospy.get_time()
         tmax = tstart + self.time_out
         self.controller_manager = ControllerManager()
         rospy.loginfo('Goal is x %f y %f z %f in %s' % (goal_ps.pose.position.x, goal_ps.pose.position.y, goal_ps.pose.position.z, goal_ps.header.frame_id))
-        verbose = False
+
+        goal_torso = change_pose_stamped_frame(self.tf, goal_ps, 'torso_lift_link')
+        rospy.loginfo('Goal is x %f y %f z %f in %s' % (goal_torso.pose.position.x, goal_torso.pose.position.y, goal_torso.pose.position.z, goal_torso.header.frame_id))
+
+        verbose = True
 
         while True:
             #tfu.tf_as_matrix(self.tf.lookupTransform('base_link', self.tool_frame
@@ -193,7 +252,8 @@ class PTPArmActionServer:
             #Send controls
             clamped_target = self.clamp_pose(goal_ps, trans_vel, rot_vel, ref_pose=gripper_ps)
             if verbose:
-                print 'clamped_target', clamped_target.pose.position.x, clamped_target.pose.position.y, clamped_target.pose.position.z, '\n'
+                print 'clamped_target', clamped_target.pose.position.x, clamped_target.pose.position.y, 
+                print clamped_target.pose.position.z, clamped_target.header.frame_id, '\n'
             #return
             self.target_pub.publish(clamped_target)
             #if verbose:
