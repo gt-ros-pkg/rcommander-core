@@ -144,9 +144,13 @@ class LinearMoveTool(tu.ToolBase):
             vr.setText(str(value))
         for value, vr in zip(node.angles, [self.phi_line, self.theta_line, self.psi_line]):
             vr.setText(str(value))
+
         self.frameline.setText(node.frame)
         self.motion_box.setCurrentIndex(self.motion_box.findText(str(node.motion_type)))
         self.arm_box.setCurrentIndex(self.arm_box.findText(node.arm))
+
+        self.trans_vel_line.setText(str(node.vels[0]))
+        self.rot_vel_line.setText(str(node.vels[1]))
 
         source_name = node.source_for('point')
         if source_name == None:

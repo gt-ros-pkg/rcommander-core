@@ -74,7 +74,6 @@ class GraphModel:
 
     @staticmethod
     def load(name):
-        #self.document = FSMDocument(filename, modified=False, real_filename=True)
         state_pkl_names = glob.glob(pt.join(name, '*.state'))
 
         gm = GraphModel()
@@ -101,6 +100,9 @@ class GraphModel:
 
             if is_container(gm.smach_states[sname]):
                 gm.smach_states[sname] = gm.smach_states[sname].load_and_recreate()
+                if sname == 'gripper_event0':
+                    print "gripper_event0 REMAPPING IS"
+                    print gm.smach_states[sname].remapping
 
         #Reconstruct graph
         graph_name = pt.join(name, GraphModel.EDGES_FILE)
@@ -108,15 +110,9 @@ class GraphModel:
         edges = pk.load(pickle_file)
         pickle_file.close()
         for node1, node2, n1_outcome in edges:
-            #print node1, node2, n1_outcome
             gm.gve.add_edge(node1, node2, label=n1_outcome, length=GraphModel.EDGE_LENGTH)
-            #eobject = gm.edge(node1, node2)
-            #eobject.outcome = n1_outcome
 
         gm.set_document(FSMDocument(name, modified=False, real_filename=True))
-
-        #for k in gm.smach_states.keys():
-        #    print '>>', gm.smach_states[k].name, gm.smach_states[k].tool_name
         return gm
 
     def save(self, name):
@@ -203,13 +199,9 @@ class GraphModel:
             for key in userdata.keys():
                 exec ("sm.userdata.%s = userdata.%s" % (key, key))
                 print 'copying key', key
+                exec ("print 'data in key is', sm.userdata.%s" % (key))
 
         with sm:
-            #print '========================'
-            #print 'all nodes'
-            #for n in self.gve.nodes:
-            #    print n.id
-            #print '========================'
             for node_name in self.nonoutcomes():
                 node = self.smach_states[node_name]
                 if issubclass(node.__class__, tu.InfoStateBase):
@@ -283,27 +275,37 @@ class GraphModel:
         #if the new node has the same name (possible to have different connections)
         #If the node is of a different name
 
+        if new_node_name != old_node_name:
+            self.gve.add_node(new_node_name, self.NODE_RADIUS)
+
         #for each existing connection
         new_outcomes = new_smach_node.get_registered_outcomes()
         for e in self.gve.node(old_node_name).edges:
-        #   if it is an outcome we expect
+        #   if it is an outcome in the new node
             if e.label in new_outcomes:
         #       if it has a different source, remove it and add a new one
-                if e.node1.id != new_node_name:
+                if e.node1.id == old_node_name:
                     self.gve.remove_edge(e.node1.id, e.node2.id, label=e.label)
-                    self.gve.add_edge(new_node_name, e.node2.id, label=e.label, length=GraphModel.EDGES_FILE)
+                    self.gve.add_edge(new_node_name, e.node2.id, label=e.label, length=GraphModel.EDGE_LENGTH)
+                elif e.node2.id == old_node_name:
+                    self.gve.remove_edge(e.node1.id, e.node2.id, label=e.label)
+                    self.gve.add_edge(e.node1.id, new_node_name, label=e.label, length=GraphModel.EDGE_LENGTH)
         #       if it has the same source ignore
         #   if it is not an outcome in our new node
             else:
-                self.gve.remove_edge(e.node1.id, e.node2.id, label=e.label)
-                if not self.is_modifiable(e.node2.id) and len(e.node2.edges) < 1:
-                    self.gve.remove_node(e.node2.id)
-                    self.smach_states.pop(e.node2.id)
+                if e.node1.id == old_node_name:
+                    print 'removing edge', e.node1.id, e.node2.id
+                    self.gve.remove_edge(e.node1.id, e.node2.id, label=e.label)
+                    if not self.is_modifiable(e.node2.id) and len(e.node2.edges) < 1:
+                        self.gve.remove_node(e.node2.id)
+                        self.smach_states.pop(e.node2.id)
+                else:
+                    self.gve.remove_edge(e.node1.id, e.node2.id, label=e.label)
+                    self.gve.add_edge(e.node1.id, new_node_name, label=e.label, length=GraphModel.EDGE_LENGTH)
         #   delete it   
 
         if new_node_name != old_node_name:
             self.gve.remove_node(old_node_name)
-            self.gve.add_node(new_node_name, self.NODE_RADIUS)
                 
         #for each new outcome
         #   if we don't have an edge for it, create that edge & its temporary node

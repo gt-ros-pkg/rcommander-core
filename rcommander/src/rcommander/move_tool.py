@@ -252,6 +252,5 @@ class JointSequenceState(smach.State, tu.StateBase):
         tu.StateBase.__setstate__(self, state['state_base'])
         self.name, self.arm, self.joint_waypoints = state['self']
         self.__init_unpicklables__()
-        print '@@ TOOL NAME', self.tool_name
 
 

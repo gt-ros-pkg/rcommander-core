@@ -531,6 +531,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
         smach_node = tool_instance.create_node(unique=False)
         # 'delete' old smach node
         self.graph_model.replace_node(smach_node, old_node_name)
+        #print 'TRANS!', smach_node.vels
         #self.graph_model.set_smach_state(old_smach_node.get_name(), smach_node)
 
         # connection changes are made instantly (so don't worry about them)
@@ -611,6 +612,9 @@ class RCommanderWindow(RNodeBoxBaseClass):
         self.set_selected_edge(None, None, None)
         smach_state = self.graph_model.get_smach_state(node.id)
 
+        if smach_state.__class__ == get.GripperEventState:
+            print 'remapping for', node.id, 'is', smach_state.remapping
+
         #tool = self.tool_dict[smach_state.tool_name]['tool_obj']
         tool = self.tool_dict[smach_state.__class__]['tool_obj']
         tool.button.setChecked(True)
@@ -664,6 +668,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
         #replace old node in the graph, reserving links which exist
         # replace_node (fix it so that it works with new nodes of the same name)
         # restore_consistency
+        print 'new_smach_node', new_smach_node.get_name(), last_fsm_el.node.get_name()
         last_fsm_el.model.replace_node(new_smach_node, last_fsm_el.node.get_name())
 
         #Shorten the stack to the element selected
