@@ -155,7 +155,14 @@ class LinearMoveTool(tu.ToolBase):
         source_name = node.source_for('point')
         if source_name == None:
             source_name = ' '
-        index = self.source_box.findText(source_name)
+            index = self.source_box.findText(source_name)
+        else:
+            index = self.source_box.findText(source_name)
+            if index == -1:
+                self.source_box.addItem(source_name)
+                index = self.source_box.findText(source_name)
+
+        print '>>>>>>>>>>>>>>>>> Source for linear node is', index
         self.source_changed(index)
 
     def reset(self):

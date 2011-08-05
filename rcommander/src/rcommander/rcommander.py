@@ -1067,8 +1067,8 @@ rc.add_tools([
               ['Navigation and Misc', nt.NavigateTool(rc)], 
               ['Navigation and Misc', spt.SpineTool(rc)],
               ['Navigation and Misc', smt.StateMachineTool(rc)],
-              ['Navigation and Misc', st.SleepTool(rc)]
-              #['Navigation and Misc', skt.SpeakTool(rc)]
+              ['Navigation and Misc', st.SleepTool(rc)],
+              ['Navigation and Misc', skt.SpeakTool(rc)]
               ])
 rc.show()
 sys.exit(app.exec_())
