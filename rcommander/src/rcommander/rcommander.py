@@ -8,7 +8,7 @@ from PyQt4.QtCore import *
 from nodebox.gui.qt import NodeBoxGraphicsView 
 from nodebox import graphics
 from nodebox.graphics.qt import *
-import graph
+import graph 
 import graph.style as gs
 import graph.layout as gl
 import math
@@ -31,6 +31,7 @@ import pr2_utils as pu
 import graph_model as gm
 import sm_thread_runner as smtr
 import tool_utils as tu
+
 import navigate_tool as nt
 import tuck_tool as tt
 import outcome_tool as ot
@@ -70,6 +71,7 @@ class RNodeBoxBaseClass(QtGui.QMainWindow):
         graphicsView._scene = scene
         graphicsView.superView = superView
         graphicsView._viewPort = superView.viewport()
+
         self.graphicsView.document = self
         self.currentView = self.graphicsView
 
@@ -102,21 +104,11 @@ class RNodeBoxBaseClass(QtGui.QMainWindow):
 
         #Start animation loop
         self.speed = self.canvas.speed
+        print 'CANVAS SPEED IS', self.canvas.speed
         self.animationTimer = QTimer(self)
         self.connect(self.animationTimer, SIGNAL("timeout()"), self.animation_cb)
         self.animationTimer.start(1000.0 / self.speed)
-        #self.connect(self.ui.graphicsSuperView, SIGNAL('resizeEvent(QResizeEvent*)'), self.resize_view_cb)
-        #self.connect(self.graphicsView, SIGNAL("mousePressEvent(QMouseEvent *)"), self.mouse_pressed_cb)
 
-    #def mouse_pressed_cb(self, event):
-    #    print 'Got called!'
-
-    #def resize_view_cb(self):
-    #    print 'resized'
-
-        #self.zoomLevel = self.ui.zoomLevel
-        #self.zoomSlider = self.ui.zoomSlider
-        #self.connect(self.ui.zoomSlider, SIGNAL('valueChanged(int)'), self.dragZoom)
 
     def dragZoom(self):
         self.graphicsView.dragZoom_(self.ui.zoomSlider.value())
@@ -128,10 +120,7 @@ class RNodeBoxBaseClass(QtGui.QMainWindow):
         pos = self.currentView.mousePosition
         mx, my = pos.x(), pos.y()
 
-        #dclick_pos = self.currentView.mouseDCPosition
-        #dcx, dcy = dclick_pos.x(), dclick_pos.y()
         self.namespace["MOUSEX"], self.namespace["MOUSEY"] = mx, my
-        #self.namespace["MOUSEDX"], self.namespace["MOUSEDY"] = dcx, dcy
         self.namespace["mousedoubleclick"] = self.currentView.mousedoubleclick
         self.currentView.mousedoubleclick = False
         self.namespace["mousedown"] = self.currentView.mousedown
@@ -145,14 +134,11 @@ class RNodeBoxBaseClass(QtGui.QMainWindow):
         self.namespace['FRAME'] = self._frame
         self.currentView.scrollwheel = False
         self.currentView.wheeldelta = 0
-        #print 't',
         for k in self.namespace.keys():
             exec "global %s\n" % (k)
             exec "%s = self.namespace['%s']" % (k, k)
         fn()
-        #print 'u',
         self.currentView.canvas = self.canvas
-        #print 'p',
 
     def animation_cb(self):
         self._setup_draw(self.draw)
@@ -236,13 +222,9 @@ class RCommanderWindow(RNodeBoxBaseClass):
         #self.node_cb(self.graph_model.node('start'))
         
         #ROS things
-        print 'ros things'
         rospy.init_node('rcommander', anonymous=True)
-        print 'tf'
         self.tf_listener = tf.TransformListener()
-        print 'pr2'
         self.pr2 = pu.PR2(self.tf_listener)
-        print 'don pr2'
 
 
     def status_bar_check(self):

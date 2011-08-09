@@ -5,7 +5,6 @@ import smach_ros
 import functools as ft
 import actionlib_msgs.msg as am
 import os.path as pt
-import graph_model as gm
 
 status_dict = {am.GoalStatus.PENDING   : 'PENDING',
                am.GoalStatus.ACTIVE    : 'ACTIVE',   
@@ -362,6 +361,7 @@ class InfoStateBase(StateBase):
 
 
 class EmbeddableState(StateBase):
+
     def __init__(self, name, child_gm):
         StateBase.__init__(self, name)
         self.child_gm = child_gm
@@ -389,6 +389,7 @@ class EmbeddableState(StateBase):
         self.document = child_gm.document
 
     def load_and_recreate(self):
+        import graph_model as gm
         child_gm = gm.GraphModel.load(self.document.get_filename())
         return self.recreate(child_gm)
 
