@@ -712,6 +712,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
                            'name': n, 
                            'fsm_stack': self.fsm_stack}
         self.graph_view.draw(properties_dict)
+        print 'has focus', self.graphicsView.hasFocus()
 
 
 class GraphView:

@@ -9,10 +9,10 @@ class NodeBoxGUI:
 
         #add scene to QGraphicsView
         scene = QGraphicsScene()
-        graphics_view.setScene(scene)
-        graphics_view._scene = scene
-        scene.setItemIndexMethod(QGraphicsScene.NoIndex)
         self.drawing_widget = NodeBoxGUIHelper(graphics_view.viewport(), scene)
+        graphics_view.setScene(scene)
+        # TODO: graphics_view._scene = scene
+        scene.setItemIndexMethod(QGraphicsScene.NoIndex)
         scene.addItem(self.drawing_widget)
 
         #Add NB to scene
@@ -47,6 +47,7 @@ class NodeBoxGUI:
         self.canvas.clear()
         self.draw(self.properties())
         self.drawing_widget.set_canvas(self.canvas)
+        self.context._resetContext()
 
     def draw(self, properties):
         pass
@@ -59,7 +60,7 @@ class NodeBoxGUIHelper(QGraphicsWidget):
     def __init__(self, viewport, scene, parent=None):
         QGraphicsWidget.__init__(self, parent)
         self.setFlag(QGraphicsItem.ItemClipsToShape, True)
-        self.setFocusPolicy(Qt.ClickFocus)
+        self.setFocusPolicy(Qt.StrongFocus)
 
         self.mousedown = False
         self.rightdown = False
@@ -81,7 +82,6 @@ class NodeBoxGUIHelper(QGraphicsWidget):
 
     def mousePressEvent(self, event):
         self.mousePosition = event.scenePos()
-        print 'something pressed!!!'
 
         if event.button() == Qt.LeftButton:
             self.mousedown = True 
@@ -143,15 +143,19 @@ class NodeBoxGUIHelper(QGraphicsWidget):
         self._dirty = True      #signal that we want to be redrawn to paint
         self._viewPort.update() #tell QT that we want to be redrawn
 
+    ##########################################################################################
+    # Must be implemented for mouse events
+    ##########################################################################################
+    def boundingRect(self):
+        return self._rect
+
     def shape(self):
         return self._shape
 
     def paint(self, painter, item, widget):
         if self._dirty:
-            #self._updateImage(painter)
             if self.get_canvas() is None: 
                 return
-            #try:
             painter.save()
             self.get_canvas().draw(painter)
             painter.restore()
@@ -179,21 +183,3 @@ class NodeBoxGUIHelper(QGraphicsWidget):
         elif cacheMode != NoCache:
             self.setCacheMode(QNoCache)
 
-    #def _updateImage(self, painter):
-    #    if self.get_canvas() is None: 
-    #        return
-    #    #try:
-    #    painter.save()
-    #    self.canvas.draw(painter)
-    #    #except:
-    #    #    # A lot of code just to display the error in the output view.
-    #    #    etype, value, tb = sys.exc_info()
-    #    #    if tb.tb_next is not None:
-    #    #        tb = tb.tb_next  # skip the frame doing the exec
-    #    #    traceback.print_exception(etype, value, tb)
-    #    #    data = "".join(traceback.format_exception(etype, value, tb))
-    #    #    outputView = self.document.outputView
-    #    #    outputView.setTextColor(QColor(255, 0, 0)) # TODO: Refactor color
-    #    #    outputView.insertPlainText(data)
-    #    #finally:
-    #    painter.restore()

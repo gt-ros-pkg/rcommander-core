@@ -197,6 +197,7 @@ class NodeBoxGraphicsView(QGraphicsWidget):
             self._updateImage(painter)
 
     def mousePressEvent(self, event):
+        print 'got mose event'
         self.mousePosition = event.scenePos()
 
         if event.button() == Qt.LeftButton:
