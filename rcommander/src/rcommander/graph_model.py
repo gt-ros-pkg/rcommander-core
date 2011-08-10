@@ -46,9 +46,9 @@ class GraphModel:
     #Misc information about graph itself
     NODES_FILE = 'nodes.graph'
 
-    NODE_RADIUS = 12
+    NODE_RADIUS = 14
 
-    EDGE_LENGTH = 1.5
+    EDGE_LENGTH = 2.
 
     def __init__(self):
         self.gve = graph.create(depth=True)

@@ -1,7 +1,27 @@
 import roslib; roslib.load_manifest('rcommander')
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
+from PyQt4.QtOpenGL import *
 from nodebox import graphics
+
+import time
+import rospy
+import threading
+
+class AnimationRunner(threading.Thread):
+
+    def __init__(self, f):
+        threading.Thread.__init__(self)    
+        self.f = f
+        self.should_stop = False
+
+    def run(self):
+        time.sleep(2.)
+        r = rospy.Rate(30)
+        while not rospy.is_shutdown() and not self.should_stop:
+            self.f()
+            r.sleep()
+
 
 class NodeBoxGUI:
 
@@ -9,6 +29,7 @@ class NodeBoxGUI:
 
         #add scene to QGraphicsView
         scene = QGraphicsScene()
+        graphics_view.setViewport(QGLWidget())
         self.drawing_widget = NodeBoxGUIHelper(graphics_view.viewport(), scene)
         graphics_view.setScene(scene)
         # TODO: graphics_view._scene = scene
@@ -18,6 +39,7 @@ class NodeBoxGUI:
         #Add NB to scene
         self.namespace = {}
         self.canvas = graphics.Canvas()
+        #print 'text scale', QPixmap(1, 1).logicalDpiX() / 72.0
         self.canvas._setTextScaleFactor(QPixmap(1, 1).logicalDpiX() / 72.0)
         self.context = graphics.Context(self.canvas, self.namespace)
 
@@ -26,6 +48,9 @@ class NodeBoxGUI:
         self.animationTimer = QTimer(self)
         self.connect(self.animationTimer, SIGNAL("timeout()"), self._draw)
         self.animationTimer.start(1000.0 / self.canvas.speed)
+
+        #self.animation_runner = AnimationRunner(self._draw)
+        #self.animation_runner.start()
 
     def properties(self):
         properties = self.namespace
@@ -139,7 +164,7 @@ class NodeBoxGUIHelper(QGraphicsWidget):
                 scene.setSceneRect(rect)
                 self._shape = shape = QPainterPath()
                 shape.addRect(rect)
-        self._check_cache()
+        #self._check_cache()
         self._dirty = True      #signal that we want to be redrawn to paint
         self._viewPort.update() #tell QT that we want to be redrawn
 
@@ -160,26 +185,26 @@ class NodeBoxGUIHelper(QGraphicsWidget):
             self.get_canvas().draw(painter)
             painter.restore()
 
-    def _check_cache(self):
-        cacheMode = self.cacheMode()
-        DeviceCoordinateCache = QGraphicsItem.DeviceCoordinateCache
-        NoCache = QGraphicsItem.NoCache
-        if self.get_canvas() is not None:
-            #if self.document.animationTimer is not None:
-            #    cache = False
-            #elif len(self.get_canvas()) > 400:
-            if len(self.get_canvas()) > 400:
-                x, y, width, height = self._rect.getRect()
-                cache = True
-                if width > 1000 or height > 1000: #or \
-                    #not (width * self.zoom <= 1200 and height * self.zoom <= 1200):
-                    cache = False
-            else:
-                cache = False
-            if cache and cacheMode != DeviceCoordinateCache:
-                self.setCacheMode(DeviceCoordinateCache)
-            elif not cache and cacheMode != NoCache:
-                self.setCacheMode(NoCache)
-        elif cacheMode != NoCache:
-            self.setCacheMode(QNoCache)
+    #def _check_cache(self):
+    #    cacheMode = self.cacheMode()
+    #    DeviceCoordinateCache = QGraphicsItem.DeviceCoordinateCache
+    #    NoCache = QGraphicsItem.NoCache
+    #    if self.get_canvas() is not None:
+    #        #if self.document.animationTimer is not None:
+    #        #    cache = False
+    #        #elif len(self.get_canvas()) > 400:
+    #        if len(self.get_canvas()) > 400:
+    #            x, y, width, height = self._rect.getRect()
+    #            cache = True
+    #            if width > 1000 or height > 1000: #or \
+    #                #not (width * self.zoom <= 1200 and height * self.zoom <= 1200):
+    #                cache = False
+    #        else:
+    #            cache = False
+    #        if cache and cacheMode != DeviceCoordinateCache:
+    #            self.setCacheMode(DeviceCoordinateCache)
+    #        elif not cache and cacheMode != NoCache:
+    #            self.setCacheMode(NoCache)
+    #    elif cacheMode != NoCache:
+    #        self.setCacheMode(QNoCache)
 

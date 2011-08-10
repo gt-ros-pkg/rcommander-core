@@ -33,7 +33,7 @@ class GraphView:
 
         node_outlines = self.context.color(0.4, 0.4, 0.4, 1.)
         text_color = self.context.color(0.3, 0.3, 0.3, 1.)
-        node_font_size = 11
+        node_font_size = 14
 
         #Customizations
         g.styles.default.depth = True
