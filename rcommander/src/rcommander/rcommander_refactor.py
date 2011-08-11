@@ -440,8 +440,8 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
         self.set_selected_edge(None, None, None)
         smach_state = self.graph_model.get_smach_state(node.id)
 
-        if smach_state.__class__ == get.GripperEventState:
-            print 'remapping for', node.id, 'is', smach_state.remapping
+        #if smach_state.__class__ == get.GripperEventState:
+        #    print 'remapping for', node.id, 'is', smach_state.remapping
 
         #tool = self.tool_dict[smach_state.tool_name]['tool_obj']
         tool = self.tool_dict[smach_state.__class__]['tool_obj']
@@ -540,40 +540,56 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
         self.graph_view.draw(properties_dict)
 
 
-app = QApplication(sys.argv)
-rc = RCommander()
-app.connect(app, SIGNAL('lastWindowClosed()'), app.quit)
-app.connect(rc.ui.action_quit, SIGNAL('clicked()'), app.quit)
+if __name__ == '__main__':
+    import plugins 
+    import point_tool as ptl
+    import state_machine_tool as smt
+    import sleep_tool as st
 
-##
-# TODO: Move this out and load it dynamically
-##
-import tuck_tool as tt
-import linear_move_tool as lmt
-import move_arm_tool as mat
-import move_tool as mt
-import gripper_tool as gt
-import point_tool as ptl
-import gripper_event_tool as get
-import navigate_tool as nt
-import spine_tool as spt
-import state_machine_tool as smt
-import sleep_tool as st
-import speak_tool as skt
+    app = QApplication(sys.argv)
+    rc = RCommander()
+    app.connect(app, SIGNAL('lastWindowClosed()'), app.quit)
+    app.connect(rc.ui.action_quit, SIGNAL('clicked()'), app.quit)
 
-rc.add_tools([
-              ['Manipulation', tt.TuckTool(rc)],
-              ['Manipulation', lmt.LinearMoveTool(rc)],
-              ['Manipulation', mat.SafeMoveArmTool(rc)],
-              ['Manipulation', mt.JointSequenceTool(rc)],
-              ['Manipulation', gt.GripperTool(rc)],
-              ['Perception', ptl.Point3DTool(rc)],
-              ['Perception', get.GripperEventTool(rc)],
-              ['Navigation and Misc', nt.NavigateTool(rc)], 
-              ['Navigation and Misc', spt.SpineTool(rc)],
-              ['Navigation and Misc', smt.StateMachineTool(rc)],
-              ['Navigation and Misc', st.SleepTool(rc)],
-              ['Navigation and Misc', skt.SpeakTool(rc)]
-              ])
-rc.show()
-sys.exit(app.exec_())
+    #Load plugins
+    tools_list = [['Graph', st.SleepTool(rc)], ['Graph', ptl.Point3DTool(rc)], ['Graph', smt.StateMachineTool(rc)]]
+    plugin_clses = plugins.load_plugins()
+    print 'found plugins', plugin_clses
+    for tab_name, pcls in plugin_clses:
+        tools_list.append([tab_name, pcls(rc)])
+    rc.add_tools(tools_list)
+
+    rc.show()
+    sys.exit(app.exec_())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    #rc.add_tools([
+    #              ['Manipulation', tt.TuckTool(rc)],
+    #              ['Manipulation', lmt.LinearMoveTool(rc)],
+    #              ['Manipulation', mat.SafeMoveArmTool(rc)],
+    #              ['Manipulation', mt.JointSequenceTool(rc)],
+    #              ['Manipulation', gt.GripperTool(rc)],
+    #              ['Perception', ptl.Point3DTool(rc)],
+    #              ['Perception', get.GripperEventTool(rc)],
+    #              ['Navigation and Misc', nt.NavigateTool(rc)], 
+    #              ['Navigation and Misc', spt.SpineTool(rc)],
+    #              ['Navigation and Misc', smt.StateMachineTool(rc)],
+    #              ['Navigation and Misc', st.SleepTool(rc)],
+    #              ['Navigation and Misc', skt.SpeakTool(rc)]
+    #              ])

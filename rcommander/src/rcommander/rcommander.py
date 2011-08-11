@@ -32,19 +32,21 @@ import graph_model as gm
 import sm_thread_runner as smtr
 import tool_utils as tu
 
-import navigate_tool as nt
-import tuck_tool as tt
-import outcome_tool as ot
-import gripper_tool as gt
-import linear_move_tool as lmt
-import point_tool as ptl
-import gripper_event_tool as get
+#import navigate_tool as nt
+#import tuck_tool as tt
+#import gripper_tool as gt
+#import linear_move_tool as lmt
+#import gripper_event_tool as get
+
 import sleep_tool as st
-import speak_tool as skt
-import move_arm_tool as mat
-import move_tool as mt
-import spine_tool as spt
+import outcome_tool as ot
+import point_tool as ptl
 import state_machine_tool as smt
+
+#import move_arm_tool as mat
+#import move_tool as mt
+#import spine_tool as spt
+#import speak_tool as skt
 
 
 def split(num, factor):
@@ -712,7 +714,7 @@ class RCommanderWindow(RNodeBoxBaseClass):
                            'name': n, 
                            'fsm_stack': self.fsm_stack}
         self.graph_view.draw(properties_dict)
-        print 'has focus', self.graphicsView.hasFocus()
+        #print 'has focus', self.graphicsView.hasFocus()
 
 
 class GraphView:
@@ -1036,25 +1038,40 @@ class GraphView:
         if debug:
             print 'ing'
 
+if __name__ == '__main__':
+    import plugins 
+    import new
 
-app = QtGui.QApplication(sys.argv)
-rc = RCommanderWindow()
-rc.add_tools([
-              ['Manipulation', tt.TuckTool(rc)],
-              ['Manipulation', lmt.LinearMoveTool(rc)],
-              ['Manipulation', mat.SafeMoveArmTool(rc)],
-              ['Manipulation', mt.JointSequenceTool(rc)],
-              ['Manipulation', gt.GripperTool(rc)],
-              ['Perception', ptl.Point3DTool(rc)],
-              ['Perception', get.GripperEventTool(rc)],
-              ['Navigation and Misc', nt.NavigateTool(rc)], 
-              ['Navigation and Misc', spt.SpineTool(rc)],
-              ['Navigation and Misc', smt.StateMachineTool(rc)],
-              ['Navigation and Misc', st.SleepTool(rc)],
-              ['Navigation and Misc', skt.SpeakTool(rc)]
-              ])
-rc.show()
-sys.exit(app.exec_())
+    app = QtGui.QApplication(sys.argv)
+    rc = RCommanderWindow()
+
+    #Builtin plugins
+    rc.add_tools([
+                  ['Graph', st.SleepTool(rc)],
+                  ['Graph', ptl.Point3DTool(rc)],
+                  ['Graph', smt.StateMachineTool(rc)],
+                  ])
+
+    #Plugins found in other places
+    plugin_clses = plugins.load_plugins()
+    print 'found plugins', plugin_clses
+    plugin_list = []
+    for tab_name, pcls in plugin_clses:
+        plugin_list.append([tab_name, pcls(rc)])
+    rc.add_tools(plugin_list)
+
+    #              ['Manipulation', tt.TuckTool(rc)],
+    #              ['Manipulation', lmt.LinearMoveTool(rc)],
+    #              ['Manipulation', mat.SafeMoveArmTool(rc)],
+    #              ['Manipulation', mt.JointSequenceTool(rc)],
+    #              ['Manipulation', gt.GripperTool(rc)],
+    #              ['Perception', get.GripperEventTool(rc)],
+    #              ['Navigation and Misc', nt.NavigateTool(rc)], 
+    #              ['Navigation and Misc', spt.SpineTool(rc)],
+    #              ['Navigation and Misc', skt.SpeakTool(rc)]
+    #              ])
+    rc.show()
+    sys.exit(app.exec_())
 
 
 
