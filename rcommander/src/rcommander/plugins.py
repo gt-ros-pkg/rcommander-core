@@ -1,9 +1,11 @@
 import roslib; roslib.load_manifest('rcommander')
-import os
 import sys
+import pdb
+#pdb.set_trace()
+import tool_utils as tu
 import roslib.rospack
-import rcommander.tool_utils as tu
 import inspect
+import os
 
 def load_plugins():
     """
@@ -33,7 +35,8 @@ def load_plugins():
                     cls_obj = getattr(mod, cls)
                     if inspect.isclass(cls_obj) and (tu.ToolBase in inspect.getmro(cls_obj)):
                         plugin_classes.append([p_tab, cls_obj])
-            except:
+            except Exception, e:
+                print e
                 print >> sys.stderr, "Unable to load plugin [%s] from package [%s]"% (p_module, pkg)
     return plugin_classes
 

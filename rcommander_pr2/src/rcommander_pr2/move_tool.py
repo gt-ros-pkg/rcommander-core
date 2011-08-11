@@ -150,7 +150,7 @@ class JointSequenceTool(tu.ToolBase):
     
         #sstate = JointSequenceState(nname, str(self.arm_box.currentText()), self._read_joints_from_fields())
         sstate = JointSequenceState(nname, str(self.arm_box.currentText()), self.joint_angs_list)
-        sstate.set_robot(self.rcommander.pr2)
+        sstate.set_robot(self.rcommander.robot)
         return sstate
 
     def _node_selected(self, my_node):

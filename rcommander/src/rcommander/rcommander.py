@@ -77,13 +77,11 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
         self.status_bar_timer.start(100)
         
         #Connect to ROS & PR2 
-        rospy.init_node('rcommander', anonymous=True)
         if tf_listener == None:
             tf_listener = tf.TransformListener()
         self.tf_listener = tf_listener
         self.robot = robot
-
-        self.pr2 = pu.PR2(self.tf_listener)
+        #self.pr2 = pu.PR2(self.tf_listener)
 
 
     def status_bar_check(self):
@@ -235,7 +233,7 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
     def _reconnect_smach_states(self):
         for k in self.graph_model.smach_states:
             if hasattr(self.graph_model.smach_states[k], 'set_robot'):
-                self.graph_model.smach_states[k].set_robot(self.pr2)
+                self.graph_model.smach_states[k].set_robot(self.robot)
 
     def connection_changed(self, node_name, outcome_name, new_outcome):
         self.graph_model.connection_changed(node_name, outcome_name, new_outcome)
@@ -550,7 +548,7 @@ def run(robot, tf_listener):
     import sleep_tool as st
 
     app = QApplication(sys.argv)
-    rc = RCommander()
+    rc = RCommander(robot, tf_listener)
     app.connect(app, SIGNAL('lastWindowClosed()'), app.quit)
     app.connect(rc.ui.action_quit, SIGNAL('clicked()'), app.quit)
 
