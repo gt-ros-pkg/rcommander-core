@@ -1,0 +1,45 @@
+<package>
+  <description brief="rcommander_pr2">
+
+     rcommander_pr2
+
+  </description>
+  <author>Hai Nguyen</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/rcommander_pr2</url>
+  <depend package="rcommander"/>
+  <depend package="pr2_common_action_msgs"/>
+  <depend package="pr2_controllers_msgs"/>
+  <depend package="geometry_msgs"/>
+  <depend package="trajectory_msgs"/>
+  <depend package="smach"/>
+  <depend package="rospy"/>
+  <depend package="tf"/>
+  <depend package="object_manipulator"/>
+  <depend package="ptp_arm_action"/>
+  <depend package="arm_navigation_msgs"/>
+  <depend package="actionlib"/>
+  <depend package="move_base_msgs"/>
+  <depend package="pr2_gripper_sensor_msgs"/>
+  <depend package="sound_play"/>
+  <depend package="sensor_msgs"/>
+  <depend package="std_msgs"/>
+
+  <export>
+      <rcommander plugin="rcommander_pr2.tuck_tool" tab="Manipulation"/> 
+      <rcommander plugin="rcommander_pr2.linear_move_tool" tab="Manipulation"/>
+      <rcommander plugin="rcommander_pr2.move_arm_tool" tab="Manipulation"/>
+      <rcommander plugin="rcommander_pr2.move_tool" tab="Manipulation"/>
+      <rcommander plugin="rcommander_pr2.gripper_tool" tab="Manipulation"/>
+      <rcommander plugin="rcommander_pr2.gripper_event_tool" tab="Manipulation"/>
+      <rcommander plugin="rcommander_pr2.spine_tool" tab="Manipulation"/>
+
+      <rcommander plugin="rcommander_pr2.navigate_tool" tab="Navigation"/>
+
+      <rcommander plugin="rcommander_pr2.speak_tool" tab="Interaction"/>
+  </export>
+
+</package>
+
+

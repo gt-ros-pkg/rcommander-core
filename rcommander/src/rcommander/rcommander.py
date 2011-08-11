@@ -15,8 +15,8 @@ import graph
 import graph_view as gv
 import nodebox_gui as nbg
 import graph_model as gm
-import pr2_utils as pu
 import outcome_tool as ot
+#import pr2_utils as pu
 
 def split(num, factor):
     num1 = int(round(num * factor))
@@ -33,7 +33,7 @@ class FSMStackElement:
 
 class RCommander(QMainWindow, nbg.NodeBoxGUI):
 
-    def __init__(self):
+    def __init__(self, robot, tf_listener=None):
         QMainWindow.__init__(self)
         self.ui = Ui_RCommanderWindow()
         self.ui.setupUi(self)
@@ -78,7 +78,11 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
         
         #Connect to ROS & PR2 
         rospy.init_node('rcommander', anonymous=True)
-        self.tf_listener = tf.TransformListener()
+        if tf_listener == None:
+            tf_listener = tf.TransformListener()
+        self.tf_listener = tf_listener
+        self.robot = robot
+
         self.pr2 = pu.PR2(self.tf_listener)
 
 
@@ -228,7 +232,6 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
     ####################################################################################################################
     # Graph tools
     ####################################################################################################################
-
     def _reconnect_smach_states(self):
         for k in self.graph_model.smach_states:
             if hasattr(self.graph_model.smach_states[k], 'set_robot'):
@@ -259,6 +262,7 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
     ####################################################################################################################
     # All callbacks
     ####################################################################################################################
+
     def run_cb(self):
         if self.selected_tool == None:
             return
@@ -539,8 +543,7 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
         properties_dict['fsm_stack'    ] = self.fsm_stack
         self.graph_view.draw(properties_dict)
 
-
-if __name__ == '__main__':
+def run(robot, tf_listener):
     import plugins 
     import point_tool as ptl
     import state_machine_tool as smt
@@ -554,7 +557,6 @@ if __name__ == '__main__':
     #Load plugins
     tools_list = [['Graph', st.SleepTool(rc)], ['Graph', ptl.Point3DTool(rc)], ['Graph', smt.StateMachineTool(rc)]]
     plugin_clses = plugins.load_plugins()
-    print 'found plugins', plugin_clses
     for tab_name, pcls in plugin_clses:
         tools_list.append([tab_name, pcls(rc)])
     rc.add_tools(tools_list)
@@ -562,22 +564,9 @@ if __name__ == '__main__':
     rc.show()
     sys.exit(app.exec_())
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#if __name__ == '__main__':
+#    tf_listener = tf.TransformListener()
+#    run_rcommander()
 
     #rc.add_tools([
     #              ['Manipulation', tt.TuckTool(rc)],
