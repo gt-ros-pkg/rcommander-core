@@ -1,3 +1,4 @@
+#/usr/bin/python
 import roslib; roslib.load_manifest('rcommander_pr2')
 import rcommander as rc
 import pr2_utils as pu
