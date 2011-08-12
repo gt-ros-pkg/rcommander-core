@@ -320,5 +320,5 @@ class Ui_RCommanderWindow(object):
         self.action_stop.setText(QtGui.QApplication.translate("RCommanderWindow", "&Stop", None, QtGui.QApplication.UnicodeUTF8))
         self.action_stop.setShortcut(QtGui.QApplication.translate("RCommanderWindow", "Ctrl+X", None, QtGui.QApplication.UnicodeUTF8))
 
-import resources_rc
-import resources_rc
+#import resources_rc
+#import resources_rc

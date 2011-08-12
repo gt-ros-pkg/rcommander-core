@@ -6,15 +6,29 @@ import pr2_interactive_manipulation.msg as pim
 import graph_model as gm
 import sm_thread_runner as smtr
 import point_tool as pt
-
+import pr2_utils as pu
+import tf
 
 class PoseStampedScriptedActionServer:
 
     def __init__(self, action_name, path_to_action):
         rospy.loginfo('Starting server for %s with path %s' %(action_name, path_to_action))
+        self.tf_listener = tf.TransformListener()
+        self.pr2 = pu.PR2(self.tf_listener)
 
+        #Setup ROS Action Server
+        self._action_name = action_name
+        self._as = actionlib.SimpleActionServer(self._action_name, pim.PoseStampedScriptedAction, execute_cb=self.execute_cb, auto_start=False)
+        self._as.start()
+
+        rospy.loginfo('%s server up!' % action_name)
+
+    def setup_sm(self):
         #Setup state machine
         self.graph_model = gm.GraphModel.load(path_to_action)
+        for k in self.graph_model.smach_states:
+            if hasattr(self.graph_model.smach_states[k], 'set_robot'):
+                self.graph_model.smach_states[k].set_robot(self.pr2)
 
         #Find the first global node that is of the right type
         self.point_field_name = None
@@ -25,14 +39,8 @@ class PoseStampedScriptedActionServer:
         if self.point_field_name == None:
             raise RuntimeError('This statemachine doesn\'t have any nodes of type Point3DState')
 
-        #Setup ROS Action Server
-        self._action_name = action_name
-        self._as = actionlib.SimpleActionServer(self._action_name, pim.PoseStampedScriptedAction, execute_cb=self.execute_cb, auto_start=False)
-        self._as.start()
-
-        rospy.loginfo('%s server up!' % action_name)
-
     def execute_cb(self, goal):
+        self.setup_sm()
         r = rospy.Rate(30)
         position = [goal.pose_stamped.pose.position.x, 
                 goal.pose_stamped.pose.position.y, 

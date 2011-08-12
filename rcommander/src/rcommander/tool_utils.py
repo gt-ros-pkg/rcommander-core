@@ -4,6 +4,7 @@ from PyQt4.QtCore import *
 import smach_ros
 import functools as ft
 import actionlib_msgs.msg as am
+import os.path as pt
 
 status_dict = {am.GoalStatus.PENDING   : 'PENDING',
                am.GoalStatus.ACTIVE    : 'ACTIVE',   
@@ -109,7 +110,7 @@ class SliderBox:
 
 class ToolBase:
 
-    def __init__(self, rcommander, name, button_name):
+    def __init__(self, rcommander, name, button_name, smach_class):
         self.rcommander = rcommander
         self.properties_box = self.rcommander.ui.properties_tab
         self.connections_box = self.rcommander.ui.connections_tab
@@ -121,12 +122,13 @@ class ToolBase:
         self.button = None
         self.button_name = button_name
 
+        self.smach_class = smach_class
         self.outcome_inputs = {}
         #self.combo_box_cbs = {}
         self.counter = 0
 
-    def get_name(self):
-        return self.name
+    #def get_name(self):
+    #    return self.name
 
     def create_button(self, container):
         self.button = create_tool_button(self.button_name, container)
@@ -143,12 +145,14 @@ class ToolBase:
         if self.button.isChecked():
             self.fill_property_box(self.properties_box)
             self.fill_connections_box(self.connections_box)
-            self.rcommander.set_selected_tool(self.get_name())
+            #self.rcommander.set_selected_tool(self.get_name())
+            #print 'setting selected tool to', self.get_smach_class()
+            self.rcommander.set_selected_tool(self.get_smach_class())
         else:
             self.rcommander.set_selected_tool(None)
 
-    def get_outcomes(self):
-        return self._create_node().get_registered_outcomes()
+    #def get_outcomes(self):
+    #    return self.new_node().get_registered_outcomes()
 
     def _get_outcome_choices(self):
         outcome_choices = {}
@@ -186,14 +190,19 @@ class ToolBase:
                 smach_state = self.rcommander.graph_model.get_smach_state(self.rcommander.selected_node)
                 self.set_child_node(smach_state)
 
-        current_node = self._create_node()
+        if self.get_current_node_name() == None:
+            current_node = self.new_node()
+        else:
+            current_node = self.rcommander.graph_model.get_smach_state(self.get_current_node_name())
+
         current_node_name = current_node.get_name()
         self.name_input = QLineEdit()
         self.name_input.setText(current_node_name)
         formlayout.addRow('Name', self.name_input)
 
         if not issubclass(current_node.__class__, InfoStateBase):
-            for outcome in self.get_outcomes():
+            #for outcome in self.get_outcomes():
+            for outcome in current_node.get_registered_outcomes(): #self.get_outcomes():
                 #Make a new combobox and add available choices to it
                 input_box = QComboBox(pbox)
                 nodes = self.rcommander.connectable_nodes(self.get_current_node_name(), outcome)
@@ -218,7 +227,6 @@ class ToolBase:
                 outcome_cb = ft.partial(cb, outcome)
                 self.rcommander.connect(input_box, SIGNAL('currentIndexChanged(int)'), outcome_cb)
 
-                #self.combo_box_cbs[outcome] = outcome_cb
 
     def set_loaded_node_name(self, name):
         self.loaded_node_name = name
@@ -229,9 +237,7 @@ class ToolBase:
     def create_node(self, unique=True):
         if unique:
             self.counter = self.counter + 1
-        n = self._create_node(str(self.name_input.text()))
-        n.tool_name = self.get_name()
-        #n.outcome_choices = self._get_outcome_choices()
+        n = self.new_node(str(self.name_input.text()))
         return n
 
     def node_selected(self, node):
@@ -256,7 +262,10 @@ class ToolBase:
         self.name_input.setText(node.get_name())
         self.set_loaded_node_name(node.get_name())
         self.loaded_node_name = node.get_name()
-        self._node_selected(node)
+        self.set_node_properties(node)
+
+    def get_smach_class(self):
+        return self.smach_class
 
     ##
     # @param pbox a QT widget using a FormLayout that can be filled with
@@ -268,14 +277,14 @@ class ToolBase:
     # Called when user clicks Add
     #
     # @return a valid smach state derived from StateBase
-    def _create_node(self, name=None):
+    def new_node(self, name=None):
         pass
 
     ##
     # Called by parent when user selects a node created by this tool
     #
     # @param node a State object created by this tool
-    def _node_selected(self, node):
+    def set_node_properties(self, node):
         pass
 
     ##
@@ -288,7 +297,7 @@ class StateBase:
 
     def __init__(self, name):
         self.name = name
-        self.tool_name = None
+        #self.tool_name = None
         #self.outcome_choices = []
         self.remapping = {}
         self.runnable = True
@@ -310,19 +319,20 @@ class StateBase:
 
     def __getstate__(self):
         #r = [self.name, self.tool_name, self.outcome_choices, self.remapping]
-        r = [self.name, self.tool_name, self.remapping, self.runnable]
+        r = [self.name, self.remapping, self.runnable]
         return r
 
     def __setstate__(self, state):
         #print 'state base', state
         #print state
-        name, tool, remapping, runnable = state
+        #name, tool, remapping, runnable = state
+        name, remapping, runnable = state
         self.name = name
-        self.tool_name = tool
+        #self.tool_name = tool
         #self.outcome_choices = choices
         self.remapping = remapping
         self.runnable = runnable
-        #print name, 'toolname set to', self.tool_name
+        #print '>>>>', name, 'toolname set to', self.tool_name
 
     def source_for(self, var_name):
         return self.remapping[var_name]
@@ -349,6 +359,56 @@ class InfoStateBase(StateBase):
         return [InfoStateBase.GLOBAL_NAME]
 
 
+class EmbeddableState(StateBase):
+
+    def __init__(self, name, child_gm):
+        StateBase.__init__(self, name)
+        self.child_gm = child_gm
+        self.document = None #child_gm.document
+
+        #Look inside state machine and look for things with remaps
+        if child_gm != None:
+            self.document = child_gm.document
+            for node_name in child_gm.smach_states.keys():
+                mapping = child_gm.get_smach_state(node_name).remapping
+                for input_key in mapping.keys():
+                    source = mapping[input_key]
+                    self.set_source_for(source, source)
+
+    def get_child(self):
+        return self.child_gm
+
+    def save_child(self, base_path=""):
+        child_gm = self.get_child()
+        if child_gm.document.has_real_filename():
+            child_gm.save(child_gm.document.get_filename())
+        else:
+            fname = pt.join(base_path, self.get_child_name())
+            child_gm.save(fname)
+        self.document = child_gm.document
+
+    def load_and_recreate(self):
+        import graph_model as gm
+        child_gm = gm.GraphModel.load(self.document.get_filename())
+        return self.recreate(child_gm)
+
+    def get_child_name(self):
+        return self.child_gm.get_start_state()
+
+    def recreate(self, graph_model):
+        raise RuntimeError('Unimplemented!!')
+
+    def __getstate__(self):
+        state = StateBase.__getstate__(self)
+        my_state = [self.document]
+        return {'state_base': state, 'self': my_state}
+
+    def __setstate__(self, state):
+        StateBase.__setstate__(self, state['state_base'])
+        self.document = state['self'][0]
+        self.child_gm = None
+
+
 class SimpleStateCB:
 
     def __init__(self, cb_func, input_keys, output_keys):
@@ -370,6 +430,7 @@ class SimpleStateCB:
 
 
 class SimpleStateBase(smach_ros.SimpleActionState, StateBase):
+
     def __init__(self, name, action_name, action_type, goal_cb_str, input_keys=[]):
         #func = eval('self.%s' % goal_cb_str)
         #print dir(func)
@@ -401,7 +462,6 @@ class SimpleStateBase(smach_ros.SimpleActionState, StateBase):
         self.input_keys  = state['input_keys']
         smach_ros.SimpleActionState.__init__(self, self.action_name, self.action_type, goal_cb = SimpleStateCB(eval('self.%s' % self.goal_cb_str), self.input_keys, []))
                
-
 
 
 

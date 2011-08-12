@@ -1,6 +1,10 @@
 from random import random
 from math import pi, sin, cos
 from math import sqrt
+import scipy.spatial as sp
+import scipy.spatial.distance as spd
+import numpy as np
+import nodebox_springlayout as nbs
 
 class Point:
     def __init__(self, x, y):
@@ -203,13 +207,112 @@ class spring_layout(layout):
         return l
     
     def iterate(self):
+        #xs = []
+        #ys = []
+        #for i in range(num_nodes):
+        #    node = self.graph.nodes[i]
+        #    xs.append(node.vx)
+        #    ys.append(node.vy)
+        #xs = np.matrix(xs)
+        #ys = np.matrix(ys)
+
+        #dists = spd.squareform(spd.pdist(np.row_stack((xs,ys)).T, 'euclidean'))
+        #F = self.k**2 / np.power(dists,2)
+
+        ##Calc forces
+        #dists = np.matrix(spd.squareform(spd.pdist(pos.T, 'euclidean')))
+        #rand = np.reshape(np.random.randn(num_nodes*num_nodes), (num_nodes, num_nodes))
+        #r01, c01 = np.where(dists < .01)
+        #dists[r01.A1, c01.A1] = rand[r01.A1, c01.A1]
+
+        #F = self.k**2 / np.power(dists, 2)
+
+        ##Calc dirs
+        #diffs = np.matrix(np.zeros((2*num_nodes, num_nodes)))
+        #for i in range(num_nodes): 
+        #    diffs[2*i:2*i+2,:] = (pos - pos[:,i])
+
+        ##Merge forces and dir
+        #xs = np.multiply(F, diffs[range(0,diffs.shape[0], 2), :])
+        #ys = np.multiply(F, diffs[range(1,diffs.shape[0], 2), :])
+
+        #for i in range(num_nodes): 
+        #    node = self.graph.nodes[i]
+        #    other_nodes_idx = range(num_nodes)
+        #    other_nodes_idx.pop(i)
+        #    node.force.x = np.sum(xs[i,other_nodes_idx])
+        #    node.force.y = np.sum(ys[i,other_nodes_idx])
         
+        #xs = diffs[, :]
+
+        #    #add some noise
+
+        #too_small_idx = np.where(dists[i,:] < .01)[1].A1
+        #diffs[2*i:2*i+2, too_small_idx] = random()*.1 + .1
+
+        #    #limit influence
+        #    in_range = np.where(dists[i,:] < self.r)[1].A1
+        #    F_d = np.multiply(diffs[2*i:2*i+2,:], F[i,:])
+
+        #     f = self.k**2 / np.power(dists[i,:], 2)
+        #     #print diffs[2*i:2*i+2,:].shape, f.shape
+
+        #     forces[:, :i] = forces[:, :i] + F[:, :i]
+        #     forces[:, i+1:] = forces[:, i+1:] + F[:, i+1:]
+        #     forces[:,i] = forces[:,i] - np.sum(F, 1)
+
+        # for i in range(num_nodes):
+        #     self.graph.nodes[i].force.x = forces[0,i]
+        #     self.graph.nodes[i].force.y = forces[1,i]
+
+
+        #if len(pos) > 1:
+        #    tree = sp.KDTree(np.array(pos))
+        #    neighbor_result = tree.query_ball_tree(tree, self.r)
+            #for idx, neighbors in enumerate(neighbor_result):
+            #    n1 = self.graph.nodes[idx]
+            #    for jdx in neighbors:
+            #        self._repulse(n1, self.graph.nodes[jdx])
+
+        #for idx, jdx in tree.query(self.r):
+        #    self._repulse(self.graph.nodes[idx], self.graph.nodes[jdx])
+
         # Forces on all nodes due to node-node repulsions.
-        for i in range(len(self.graph.nodes)):
-            n1 = self.graph.nodes[i]
-            for j in range(i+1, len(self.graph.nodes)):
-                n2 = self.graph.nodes[j]             
-                self._repulse(n1, n2)
+        fast = True
+        if fast:
+            #print 'ITERRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRr'
+            num_nodes = len(self.graph.nodes)
+            pos = []
+            elen = []
+            for i in range(num_nodes):
+                node = self.graph.nodes[i]
+                pos.append([node.vx, node.vy])
+                elen.append(len(node.edges))
+            pos = np.matrix(pos).T
+            #print 'calling with param\n', pos
+            #print 'elen', elen
+            #print 'k', self.k, 'r', self.r, 'r0', self.r0
+            forces = nbs.spring_force(pos, np.matrix(elen, dtype='float'), self.k, self.r, self.r0)
+            for i in range(num_nodes):
+                node = self.graph.nodes[i]
+                node.force.x = forces[0,i]
+                node.force.y = forces[1,i]
+        #else:
+            #for i in range(len(self.graph.nodes)):
+            #    n1 = self.graph.nodes[i]
+            #    for j in range(i+1, len(self.graph.nodes)):
+            #        n2 = self.graph.nodes[j]             
+            #        self._repulse(n1, n2)
+            #print 'nodes are'
+            #temp = []
+            #for n in self.graph.nodes:
+            #    temp.append([n.force.x, n.force.y])
+
+            #print 'forces'
+            #print forces
+            #print 'repulse'
+            #print np.matrix(temp).T
+
 
         # Forces on nodes due to edge attractions.
         for e in self.graph.edges:
@@ -236,6 +339,7 @@ class spring_layout(layout):
             dx = random()*0.1 + 0.1
             dy = random()*0.1 + 0.1
             d2 = dx**2 + dy**2
+            #print dx, dy, d2
             
         d = sqrt(d2)
         

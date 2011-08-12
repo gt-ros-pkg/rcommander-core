@@ -8,7 +8,7 @@ import smach
 class SleepTool(tu.ToolBase):
 
     def __init__(self, rcommander):
-        tu.ToolBase.__init__(self, rcommander, 'sleep', 'Sleep')
+        tu.ToolBase.__init__(self, rcommander, 'sleep', 'Sleep', SleepState)
 
     def fill_property_box(self, pbox):
         formlayout = pbox.layout()
@@ -19,14 +19,14 @@ class SleepTool(tu.ToolBase):
         self.time_box.setValue(3.)
         formlayout.addRow("&Seconds", self.time_box)
 
-    def _create_node(self, name=None):
+    def new_node(self, name=None):
         if name == None:
             nname = self.name + str(self.counter)
         else:
             nname = name
         return SleepState(nname, self.time_box.value())
 
-    def _node_selected(self, my_node):
+    def set_node_properties(self, my_node):
         self.time_box.setValue(my_node.sleep_time)
 
     def reset(self):

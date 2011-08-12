@@ -55,14 +55,19 @@ class NodeBoxGraphicsView(QGraphicsWidget):
         self._canvas = None
         self._dirty = True
         self.mousedown = False
+        self.rightdown = False
         self.mousePosition = QPointF(0, 0)
+        self.mouseDCPosition = QPointF(0, 0)
+        self.mousedoubleclick = False
         self.keydown = False
         self.key = None
         self.keycode = None        
         self.scrollwheel = False
         self.wheeldelta = 0.0
         self._zoom = 1.0
-        
+        #self.setMouseTracking(True)
+        #print self.hasMouseTracking()
+
     def boundingRect(self):
         return self._rect
 
@@ -192,9 +197,21 @@ class NodeBoxGraphicsView(QGraphicsWidget):
             self._updateImage(painter)
 
     def mousePressEvent(self, event):
+        print 'got mose event'
         self.mousePosition = event.scenePos()
+
         if event.button() == Qt.LeftButton:
             self.mousedown = True 
+
+        if event.button() == Qt.RightButton:
+            self.rightdown = True
+
+        self.setFocus()
+
+    def mouseDoubleClickEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            #self.mouseDCPosition = event.scenePos()
+            self.mousedoubleclick = True
             self.setFocus()
 
     def mouseMoveEvent(self, event):
@@ -204,6 +221,8 @@ class NodeBoxGraphicsView(QGraphicsWidget):
         self.mousePosition = event.scenePos()
         if event.button() == Qt.LeftButton: 
            	self.mousedown = False 
+        if event.button() == Qt.RightButton: 
+            self.rightdown = False
 
     def keyPressEvent(self, event): 
         self.keydown = True 
@@ -218,6 +237,7 @@ class NodeBoxGraphicsView(QGraphicsWidget):
     def wheelEvent(self, event): 
         self.scrollwheel = True 
         self.wheeldelta = event.delta() / 120.
+        print 'event delta', event.delta()
         
 class NodeBoxDocument(NodeBoxDocumentBaseClass):
     

@@ -28,6 +28,8 @@ class MyTool(tu.ToolBase):
     def reset(self):
         pass
 
+    def get_smach_class(self):
+        pass
 
 class MyState(smach.State, tu.StateBase): 
 

@@ -6,7 +6,7 @@ import numpy as np
 class Point3DTool(tu.ToolBase):
 
     def __init__(self, rcommander):
-        tu.ToolBase.__init__(self, rcommander, 'point3d', 'Point 3D')
+        tu.ToolBase.__init__(self, rcommander, 'point3d', 'Point 3D', Point3DState)
         self.default_frame = 'base_link'
 
     def fill_property_box(self, pbox):
@@ -28,7 +28,7 @@ class Point3DTool(tu.ToolBase):
         self.reset()
         pbox.update()
 
-    def _create_node(self, name=None):
+    def new_node(self, name=None):
         point = [float(str(self.xline.text())), float(str(self.yline.text())), float(str(self.zline.text()))]
         frame = str(self.frameline.text())
         if name == None:
@@ -37,7 +37,7 @@ class Point3DTool(tu.ToolBase):
             nname = name
         return Point3DState(nname, point, frame)
     
-    def _node_selected(self, node):
+    def set_node_properties(self, node):
         self.xline.setText(str(node.point[0]))
         self.yline.setText(str(node.point[1]))
         self.zline.setText(str(node.point[2]))
@@ -48,7 +48,6 @@ class Point3DTool(tu.ToolBase):
         self.yline.setText(str(0.))
         self.zline.setText(str(0.))
         self.frameline.setText(self.default_frame)
-
 
 class Point3DState(tu.InfoStateBase):
     
