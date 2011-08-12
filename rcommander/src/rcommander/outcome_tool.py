@@ -24,12 +24,9 @@ class EmptyState(tu.StateBase):
 class OutcomeTool(tu.ToolBase):
 
     def __init__(self, button, rcommander):
-        tu.ToolBase.__init__(self, rcommander, TOOL_NAME, 'Add Outcome')
+        tu.ToolBase.__init__(self, rcommander, TOOL_NAME, 'Add Outcome', EmptyState)
         self.button = button
         self.rcommander.connect(self.button, SIGNAL('clicked()'), self.activate_cb)
-
-    def get_smach_class(self):
-        return EmptyState
 
     def activate_cb(self, loaded_node_name=None):
         tu.ToolBase.activate_cb(self, loaded_node_name)
@@ -41,7 +38,7 @@ class OutcomeTool(tu.ToolBase):
         self.rcommander.ui.run_button.setDisabled(True)
         self.rcommander.ui.reset_button.setDisabled(True)
 
-    def _create_node(self, name=None):
+    def new_node(self, name=None):
         if name == None:
             nname = self.name + str(self.counter)
         else:
@@ -49,7 +46,7 @@ class OutcomeTool(tu.ToolBase):
         state = EmptyState(nname, False) 
         return state
 
-    def _node_selected(self, node):
+    def set_node_properties(self, node):
         self.rcommander.disable_buttons()
         self.outcome_mode()
 

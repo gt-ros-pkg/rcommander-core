@@ -11,19 +11,10 @@ import graph_model as gm
 class StateMachineTool(tu.ToolBase):
 
     def __init__(self, rcommander):
-        tu.ToolBase.__init__(self, rcommander, 'state_machine', 'State Machine')
+        tu.ToolBase.__init__(self, rcommander, 'state_machine', 'State Machine', StateMachineNode)
         self.child_gm = None
 
-    def get_smach_class(self):
-        return StateMachineNode
-
-    #def set_child_node(self, child_smach):
-    #    self.child_gm = gm.GraphModel()
-    #    self.child_gm.add_node(child_smach)
-    #    self.child_gm.set_start_state(child_smach.get_name())
-    #    self.child_gm.set_document(gm.FSMDocument(child_smach.get_name(), modified=False, real_filename=False))
-
-    def fill_property_box(self, pbox):
+   def fill_property_box(self, pbox):
         formlayout = pbox.layout()
         self.filename_edit = QLineEdit(pbox)
         self.filename_edit.setText("...")
@@ -43,7 +34,7 @@ class StateMachineTool(tu.ToolBase):
             filename = str(filenames[0])
             self.filename_edit.setText(filename)
 
-    def _create_node(self, name=None):
+    def new_node(self, name=None):
         if name == None:
             nname = self.name + str(self.counter)
         else:
@@ -59,16 +50,13 @@ class StateMachineTool(tu.ToolBase):
 
         return StateMachineNode(nname, self.child_gm)
 
-    def _node_selected(self, my_node):
+    def set_node_properties(self, my_node):
         self.child_gm = my_node.child_gm
         self.filename_edit.setText(self.child_gm.document.get_filename())
 
     def reset(self):
         self.filename_edit.setText("...")
         self.child_gm = None
-
-    def get_smach_class(self):
-        return StateMachineNode
 
 
 ##

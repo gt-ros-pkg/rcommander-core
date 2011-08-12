@@ -28,7 +28,7 @@ class LinearMoveTool(tu.ToolBase):
     RIGHT_TIP = 'r_gripper_tool_frame'
 
     def __init__(self, rcommander):
-        tu.ToolBase.__init__(self, rcommander, 'linear_move', 'Linear Move')
+        tu.ToolBase.__init__(self, rcommander, 'linear_move', 'Linear Move', LinearMoveState)
         self.default_frame = 'base_link'
         self.tf_listener = rcommander.tf_listener
 
@@ -118,7 +118,7 @@ class LinearMoveTool(tu.ToolBase):
         for value, vr in zip(tr.euler_from_quaternion(rotation), [self.phi_line, self.theta_line, self.psi_line]):
             vr.setText(str(np.degrees(value)))
 
-    def _create_node(self, name=None):
+    def new_node(self, name=None):
         trans  = [float(vr.text()) for vr in [self.xline, self.yline, self.zline]]
         angles = [float(vr.text()) for vr in [self.phi_line, self.theta_line, self.psi_line]]
         frame  = str(self.frameline.text())
@@ -140,7 +140,7 @@ class LinearMoveTool(tu.ToolBase):
         #state = NavigateState(nname, xy, theta, frame)
         #return state
 
-    def _node_selected(self, node):
+    def set_node_properties(self, node):
         for value, vr in zip(node.trans, [self.xline, self.yline, self.zline]):
             vr.setText(str(value))
         for value, vr in zip(node.angles, [self.phi_line, self.theta_line, self.psi_line]):
@@ -175,9 +175,6 @@ class LinearMoveTool(tu.ToolBase):
         self.motion_box.setCurrentIndex(self.motion_box.findText('relative'))
         self.trans_vel_line.setText(str(.02))
         self.rot_vel_line.setText(str(.16))
-
-    def get_smach_class(self):
-        return LinearMoveState
 
 
 #

@@ -8,7 +8,7 @@ import pr2_common_action_msgs.msg as ca
 class TuckTool(tu.ToolBase):
 
     def __init__(self, rcommander):
-        tu.ToolBase.__init__(self, rcommander, 'tuck', 'Tuck')
+        tu.ToolBase.__init__(self, rcommander, 'tuck', 'Tuck', TuckState)
 
     def fill_property_box(self, pbox):
         formlayout = pbox.layout()
@@ -26,7 +26,7 @@ class TuckTool(tu.ToolBase):
         formlayout.addRow("&Right Arm", self.tuck_right)
         pbox.update()
 
-    def _create_node(self, name=None):
+    def new_node(self, name=None):
         left = ('True' == str(self.tuck_left.currentText()))
         right = ('True' == str(self.tuck_right.currentText()))
         if name == None:
@@ -35,16 +35,13 @@ class TuckTool(tu.ToolBase):
             nname = name
         return TuckState(nname, left, right)
     
-    def _node_selected(self, node):
+    def set_node_properties(self, node):
         self.tuck_left.setCurrentIndex(self.tuck_left.findText(str(node.tuck_left)))
         self.tuck_right.setCurrentIndex(self.tuck_right.findText(str(node.tuck_right)))
 
     def reset(self):
         self.tuck_left.setCurrentIndex(self.tuck_left.findText('True'))
         self.tuck_right.setCurrentIndex(self.tuck_right.findText('True'))
-
-    def get_smach_class(self):
-        return TuckState
 
 
 class TuckState(tu.SimpleStateBase): # smach_ros.SimpleActionState):

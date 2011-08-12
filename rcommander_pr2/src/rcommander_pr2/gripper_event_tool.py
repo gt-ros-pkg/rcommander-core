@@ -13,14 +13,9 @@ import rcommander.sm_thread_runner as smtr
 class GripperEventTool(tu.ToolBase):
 
     def __init__(self, rcommander):
-        tu.ToolBase.__init__(self, rcommander, 'gripper_event', 'Gripper Event')
+        tu.ToolBase.__init__(self, rcommander, 'gripper_event', 'Gripper Event', GripperEventState)
         self.child_gm = None
 
-    #NEED TO IMPLEMENT
-    def get_smach_class(self):
-        return GripperEventState
-
-    #NEED TO IMPLEMENT
     def set_child_node(self, child_smach):
         self.child_gm = gm.GraphModel()
         self.child_gm.add_node(child_smach)
@@ -43,7 +38,7 @@ class GripperEventTool(tu.ToolBase):
         formlayout.addRow('&Slip', self.slip_box.container)
         pbox.update()
 
-    def _create_node(self, name=None):
+    def new_node(self, name=None):
         if self.child_gm == None:
             raise RuntimeError('No child node!')
         selected_arm = None
@@ -64,7 +59,7 @@ class GripperEventTool(tu.ToolBase):
 
         return GripperEventState(nname, self.child_gm, selected_arm, event_type, accel_val, slip_val)
     
-    def _node_selected(self, gripper_event_state):
+    def set_node_properties(self, gripper_event_state):
         if gripper_event_state.arm == 'left':
             self.gripper_radio_buttons[0].setChecked(True)
         if gripper_event_state.arm == 'right':
@@ -223,29 +218,4 @@ class GripperEventState(smach.State, tu.EmbeddableState):
             #if not found just return what we have
             return rthread.outcome
 
-
-
-
-
-
-#from pr2_gripper_sensor_msgs.msg import PR2GripperFindContactAction, PR2GripperFindContactGoal, \
-#    PR2GripperGrabAction, PR2GripperGrabGoal, PR2GripperEventDetectorAction, PR2GripperEventDetectorGoal
-
-#whicharm = 'r'
-#evd_client = actionlib.SimpleActionClient(evd_name, gr.PR2GripperEventDetectorAction)
-#
-#goal = PR2GripperEventDetectorGoal()
-#goal.command.acceleration_trigger_magnitude = accel
-#goal.command.slip_trigger_magnitude = slip
-#goal.command.trigger_conditions = goal.command.ACC
-#goal.command.trigger_conditions = goal.command.SLIP
-#goal.command.trigger_conditions = goal.command.FINGER_SIDE_IMPACT_OR_ACC
-#goal.command.trigger_conditions = goal.command.SLIP_AND_ACC
-#goal.command.trigger_conditions = goal.command.FINGER_SIDE_IMPACT_OR_SLIP_OR_ACC 
-
-#Either detect event or not
-#evd_client.send_goal(goal)
-#evd_client.wait_for_result()
-#state = evd_client.get_state()
-#if state == am.GoalStatus.SUCCEEDED:
 

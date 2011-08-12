@@ -11,10 +11,7 @@ import pr2_controllers_msgs.msg as pm
 class GripperTool(tu.ToolBase):
 
     def __init__(self, rcommander):
-        tu.ToolBase.__init__(self, rcommander, 'gripper', 'Gripper')
-
-    def get_smach_class(self):
-        return GripperState
+        tu.ToolBase.__init__(self, rcommander, 'gripper', 'Gripper', GripperState)
 
     def fill_property_box(self, pbox):
         formlayout = pbox.layout()
@@ -30,7 +27,7 @@ class GripperTool(tu.ToolBase):
         formlayout.addRow('&Effort', self.effort_box.container)
         pbox.update()
 
-    def _create_node(self, name=None):
+    def new_node(self, name=None):
         selected_arm = None
         for r in self.radio_buttons:
             if r.isChecked():
@@ -47,7 +44,7 @@ class GripperTool(tu.ToolBase):
             nname = name
         return GripperState(nname, selected_arm, gsize, effort)
     
-    def _node_selected(self, gripper_state):
+    def set_node_properties(self, gripper_state):
         if gripper_state.arm == 'left':
             self.radio_buttons[0].setChecked(True)
         if gripper_state.arm == 'right':

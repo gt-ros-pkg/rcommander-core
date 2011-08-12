@@ -12,7 +12,7 @@ class SpeakTool(tu.ToolBase):
     DEFAULT_TEXT = 'hello world'
 
     def __init__(self, rcommander):
-        tu.ToolBase.__init__(self, rcommander, 'speak', 'Speak')
+        tu.ToolBase.__init__(self, rcommander, 'speak', 'Speak', SpeakNode)
         self.sound_client = SoundClient()
 
     def fill_property_box(self, pbox):
@@ -20,24 +20,19 @@ class SpeakTool(tu.ToolBase):
         self.text = QLineEdit(pbox)
         self.text.setText(SpeakTool.DEFAULT_TEXT)
         formlayout.addRow('&Say', self.text)
-        
 
-    def _create_node(self, name=None):
+    def new_node(self, name=None):
         if name == None:
             nname = self.name + str(self.counter)
         else:
             nname = name
         return SpeakNode(nname, str(self.text.text()), sound_client=self.sound_client)
 
-    def _node_selected(self, my_node):
+    def set_node_properties(self, my_node):
         self.text.setText(my_node.text)
 
     def reset(self):
         self.text.setText(SpeakTool.DEFAULT_TEXT)
-
-
-    def get_smach_class(self):
-        return SpeakNode
 
 
 class SpeakNode(smach.State, tu.StateBase): 

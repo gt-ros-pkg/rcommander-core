@@ -16,7 +16,7 @@ import math
 class NavigateTool(tu.ToolBase):
 
     def __init__(self, rcommander):
-        tu.ToolBase.__init__(self, rcommander, 'navigate', 'Navigate')
+        tu.ToolBase.__init__(self, rcommander, 'navigate', 'Navigate', NavigateState)
         self.tf_listener = rcommander.tf_listener
         self.default_frame = 'map'
         self.robot_frame_name = 'base_link'
@@ -61,7 +61,7 @@ class NavigateTool(tu.ToolBase):
         self.yline.setText(str(y))
         self.tline.setText(str(math.degrees(theta)))
 
-    def _create_node(self, name=None):
+    def new_node(self, name=None):
         xy = [float(self.xline.text()), float(self.yline.text())]
         theta = math.radians(float(self.tline.text()))
         frame = str(self.frameline.text())
@@ -72,7 +72,7 @@ class NavigateTool(tu.ToolBase):
         state = NavigateState(nname, xy, theta, frame)
         return state
 
-    def _node_selected(self, node):
+    def set_node_properties(self, node):
         xy = node.xy
         self.xline.setText(str(xy[0]))
         self.yline.setText(str(xy[1]))
@@ -86,8 +86,6 @@ class NavigateTool(tu.ToolBase):
         self.tline.setText('0.')
         self.frameline.setText(self.default_frame)
 
-    def get_smach_class(self):
-        return NavigateState
 #
 # name maps to tool used to create it
 # model

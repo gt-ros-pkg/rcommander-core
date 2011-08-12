@@ -11,7 +11,7 @@ import smach
 class JointSequenceTool(tu.ToolBase):
 
     def __init__(self, rcommander):
-        tu.ToolBase.__init__(self, rcommander, 'joint_sequence', 'Joint Sequence')
+        tu.ToolBase.__init__(self, rcommander, 'joint_sequence', 'Joint Sequence', JointSequenceState)
         self.joint_name_fields = ["shoulder_pan_joint", "shoulder_lift_joint", "upper_arm_roll_joint", 
                                   "elbow_flex_joint", "forearm_roll_joint", "wrist_flex_joint", "wrist_roll_joint"]
         self.joint_angs_list = None
@@ -142,7 +142,7 @@ class JointSequenceTool(tu.ToolBase):
             exec('line_edit = self.%s' % name)
             line_edit.setText(str(deg))
 
-    def _create_node(self, name=None):
+    def new_node(self, name=None):
         if name == None:
             nname = self.name + str(self.counter)
         else:
@@ -153,7 +153,7 @@ class JointSequenceTool(tu.ToolBase):
         sstate.set_robot(self.rcommander.robot)
         return sstate
 
-    def _node_selected(self, my_node):
+    def set_node_properties(self, my_node):
         self.joint_angs_list = my_node.joint_waypoints
         for d in self.joint_angs_list:
             self.list_widget.addItem(d['name'])
@@ -164,9 +164,6 @@ class JointSequenceTool(tu.ToolBase):
         self.arm_box.setCurrentIndex(self.arm_box.findText('left'))
         for name in self.joint_name_fields:
             exec('self.%s.setText(str(0.))' % name)
-
-    def get_smach_class(self):
-        return JointSequenceState
 
 
 class JointSequenceState(smach.State, tu.StateBase): 

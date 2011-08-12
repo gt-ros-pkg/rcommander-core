@@ -13,7 +13,7 @@ import smach
 class SafeMoveArmTool(tu.ToolBase):
 
     def __init__(self, rcommander):
-        tu.ToolBase.__init__(self, rcommander, 'save_move', 'Safe Move')
+        tu.ToolBase.__init__(self, rcommander, 'save_move', 'Safe Move', SafeMoveArmState)
         #self.left, self.right = pu.PR2Arm.create_arms(rcommander.tf_listener, 'both')
         self.joint_name_fields = ["shoulder_pan_joint", "shoulder_lift_joint", "upper_arm_roll_joint", 
                                   "elbow_flex_joint", "forearm_roll_joint", "wrist_flex_joint", "wrist_roll_joint"]
@@ -52,7 +52,7 @@ class SafeMoveArmTool(tu.ToolBase):
             line_edit.setText(str(deg))
 
 
-    def _create_node(self, name=None):
+    def new_node(self, name=None):
         if name == None:
             nname = self.name + str(self.counter)
         else:
@@ -64,7 +64,7 @@ class SafeMoveArmTool(tu.ToolBase):
             joints.append(rad)
         return SafeMoveArmState(nname, str(self.arm_box.currentText()), joints)
 
-    def _node_selected(self, my_node):
+    def set_node_properties(self, my_node):
         self.arm_box.setCurrentIndex(self.arm_box.findText(my_node.arm))
         for idx, name in enumerate(self.joint_name_fields):
             deg = np.degrees(my_node.joints[idx])
@@ -76,8 +76,6 @@ class SafeMoveArmTool(tu.ToolBase):
         for name in self.joint_name_fields:
             exec('self.%s.setText(str(0.))' % name)
 
-    def get_smach_class(self):
-        return SafeMoveArmState
 
 class SafeMoveArmState(smach.State, tu.StateBase): 
 

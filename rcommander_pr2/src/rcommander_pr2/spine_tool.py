@@ -10,7 +10,7 @@ import pr2_controllers_msgs.msg as pm
 class SpineTool(tu.ToolBase):
 
     def __init__(self, rcommander):
-        tu.ToolBase.__init__(self, rcommander, 'move_spine', 'Spine')
+        tu.ToolBase.__init__(self, rcommander, 'move_spine', 'Spine', SpineState)
 
     def fill_property_box(self, pbox):
         formlayout = pbox.layout()
@@ -18,21 +18,19 @@ class SpineTool(tu.ToolBase):
         formlayout.addRow('&Height', self.spine_box.container)
         pbox.update()
 
-    def _create_node(self, name=None):
+    def new_node(self, name=None):
         if name == None:
             nname = self.name + str(self.counter)
         else:
             nname = name
         return SpineState(nname, self.spine_box.value()/100.)
 
-    def _node_selected(self, my_node):
+    def set_node_properties(self, my_node):
         self.spine_box.set_value(my_node.position*100.)
 
     def reset(self):
         self.spine_box.set_value(15.)
 
-    def get_smach_class(self):
-        return SpineState
 
 class SpineState(tu.SimpleStateBase): 
 

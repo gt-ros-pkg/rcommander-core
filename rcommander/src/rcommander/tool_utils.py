@@ -110,7 +110,7 @@ class SliderBox:
 
 class ToolBase:
 
-    def __init__(self, rcommander, name, button_name):
+    def __init__(self, rcommander, name, button_name, smach_class):
         self.rcommander = rcommander
         self.properties_box = self.rcommander.ui.properties_tab
         self.connections_box = self.rcommander.ui.connections_tab
@@ -122,6 +122,7 @@ class ToolBase:
         self.button = None
         self.button_name = button_name
 
+        self.smach_class = smach_class
         self.outcome_inputs = {}
         #self.combo_box_cbs = {}
         self.counter = 0
@@ -151,7 +152,7 @@ class ToolBase:
             self.rcommander.set_selected_tool(None)
 
     #def get_outcomes(self):
-    #    return self._create_node().get_registered_outcomes()
+    #    return self.new_node().get_registered_outcomes()
 
     def _get_outcome_choices(self):
         outcome_choices = {}
@@ -190,7 +191,7 @@ class ToolBase:
                 self.set_child_node(smach_state)
 
         if self.get_current_node_name() == None:
-            current_node = self._create_node()
+            current_node = self.new_node()
         else:
             current_node = self.rcommander.graph_model.get_smach_state(self.get_current_node_name())
 
@@ -236,9 +237,7 @@ class ToolBase:
     def create_node(self, unique=True):
         if unique:
             self.counter = self.counter + 1
-        n = self._create_node(str(self.name_input.text()))
-        #n.tool_name = self.get_name()
-        #n.outcome_choices = self._get_outcome_choices()
+        n = self.new_node(str(self.name_input.text()))
         return n
 
     def node_selected(self, node):
@@ -263,10 +262,10 @@ class ToolBase:
         self.name_input.setText(node.get_name())
         self.set_loaded_node_name(node.get_name())
         self.loaded_node_name = node.get_name()
-        self._node_selected(node)
+        self.set_node_properties(node)
 
     def get_smach_class(self):
-        raise RuntimeError('Unimplemented!')
+        return self.smach_class
 
     ##
     # @param pbox a QT widget using a FormLayout that can be filled with
@@ -278,14 +277,14 @@ class ToolBase:
     # Called when user clicks Add
     #
     # @return a valid smach state derived from StateBase
-    def _create_node(self, name=None):
+    def new_node(self, name=None):
         pass
 
     ##
     # Called by parent when user selects a node created by this tool
     #
     # @param node a State object created by this tool
-    def _node_selected(self, node):
+    def set_node_properties(self, node):
         pass
 
     ##
