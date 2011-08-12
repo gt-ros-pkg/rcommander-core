@@ -65,9 +65,9 @@ class JointSequenceTool(tu.ToolBase):
 
     def get_current_joint_angles(self):
         if ('left' == str(self.arm_box.currentText())):
-            arm_obj = self.rcommander.pr2.left
+            arm_obj = self.rcommander.robot.left
         else:
-            arm_obj = self.rcommander.pr2.right
+            arm_obj = self.rcommander.robot.right
 
         pose_mat = arm_obj.pose()
         for idx, name in enumerate(self.joint_name_fields):

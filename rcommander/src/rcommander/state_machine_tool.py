@@ -14,7 +14,7 @@ class StateMachineTool(tu.ToolBase):
         tu.ToolBase.__init__(self, rcommander, 'state_machine', 'State Machine', StateMachineNode)
         self.child_gm = None
 
-   def fill_property_box(self, pbox):
+    def fill_property_box(self, pbox):
         formlayout = pbox.layout()
         self.filename_edit = QLineEdit(pbox)
         self.filename_edit.setText("...")
