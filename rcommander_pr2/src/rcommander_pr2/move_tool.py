@@ -169,7 +169,7 @@ class JointSequenceTool(tu.ToolBase):
 
 class JointSequenceState(smach.State, tu.StateBase): 
 
-    TIME_OUT_FACTOR = 2.
+    TIME_OUT_FACTOR = 3.
 
     def __init__(self, name, arm, joint_waypoints):
         self.name = name
@@ -192,7 +192,6 @@ class JointSequenceState(smach.State, tu.StateBase):
         self.arm_obj.set_poses(np.column_stack(wps), np.cumsum(np.array(times)), block=False)
         client = self.arm_obj.client
         state = client.get_state()
-        print 'goal status', tu.goal_status_to_string(state)
 
         #Monitor execution
         trajectory_time_out = JointSequenceState.TIME_OUT_FACTOR * np.sum(times)
@@ -212,7 +211,7 @@ class JointSequenceState(smach.State, tu.StateBase):
             if (rospy.get_time() - start_time) > trajectory_time_out:
                 client.cancel_goal()
                 rospy.loginfo('JointSequenceState: timed out!')
-                succeeded = True
+                succeeded = False
                 break
 
             #print tu.goal_status_to_string(state)
@@ -221,6 +220,8 @@ class JointSequenceState(smach.State, tu.StateBase):
                     rospy.loginfo('JointSequenceState: Succeeded!')
                     succeeded = True
                 break
+
+            state = client.get_state()
 
             r.sleep()
 
