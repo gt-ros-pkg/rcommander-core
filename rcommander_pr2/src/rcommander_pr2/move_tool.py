@@ -6,6 +6,7 @@ import rcommander.tool_utils as tu
 import numpy as np
 import actionlib_msgs.msg as am
 import smach
+from pycontroller_manager.pycontroller_manager import ControllerManager
 
 
 class JointSequenceTool(tu.ToolBase):
@@ -179,6 +180,8 @@ class JointSequenceState(smach.State, tu.StateBase):
         self.__init_unpicklables__()
 
     def execute(self, userdata):
+        self.controller_manager.joint_mode(self.arm)
+
         #Construct trajectory command
         times = []
         wps = []
@@ -238,6 +241,7 @@ class JointSequenceState(smach.State, tu.StateBase):
 
     def __init_unpicklables__(self):
         smach.State.__init__(self, outcomes = ['succeeded', 'preempted', 'failed'], input_keys = [], output_keys = [])
+        self.controller_manager = ControllerManager()
 
     def __getstate__(self):
         state = tu.StateBase.__getstate__(self)

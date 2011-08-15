@@ -27,17 +27,17 @@
   <depend package="std_msgs"/>
 
   <export>
-      <rcommander plugin="rcommander_pr2.tuck_tool" tab="Manipulation"/> 
-      <rcommander plugin="rcommander_pr2.linear_move_tool" tab="Manipulation"/>
-      <rcommander plugin="rcommander_pr2.move_arm_tool" tab="Manipulation"/>
-      <rcommander plugin="rcommander_pr2.move_tool" tab="Manipulation"/>
-      <rcommander plugin="rcommander_pr2.gripper_tool" tab="Manipulation"/>
-      <rcommander plugin="rcommander_pr2.gripper_event_tool" tab="Manipulation"/>
-      <rcommander plugin="rcommander_pr2.spine_tool" tab="Manipulation"/>
+      <rcommander plugin="rcommander_pr2.tuck_tool"          robot="pr2" tab="Manipulation"/> 
+      <rcommander plugin="rcommander_pr2.linear_move_tool"   robot="pr2" tab="Manipulation"/>
+      <rcommander plugin="rcommander_pr2.move_arm_tool"      robot="pr2" tab="Manipulation"/>
+      <rcommander plugin="rcommander_pr2.move_tool"          robot="pr2" tab="Manipulation"/>
+      <rcommander plugin="rcommander_pr2.gripper_tool"       robot="pr2" tab="Manipulation"/>
+      <rcommander plugin="rcommander_pr2.gripper_event_tool" robot="pr2" tab="Manipulation"/>
+      <rcommander plugin="rcommander_pr2.spine_tool"         robot="pr2" tab="Manipulation"/>
 
-      <rcommander plugin="rcommander_pr2.navigate_tool" tab="Navigation"/>
+      <rcommander plugin="rcommander_pr2.navigate_tool"      robot="all" tab="Navigation"/>
 
-      <rcommander plugin="rcommander_pr2.speak_tool" tab="Interaction"/>
+      <rcommander plugin="rcommander_pr2.speak_tool"         robot="all" tab="Interaction"/>
   </export>
 
 </package>

@@ -7,13 +7,13 @@ import rospy
 import tf_utils as tfu
 import tf.transformations as tr
 import numpy as np
-#import move_base_msgs.msg as mm
-#import math
 from object_manipulator.convert_functions import *
 import ptp_arm_action.msg as ptp
 import math
 import rcommander.point_tool as ptl
 
+#import move_base_msgs.msg as mm
+#import math
 ##
 # Options: stopping criteria
 #          relative or absolute

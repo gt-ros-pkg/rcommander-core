@@ -8,4 +8,4 @@ import tf
 rospy.init_node('rcommander', anonymous=True)
 tf = tf.TransformListener()
 pr2 = pu.PR2(tf)
-rc.run(pr2, tf)
+rc.run(pr2, tf, ['all', 'pr2'])

@@ -542,7 +542,7 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
         properties_dict['fsm_stack'    ] = self.fsm_stack
         self.graph_view.draw(properties_dict)
 
-def run(robot, tf_listener):
+def run(robot, tf_listener, plugin_namespace):
     import plugins 
     import point_tool as ptl
     import state_machine_tool as smt
@@ -555,7 +555,7 @@ def run(robot, tf_listener):
 
     #Load plugins
     tools_list = [['Graph', st.SleepTool(rc)], ['Graph', ptl.Point3DTool(rc)], ['Graph', smt.StateMachineTool(rc)]]
-    plugin_clses = plugins.load_plugins()
+    plugin_clses = plugins.load_plugins(plugin_namespace)
     for tab_name, pcls in plugin_clses:
         tools_list.append([tab_name, pcls(rc)])
     rc.add_tools(tools_list)
