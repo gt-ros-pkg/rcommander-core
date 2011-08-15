@@ -12,9 +12,8 @@
   <depend package="rospy"/>
   <depend package="tf"/>
   <depend package="actionlib"/>
-  <depend package="pr2_mechanism_msgs"/>
-
   <depend package="object_manipulator"/>
+  <depend package="pycontroller_manager"/>
 </package>
 
 
