@@ -7,7 +7,7 @@ import roslib.rospack
 import inspect
 import os
 
-def load_plugins():
+def load_plugins(robot_namespaces):
     """
     @return: list of static roswtf plugins, list of online
     roswtf plugins
@@ -17,13 +17,16 @@ def load_plugins():
     plugin_classes = []
     for pkg in dependencies:
         m_filename = roslib.manifest.manifest_file(pkg, True)
-        manifest = roslib.manifest.parse_file(m_filename)
-        p_modules = manifest.get_export('rcommander', 'plugin')
-        p_tabs = manifest.get_export('rcommander', 'tab')
+        manifest   = roslib.manifest.parse_file(m_filename)
+        p_modules  = manifest.get_export('rcommander', 'plugin')
+        p_tabs     = manifest.get_export('rcommander', 'tab')
+        p_robots   = manifest.get_export('rcommander', 'robot')
         if not p_modules:
             continue
 
-        for p_module, p_tab in zip(p_modules, p_tabs):
+        for p_module, p_tab, p_robot in zip(p_modules, p_tabs, p_robots):
+            if not (p_robot in robot_namespaces):
+                continue
             ## import the specified plugin module
             try:
                 roslib.load_manifest(pkg)
