@@ -1,0 +1,17 @@
+<package>
+  <description brief="pycontroller_manager">
+
+     pycontroller_manager
+
+  </description>
+  <author>Hai</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/pycontroller_manager</url>
+
+  <depend package="rospy"/>
+  <depend package="pr2_mechanism_msgs"/>
+
+</package>
+
+
