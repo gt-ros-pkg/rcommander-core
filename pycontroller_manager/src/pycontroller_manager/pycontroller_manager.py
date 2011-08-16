@@ -25,7 +25,7 @@ class ControllerManager:
     def switch(self, start_con, stop_con):
         con = self.list_controllers()
         for n in start_con:
-            if not n in con.controller:
+            if not n in con.controllers:
                 print 'loading controller', n
                 self.load(n)
             else:

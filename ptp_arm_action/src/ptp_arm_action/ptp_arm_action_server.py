@@ -214,7 +214,7 @@ class PTPArmActionServer:
                 print 'clamped_target', clamped_target.pose.position.x, clamped_target.pose.position.y, 
                 print clamped_target.pose.position.z, clamped_target.header.frame_id, '\n'
 
-            break
+            #break
             self.target_pub.publish(clamped_target)
 
         trans, ang, _ = pose_distance(gripper_ps, goal_ps, self.tf)
