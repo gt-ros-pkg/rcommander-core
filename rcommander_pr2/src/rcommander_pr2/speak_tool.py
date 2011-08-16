@@ -44,7 +44,7 @@ class SpeakNode(smach.State, tu.StateBase):
         self.__init_unpicklables__()
 
     def execute(self, userdata):
-        self.sound_client.say(self.text, 'voice_kal_diphone')
+        self.sound_client.say(self.text)#, 'voice_kal_diphone')
         return 'done'
 
     def __init_unpicklables__(self):

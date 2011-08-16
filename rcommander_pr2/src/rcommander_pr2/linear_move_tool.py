@@ -103,22 +103,21 @@ class LinearMoveTool(tu.ToolBase):
 
     def get_current_pose(self):
         frame_described_in = str(self.frame_box.currentText())
-        left = ('Left' == str(self.arm_box.currentText()))
-        right = False
+        left = ('left' == str(self.arm_box.currentText()))
         if not left:
-            right = True
             arm_tip_frame = LinearMoveTool.RIGHT_TIP
         else:
             arm_tip_frame = LinearMoveTool.LEFT_TIP
         
+        #print 'getting pose for', arm_tip_frame, left, str(self.arm_box.currentText())
         self.tf_listener.waitForTransform(frame_described_in, arm_tip_frame, rospy.Time(), rospy.Duration(2.))
-        p_arm = tfu.tf_as_matrix(self.tf_listener.lookupTransform(frame_described_in, arm_tip_frame, rospy.Time(0))) * tr.identity_matrix()
+        p_arm = tfu.tf_as_matrix(self.tf_listener.lookupTransform(frame_described_in, arm_tip_frame, rospy.Time(0)))
         trans, rotation = tr.translation_from_matrix(p_arm), tr.quaternion_from_matrix(p_arm)
 
         for value, vr in zip(trans, [self.xline, self.yline, self.zline]):
-            vr.setText(str(value))
+            vr.setText("%.3f" % value)
         for value, vr in zip(tr.euler_from_quaternion(rotation), [self.phi_line, self.theta_line, self.psi_line]):
-            vr.setText(str(np.degrees(value)))
+            vr.setText("%.3f" % np.degrees(value))
 
         self.motion_box.setCurrentIndex(self.motion_box.findText('absolute'))
 
@@ -176,7 +175,7 @@ class LinearMoveTool(tu.ToolBase):
         for vr in [self.phi_line, self.theta_line, self.psi_line]:
             vr.setText(str(0.0))
 
-        self.frame_box.setCurrentIndex(self.frame_box.findText('base_link'))
+        self.frame_box.setCurrentIndex(self.frame_box.findText('/base_link'))
         self.motion_box.setCurrentIndex(self.motion_box.findText('relative'))
         self.trans_vel_line.setText(str(.02))
         self.rot_vel_line.setText(str(.16))
