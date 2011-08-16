@@ -14,6 +14,8 @@ class ControllerManager:
         # SwitchController
         self._switch_controller = rospy.ServiceProxy('pr2_controller_manager/switch_controller', pmm.SwitchController)
 
+        self.list_controllers = rospy.ServiceProxy('pr2_controller_manager/list_controllers', pmm.ListControllers)
+
         self.joint_controllers = {}
         self.cart_controllers = {}
         for arm in ['l', 'r']:
@@ -21,12 +23,15 @@ class ControllerManager:
             self.cart_controllers[arm] = cart_controller_name = arm + '_cart'
 
     def switch(self, start_con, stop_con):
-        print 'switching to', start_con, 'from', stop_con
+        con = self.list_controllers()
         for n in start_con:
-            self.load(n)
+            if not n in con.controller:
+                print 'loading controller', n
+                self.load(n)
+            else:
+                print n, 'already loaded'
+
         resp = self._switch_controller(start_con, stop_con, pmm.SwitchControllerRequest.STRICT)
-        #for n in stop_con:
-        #    self.unload(n)
         return resp.ok
 
     def joint_mode(self, arm):

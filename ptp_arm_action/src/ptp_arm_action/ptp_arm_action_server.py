@@ -176,7 +176,9 @@ class PTPArmActionServer:
 
         while True:
             #tfu.tf_as_matrix(self.tf.lookupTransform('base_link', self.tool_frame
-            gripper_ps = stamp_pose(mat_to_pose(tfu.tf_as_matrix(self.tf.lookupTransform('torso_lift_link', self.tool_frame, rospy.Time(0)))), 'torso_lift_link')
+            gripper_matrix = tfu.tf_as_matrix(self.tf.lookupTransform('torso_lift_link', self.tool_frame, rospy.Time(0)))
+            print 'translation', tr.translation_from_matrix(gripper_matrix)
+            gripper_ps = stamp_pose(mat_to_pose(gripper_matrix), 'torso_lift_link')
             #Someone preempted us!
             if self.linear_movement_as.is_preempt_requested():
                 #Stop our motion
@@ -190,8 +192,6 @@ class PTPArmActionServer:
                 print 'current_pose %.3f %.3f %.3f in %s' % (gripper_ps.pose.position.x, gripper_ps.pose.position.y, gripper_ps.pose.position.z, gripper_ps.header.frame_id)
 
             trans, ang, _ = pose_distance(gripper_ps, goal_ps, self.tf)
-            #TODO What is trans, verify its type
-            #print trans, trans.__class__
             feedback = ptp.LinearMovementFeedback(gm.Vector3(trans[0,0], trans[1,0], trans[2,0]))
             self.linear_movement_as.publish_feedback(feedback)
 
@@ -214,6 +214,7 @@ class PTPArmActionServer:
                 print 'clamped_target', clamped_target.pose.position.x, clamped_target.pose.position.y, 
                 print clamped_target.pose.position.z, clamped_target.header.frame_id, '\n'
 
+            break
             self.target_pub.publish(clamped_target)
 
         trans, ang, _ = pose_distance(gripper_ps, goal_ps, self.tf)
