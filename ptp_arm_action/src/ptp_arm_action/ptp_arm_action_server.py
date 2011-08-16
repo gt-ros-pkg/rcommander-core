@@ -41,11 +41,13 @@ class PTPArmActionServer:
         if arm == 'left':
             self.controller = 'l_cart'
             self.joint_controller = 'l_arm_controller'
-            self.tool_frame = 'l_gripper_tool_frame'
+            #self.tool_frame = 'l_gripper_tool_frame'
+            self.tool_frame = rospy.get_param('/l_cart/tip_name')
         elif arm == 'right':
             self.controller = 'r_cart'
             self.joint_controller = 'r_arm_controller'
-            self.tool_frame = 'r_gripper_tool_frame'
+            #self.tool_frame = 'r_gripper_tool_frame'
+            self.tool_frame = rospy.get_param('/r_cart/tip_name')
         else:
             raise RuntimeError('Invalid parameter for arm: %s' % arm)
 
@@ -122,24 +124,24 @@ class PTPArmActionServer:
 	    ############################################
 	    ############################################
 
-            #ref_T_tip = tfu.tf_as_matrix(self.tf.lookupTransform(goal_ps.header.frame_id, self.tool_frame, rospy.Time(0)))
-            ##ref_R_tip = ref_T_tip.copy()
-            ##ref_R_tip[0:3,3] = 0
-            #tll_T_ref = tfu.tf_as_matrix(self.tf.lookupTransform('torso_lift_link', goal_ps.header.frame_id, rospy.Time(0)))
+            ref_T_tip = tfu.tf_as_matrix(self.tf.lookupTransform(goal_ps.header.frame_id, self.tool_frame, rospy.Time(0)))
+            #ref_R_tip = ref_T_tip.copy()
+            #ref_R_tip[0:3,3] = 0
+            tll_T_ref = tfu.tf_as_matrix(self.tf.lookupTransform('torso_lift_link', goal_ps.header.frame_id, rospy.Time(0)))
 
-            #tip_R_tp  = pose_to_mat(goal_ps.pose)
-            #ref_T_tp  = ref_R_tip * tip_R_tp
-            #tll_T_tp  = tll_T_ref * ref_T_tp
+            tip_R_tp  = pose_to_mat(goal_ps.pose)
+            ref_T_tp  = ref_T_tip * tip_R_tp
+            tll_T_tp  = tll_T_ref * ref_T_tp
 
 
-            tip_T_ref = tfu.tf_as_matrix(self.tf.lookupTransform(self.tool_frame, goal_ps.header.frame_id, rospy.Time(0)))
-            tll_T_tip = tfu.tf_as_matrix(self.tf.lookupTransform('torso_lift_link', self.tool_frame, rospy.Time(0)))
-            tip_R_ref = tip_T_ref.copy()
-            tip_R_ref[0:3,3] = 0
+            ##tip_T_ref = tfu.tf_as_matrix(self.tf.lookupTransform(self.tool_frame, goal_ps.header.frame_id, rospy.Time(0)))
+            ##tll_T_tip = tfu.tf_as_matrix(self.tf.lookupTransform('torso_lift_link', self.tool_frame, rospy.Time(0)))
+            ##tip_R_ref = tip_T_ref.copy()
+            ##tip_R_ref[0:3,3] = 0
 
-            p_ref     = pose_to_mat(goal_ps.pose)
-            p_tip     = tip_R_ref * p_ref
-            p_tll     = tll_T_tip * p_tip 
+            ##p_ref     = pose_to_mat(goal_ps.pose)
+            ##p_tip     = tip_R_ref * p_ref
+            ##p_tll     = tll_T_tip * p_tip 
 
             #print 'tll_T_ref\n', tll_T_ref
             #print 'ref_T_tp \n', ref_T_tp
@@ -172,8 +174,8 @@ class PTPArmActionServer:
             #rospy.loginfo('New position in torso lift link' + str(tll_T_pose[:,3].T))
             #goal_ps = stamp_pose(mat_to_pose(tll_T_pose), 'torso_lift_link')
 
-            #goal_ps = stamp_pose(mat_to_pose(tll_T_tp), 'torso_lift_link')
-            goal_ps = stamp_pose(mat_to_pose(p_tll), 'torso_lift_link')
+            goal_ps = stamp_pose(mat_to_pose(tll_T_tp), 'torso_lift_link')
+            #goal_ps = stamp_pose(mat_to_pose(p_tll), 'torso_lift_link')
             #self.linear_movement_as.set_aborted(ptp.LinearMovementResult(gm.Vector3(0,0,0)))
 
         tstart = rospy.get_time()
@@ -186,12 +188,12 @@ class PTPArmActionServer:
         rospy.loginfo('Goal is x %f y %f z %f in %s' % (goal_torso.pose.position.x, goal_torso.pose.position.y, 
             goal_torso.pose.position.z, goal_torso.header.frame_id))
 
-        verbose = True
+        verbose = False
 
         while True:
             #tfu.tf_as_matrix(self.tf.lookupTransform('base_link', self.tool_frame
             gripper_matrix = tfu.tf_as_matrix(self.tf.lookupTransform('torso_lift_link', self.tool_frame, rospy.Time(0)))
-            print 'translation', tr.translation_from_matrix(gripper_matrix)
+            #print 'translation', tr.translation_from_matrix(gripper_matrix)
             gripper_ps = stamp_pose(mat_to_pose(gripper_matrix), 'torso_lift_link')
             #Someone preempted us!
             if self.linear_movement_as.is_preempt_requested():
@@ -203,7 +205,12 @@ class PTPArmActionServer:
 
             #Calc feedback
             if verbose:
-                print 'current_pose %.3f %.3f %.3f in %s' % (gripper_ps.pose.position.x, gripper_ps.pose.position.y, gripper_ps.pose.position.z, gripper_ps.header.frame_id)
+                print 'current_pose %.3f %.3f %.3f, rot %.3f %.3f %.3f %.3f in %s' % (gripper_ps.pose.position.x, gripper_ps.pose.position.y, gripper_ps.pose.position.z, 
+                        gripper_ps.pose.orientation.x, gripper_ps.pose.orientation.y, gripper_ps.pose.orientation.z, 
+                        gripper_ps.pose.orientation.w, gripper_ps.header.frame_id)
+                print 'goal_pose %.3f %.3f %.3f, rot %.3f %.3f %.3f %.3f in %s' % (goal_ps.pose.position.x, goal_ps.pose.position.y, goal_ps.pose.position.z, 
+                        goal_ps.pose.orientation.x, goal_ps.pose.orientation.y, goal_ps.pose.orientation.z, 
+                        goal_ps.pose.orientation.w, goal_ps.header.frame_id)
 
             trans, ang, _ = pose_distance(gripper_ps, goal_ps, self.tf)
             feedback = ptp.LinearMovementFeedback(gm.Vector3(trans[0,0], trans[1,0], trans[2,0]))
@@ -212,7 +219,7 @@ class PTPArmActionServer:
             #Reached goal
             trans_mag = np.linalg.norm(trans)
             if verbose:
-                print trans.T, 'trans_mag', trans_mag, abs(ang), self.rot_tolerance
+                print trans.T, 'trans_mag', trans_mag, 'ang', abs(ang), 'rot toler', self.rot_tolerance
 
             if self.trans_tolerance > trans_mag and self.rot_tolerance > abs(ang):
                 rospy.loginfo('action_cb: reached goal.')
@@ -228,8 +235,8 @@ class PTPArmActionServer:
                 print 'clamped_target', clamped_target.pose.position.x, clamped_target.pose.position.y, 
                 print clamped_target.pose.position.z, clamped_target.header.frame_id, '\n'
 
-            #break
             self.target_pub.publish(clamped_target)
+            #break
 
         trans, ang, _ = pose_distance(gripper_ps, goal_ps, self.tf)
         result = ptp.LinearMovementResult(gm.Vector3(trans[0,0], trans[1,0], trans[2,0]))
@@ -275,6 +282,7 @@ class PTPArmActionServer:
         c_T_d[0:3, 3] = clamped_trans
         g_T_d = g_T_c * c_T_d
         clamped_pose = stamp_pose(mat_to_pose(g_T_d), desired_pose.header.frame_id)
+        clamped_pose.header.stamp = rospy.Time.now()
         return clamped_pose
 
 if __name__ == '__main__':
