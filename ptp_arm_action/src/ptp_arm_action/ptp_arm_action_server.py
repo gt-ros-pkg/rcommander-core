@@ -165,10 +165,12 @@ class PTPArmActionServer:
         tstart = rospy.get_time()
         tmax = tstart + self.time_out
         self.controller_manager = ControllerManager()
-        rospy.loginfo('Goal is x %f y %f z %f in %s' % (goal_ps.pose.position.x, goal_ps.pose.position.y, goal_ps.pose.position.z, goal_ps.header.frame_id))
+        rospy.loginfo('Goal is x %f y %f z %f in %s' % (goal_ps.pose.position.x, goal_ps.pose.position.y, 
+            goal_ps.pose.position.z, goal_ps.header.frame_id))
 
         goal_torso = change_pose_stamped_frame(self.tf, goal_ps, 'torso_lift_link')
-        rospy.loginfo('Goal is x %f y %f z %f in %s' % (goal_torso.pose.position.x, goal_torso.pose.position.y, goal_torso.pose.position.z, goal_torso.header.frame_id))
+        rospy.loginfo('Goal is x %f y %f z %f in %s' % (goal_torso.pose.position.x, goal_torso.pose.position.y, 
+            goal_torso.pose.position.z, goal_torso.header.frame_id))
 
         verbose = True
 
@@ -211,10 +213,8 @@ class PTPArmActionServer:
             if verbose:
                 print 'clamped_target', clamped_target.pose.position.x, clamped_target.pose.position.y, 
                 print clamped_target.pose.position.z, clamped_target.header.frame_id, '\n'
-            #return
+
             self.target_pub.publish(clamped_target)
-            #if verbose:
-            #    print 'sending controls'
 
         trans, ang, _ = pose_distance(gripper_ps, goal_ps, self.tf)
         result = ptp.LinearMovementResult(gm.Vector3(trans[0,0], trans[1,0], trans[2,0]))
@@ -224,8 +224,8 @@ class PTPArmActionServer:
         else:
             rospy.loginfo('ABORTED! %.3f ang %.3f' % (np.linalg.norm(trans), np.degrees(ang)))
             self.linear_movement_as.set_aborted(result)
-        self.controller_manager.joint_mode(self.arm)
 
+        #self.controller_manager.joint_mode(self.arm)
         #loop
         # while not at goal and not timed out
         #   clamp pose
