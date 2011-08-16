@@ -24,12 +24,14 @@ import rcommander.point_tool as ptl
 # create and edits smach states
 class LinearMoveTool(tu.ToolBase):
 
-    LEFT_TIP = 'l_gripper_tool_frame'
-    RIGHT_TIP = 'r_gripper_tool_frame'
+    #LEFT_TIP = 'l_gripper_tool_frame'
+    #RIGHT_TIP = 'r_gripper_tool_frame'
+    LEFT_TIP = rospy.get_param('/l_cart/tip_name')
+    RIGHT_TIP = rospy.get_param('/r_cart/tip_name')
 
     def __init__(self, rcommander):
         tu.ToolBase.__init__(self, rcommander, 'linear_move', 'Linear Move', LinearMoveState)
-        self.default_frame = 'base_link'
+        self.default_frame = '/torso_lift_link'
         self.tf_listener = rcommander.tf_listener
 
     def fill_property_box(self, pbox):
@@ -175,7 +177,7 @@ class LinearMoveTool(tu.ToolBase):
         for vr in [self.phi_line, self.theta_line, self.psi_line]:
             vr.setText(str(0.0))
 
-        self.frame_box.setCurrentIndex(self.frame_box.findText('/base_link'))
+        self.frame_box.setCurrentIndex(self.frame_box.findText(self.default_frame))
         self.motion_box.setCurrentIndex(self.motion_box.findText('relative'))
         self.trans_vel_line.setText(str(.02))
         self.rot_vel_line.setText(str(.16))
