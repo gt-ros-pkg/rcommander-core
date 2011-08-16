@@ -122,12 +122,25 @@ class PTPArmActionServer:
 	    ############################################
 	    ############################################
 
-            ref_T_tip = tfu.tf_as_matrix(self.tf.lookupTransform(goal_ps.header.frame_id, self.tool_frame, rospy.Time(0)))
-            tll_T_ref = tfu.tf_as_matrix(self.tf.lookupTransform('torso_lift_link', goal_ps.header.frame_id, rospy.Time(0)))
+            #ref_T_tip = tfu.tf_as_matrix(self.tf.lookupTransform(goal_ps.header.frame_id, self.tool_frame, rospy.Time(0)))
+            ##ref_R_tip = ref_T_tip.copy()
+            ##ref_R_tip[0:3,3] = 0
+            #tll_T_ref = tfu.tf_as_matrix(self.tf.lookupTransform('torso_lift_link', goal_ps.header.frame_id, rospy.Time(0)))
 
-            tip_R_tp  = pose_to_mat(goal_ps.pose)
-            ref_T_tp  = ref_T_tip * tip_R_tp
-            tll_T_tp  = tll_T_ref * ref_T_tp
+            #tip_R_tp  = pose_to_mat(goal_ps.pose)
+            #ref_T_tp  = ref_R_tip * tip_R_tp
+            #tll_T_tp  = tll_T_ref * ref_T_tp
+
+
+            tip_T_ref = tfu.tf_as_matrix(self.tf.lookupTransform(self.tool_frame, goal_ps.header.frame_id, rospy.Time(0)))
+            tll_T_tip = tfu.tf_as_matrix(self.tf.lookupTransform('torso_lift_link', self.tool_frame, rospy.Time(0)))
+            tip_R_ref = tip_T_ref.copy()
+            tip_R_ref[0:3,3] = 0
+
+            p_ref     = pose_to_mat(goal_ps.pose)
+            p_tip     = tip_R_ref * p_ref
+            p_tll     = tll_T_tip * p_tip 
+
             #print 'tll_T_ref\n', tll_T_ref
             #print 'ref_T_tp \n', ref_T_tp
             #print 'result\n', tll_T_tp
@@ -159,7 +172,8 @@ class PTPArmActionServer:
             #rospy.loginfo('New position in torso lift link' + str(tll_T_pose[:,3].T))
             #goal_ps = stamp_pose(mat_to_pose(tll_T_pose), 'torso_lift_link')
 
-            goal_ps = stamp_pose(mat_to_pose(tll_T_tp), 'torso_lift_link')
+            #goal_ps = stamp_pose(mat_to_pose(tll_T_tp), 'torso_lift_link')
+            goal_ps = stamp_pose(mat_to_pose(p_tll), 'torso_lift_link')
             #self.linear_movement_as.set_aborted(ptp.LinearMovementResult(gm.Vector3(0,0,0)))
 
         tstart = rospy.get_time()
