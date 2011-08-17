@@ -99,7 +99,7 @@ class GraphModel:
             pickle_file.close()
 
             if is_container(gm.smach_states[sname]):
-                gm.smach_states[sname] = gm.smach_states[sname].load_and_recreate(robot)
+                gm.smach_states[sname] = gm.smach_states[sname].load_and_recreate(name, robot)
                 #if sname == 'gripper_event0':
                 #    print "gripper_event0 REMAPPING IS"
                 #    print gm.smach_states[sname].remapping

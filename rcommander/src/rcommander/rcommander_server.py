@@ -6,9 +6,11 @@ import os
 import actionlib
 import rospy
 import pr2_interactive_manipulation.msg as pim 
+import geometry_msgs.msg as geo
 import sys
 
-from srv import *
+#from srv import *
+from pr2_interactive_manipulation.srv import *
 import sm_thread_runner as smtr
 import graph_model as gm
 import point_tool as pt
@@ -17,19 +19,19 @@ import point_tool as pt
 class PoseStampedScriptedActionServer:
 
     def __init__(self, action_name, path_to_action, robot):
-        rospy.loginfo('Starting server for %s with path %s' %(action_name, path_to_action))
+        self.action_name = action_name
+        self.path_to_action = path_to_action
+        #rospy.loginfo('Starting server for %s with path %s' %(action_name, path_to_action))
         self.robot = robot
-
         #Setup ROS Action Server
-        self._action_name = action_name
-        self._as = actionlib.SimpleActionServer(self._action_name, pim.PoseStampedScriptedAction, execute_cb=self.execute_cb, auto_start=False)
-        self._as.start()
-
-        rospy.loginfo('%s server up!' % action_name)
+        #self._action_name = action_name
+        #self._as = actionlib.SimpleActionServer(self._action_name, pim.PoseStampedScriptedAction, execute_cb=self.execute_cb, auto_start=False)
+        #self._as.start()
+        #rospy.loginfo('%s server up!' % action_name)
 
     def setup_sm(self):
         #Setup state machine
-        self.graph_model = gm.GraphModel.load(path_to_action, self.robot)
+        self.graph_model = gm.GraphModel.load(self.path_to_action, self.robot)
 
         #Find the first global node that is of the right type
         self.point_field_name = None
@@ -40,24 +42,24 @@ class PoseStampedScriptedActionServer:
         if self.point_field_name == None:
             raise RuntimeError('This statemachine doesn\'t have any nodes of type Point3DState')
 
-    def execute_cb(self, goal):
+    def execute(self, pose_stamped, actserver):
         self.setup_sm()
         r = rospy.Rate(30)
-        position = [goal.pose_stamped.pose.position.x, 
-                goal.pose_stamped.pose.position.y, 
-                goal.pose_stamped.pose.position.z]
-        frame = goal.pose_stamped.header.frame_id
+        position = [pose_stamped.pose.position.x, 
+                    pose_stamped.pose.position.y, 
+                    pose_stamped.pose.position.z]
+        frame = pose_stamped.header.frame_id
         print 'Position', position, 'frame', frame
 
         self.graph_model.get_smach_state(self.point_field_name).set_info((position, frame))
         state_machine = self.graph_model.create_state_machine()
-        rthread = smtr.ThreadRunSM(self._action_name, state_machine)
+        rthread = smtr.ThreadRunSM(self.action_name, state_machine)
         rthread.start()
 
         #Do something
         while True:
-            if self._as.is_preempt_requested():
-                self._as.set_preempted()
+            if actserver.is_preempt_requested():
+                actserver.set_preempted()
                 success = False
                 break
 
@@ -75,11 +77,12 @@ class PoseStampedScriptedActionServer:
 
         if success:
             state_machine_output = rthread.outcome
-            result = pim.PoseStampedScriptedResult(state_machine_output)
-            rospy.loginfo("%s: Succeeded" % self._action_name)
-            self._as.set_succeeded(result)
+            #result = pim.PoseStampedScriptedResult(state_machine_output)
+            result = pim.RunScriptResult(state_machine_output)
+            rospy.loginfo("%s: succeeded with %s" % (self.action_name, state_machine_output))
+            actserver.set_succeeded(result)
         else:
-            self._as.set_aborted()
+            actserver.set_aborted()
 
 
 # rviz talks to server, which loads and serves everything in a directory
@@ -89,7 +92,15 @@ class RCommanderServer:
     def __init__(self, robot):
         self.robot = robot
         self.action_dict = {}
-        rospy.Service('list_actions', ActionInfo, self.list_action_cb)
+        rospy.Service('list_rcommander_actions', ActionInfo, self.list_action_cb)
+        self.actserv = actionlib.SimpleActionServer('run_rcommander_action', pim.RunScriptAction, execute_cb=self.execute_cb, auto_start=False)
+        self.actserv.start()
+
+    def execute_cb(self, goal):
+        rospy.loginfo('Requested: group ' + goal.group_name + ' action: ' + goal.action_name)
+        rospy.loginfo('waiting for click..')
+        ps_msg = rospy.wait_for_message('/cloud_click_point', geo.PoseStamped)
+        self.action_dict[goal.group_name][goal.action_name].execute(ps_msg, self.actserv)
 
     def load_actions_in_groups(self, action_groups):
         for group_name, path_name in action_groups:
@@ -104,11 +115,11 @@ class RCommanderServer:
         rospy.loginfo('Found actions: ' + str(dirs))
         self.action_dict[group_name] = {}
         for action_pt in dirs:
-            self.serve_action(action_pt, os.path.join(path_name, d), group_name)
+            self.serve_action(action_pt, os.path.join(path_name, action_pt), group_name)
 
     def serve_action(self, action_name, action_path, group_name):
         #Actually, they're all pose stamped scripted actions...
-        self.action_dict[group_name][action_path] = PoseStampedScriptedActionServer(action_name, action_path, self.robot)
+        self.action_dict[group_name][action_name] = PoseStampedScriptedActionServer(action_name, action_path, self.robot)
 
     def list_action_cb(self, req):
         actions = self.action_dict[req.group_name].keys()
