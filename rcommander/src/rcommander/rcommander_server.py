@@ -1,13 +1,17 @@
 import roslib; roslib.load_manifest('rcommander')
-import pr2_interactive_manipulation.msg as pim
+
+import os.path
+import os
+
+import actionlib
+import rospy
+import pr2_interactive_manipulation.msg as pim 
+import sys
+
+from srv import *
 import sm_thread_runner as smtr
-from rcommander.srv import *
 import graph_model as gm
 import point_tool as pt
-import actionlib
-import os.path
-import rospy
-import os
 
 
 class PoseStampedScriptedActionServer:
@@ -83,6 +87,7 @@ class PoseStampedScriptedActionServer:
 class RCommanderServer:
 
     def __init__(self, robot):
+        self.robot = robot
         self.action_dict = {}
         rospy.Service('list_actions', ActionInfo, self.list_action_cb)
 
@@ -91,14 +96,19 @@ class RCommanderServer:
             self.load_group(group_name, path_name)
 
     def load_group(self, group_name, path_name):
-        dirs = [d for d in os.listdir(path_name) if os.path.isdir(d)]
+        rospy.loginfo('Loading group: ' + group_name)
+        dirs = []#[d for d in os.listdir(path_name) if os.path.isdir(d)]
+        for d in os.listdir(path_name):
+            if os.path.isdir(os.path.join(path_name, d)):
+                dirs.append(d)
+        rospy.loginfo('Found actions: ' + str(dirs))
         self.action_dict[group_name] = {}
         for action_pt in dirs:
-            self.serve_action(action_pt, group_name)
+            self.serve_action(action_pt, os.path.join(path_name, d), group_name)
 
-    def serve_action(self, action_path, group_name):
+    def serve_action(self, action_name, action_path, group_name):
         #Actually, they're all pose stamped scripted actions...
-        self.action_dict[group_name][action_path] = PoseStampedScriptedActionServer(action_path, action_path, self.robot)
+        self.action_dict[group_name][action_path] = PoseStampedScriptedActionServer(action_name, action_path, self.robot)
 
     def list_action_cb(self, req):
         actions = self.action_dict[req.group_name].keys()
@@ -124,12 +134,14 @@ def run(robot):
     from optparse import OptionParser
 
     p = OptionParser()
-    parser.add_option("-d", "--dir", dest="dir", action="append", default=[], help="directory to find saved actions from")
-    parser.add_option("-n", "--name", dest="name", action="append", default=[], help="name for action group")
+    p.add_option("-d", "--dir", dest="dir", action="append", default=[], help="directory to find saved actions from")
+    p.add_option("-n", "--name", dest="name", action="append", default=[], help="name for action group")
     options, args = p.parse_args()
 
     server_man = RCommanderServer(robot)
-    server_man.load_actions_in_groups(zip(options.dir, options.name))
+    #print options.name, options.dir
+    server_man.load_actions_in_groups(zip(options.name, options.dir))
+    rospy.loginfo('server up!')
     rospy.spin()
 
 
