@@ -24,12 +24,14 @@ import rcommander.point_tool as ptl
 # create and edits smach states
 class LinearMoveTool(tu.ToolBase):
 
-    LEFT_TIP = 'l_gripper_tool_frame'
-    RIGHT_TIP = 'r_gripper_tool_frame'
+    #LEFT_TIP = 'l_gripper_tool_frame'
+    #RIGHT_TIP = 'r_gripper_tool_frame'
+    LEFT_TIP = rospy.get_param('/l_cart/tip_name')
+    RIGHT_TIP = rospy.get_param('/r_cart/tip_name')
 
     def __init__(self, rcommander):
         tu.ToolBase.__init__(self, rcommander, 'linear_move', 'Linear Move', LinearMoveState)
-        self.default_frame = 'base_link'
+        self.default_frame = '/torso_lift_link'
         self.tf_listener = rcommander.tf_listener
 
     def fill_property_box(self, pbox):
@@ -61,8 +63,10 @@ class LinearMoveTool(tu.ToolBase):
         self.trans_vel_line = QLineEdit(pbox)
         self.rot_vel_line = QLineEdit(pbox)
 
-        self.frameline  = QLineEdit(pbox)
-        self.frameline.setText(self.default_frame)
+        self.frame_box = QComboBox(pbox)
+        for f in self.tf_listener.getFrameStrings():
+            self.frame_box.addItem(f)
+
         self.pose_button = QPushButton(pbox)
         self.pose_button.setText('Current Pose')
         self.rcommander.connect(self.pose_button, SIGNAL('clicked()'), self.get_current_pose)
@@ -80,7 +84,7 @@ class LinearMoveTool(tu.ToolBase):
 
         formlayout.addRow('&Translational Vel', self.trans_vel_line)
         formlayout.addRow('&Rotational Vel', self.rot_vel_line)
-        formlayout.addRow("&frame", self.frameline)
+        formlayout.addRow("&frame", self.frame_box)
         formlayout.addRow(self.pose_button)
         self.reset()
 
@@ -90,38 +94,39 @@ class LinearMoveTool(tu.ToolBase):
             self.xline.setEnabled(False)
             self.yline.setEnabled(False)
             self.zline.setEnabled(False)
-            self.frameline.setEnabled(False)
+            self.frame_box.setEnabled(False)
             self.pose_button.setEnabled(False)
         else:
             self.xline.setEnabled(True)
             self.yline.setEnabled(True)
             self.zline.setEnabled(True)
-            self.frameline.setEnabled(True)
+            self.frame_box.setEnabled(True)
             self.pose_button.setEnabled(True)
 
     def get_current_pose(self):
-        frame_described_in = str(self.frameline.text())
-        left = ('Left' == str(self.arm_box.currentText()))
-        right = False
+        frame_described_in = str(self.frame_box.currentText())
+        left = ('left' == str(self.arm_box.currentText()))
         if not left:
-            right = True
             arm_tip_frame = LinearMoveTool.RIGHT_TIP
         else:
             arm_tip_frame = LinearMoveTool.LEFT_TIP
         
+        #print 'getting pose for', arm_tip_frame, left, str(self.arm_box.currentText())
         self.tf_listener.waitForTransform(frame_described_in, arm_tip_frame, rospy.Time(), rospy.Duration(2.))
-        p_arm = tfu.tf_as_matrix(self.tf_listener.lookupTransform(frame_described_in, arm_tip_frame, rospy.Time(0))) * tr.identity_matrix()
+        p_arm = tfu.tf_as_matrix(self.tf_listener.lookupTransform(frame_described_in, arm_tip_frame, rospy.Time(0)))
         trans, rotation = tr.translation_from_matrix(p_arm), tr.quaternion_from_matrix(p_arm)
 
         for value, vr in zip(trans, [self.xline, self.yline, self.zline]):
-            vr.setText(str(value))
+            vr.setText("%.3f" % value)
         for value, vr in zip(tr.euler_from_quaternion(rotation), [self.phi_line, self.theta_line, self.psi_line]):
-            vr.setText(str(np.degrees(value)))
+            vr.setText("%.3f" % np.degrees(value))
+
+        self.motion_box.setCurrentIndex(self.motion_box.findText('absolute'))
 
     def new_node(self, name=None):
         trans  = [float(vr.text()) for vr in [self.xline, self.yline, self.zline]]
         angles = [float(vr.text()) for vr in [self.phi_line, self.theta_line, self.psi_line]]
-        frame  = str(self.frameline.text())
+        frame  = str(self.frame_box.currentText())
         trans_vel = float(str(self.trans_vel_line.text()))
         rot_vel   = float(str(self.rot_vel_line.text()))
         source_name = str(self.source_box.currentText())
@@ -146,7 +151,7 @@ class LinearMoveTool(tu.ToolBase):
         for value, vr in zip(node.angles, [self.phi_line, self.theta_line, self.psi_line]):
             vr.setText(str(value))
 
-        self.frameline.setText(node.frame)
+        self.frame_box.setCurrentIndex(self.frame_box.findText(str(node.frame)))
         self.motion_box.setCurrentIndex(self.motion_box.findText(str(node.motion_type)))
         self.arm_box.setCurrentIndex(self.arm_box.findText(node.arm))
 
@@ -171,7 +176,8 @@ class LinearMoveTool(tu.ToolBase):
             vr.setText(str(0.0))
         for vr in [self.phi_line, self.theta_line, self.psi_line]:
             vr.setText(str(0.0))
-        self.frameline.setText(self.default_frame)
+
+        self.frame_box.setCurrentIndex(self.frame_box.findText(self.default_frame))
         self.motion_box.setCurrentIndex(self.motion_box.findText('relative'))
         self.trans_vel_line.setText(str(.02))
         self.rot_vel_line.setText(str(.16))

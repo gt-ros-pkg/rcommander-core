@@ -9,6 +9,7 @@ import tf
 
 import sys
 import os.path as pt
+import time
 
 #NodeBox 
 import graph
@@ -554,7 +555,7 @@ def run(robot, tf_listener, plugin_namespace):
 
     #Load plugins
     tools_list = [['Graph', st.SleepTool(rc)], ['Graph', ptl.Point3DTool(rc)], ['Graph', smt.StateMachineTool(rc)]]
-    plugin_clses = plugins.load_plugins()
+    plugin_clses = plugins.load_plugins(plugin_namespace)
     for tab_name, pcls in plugin_clses:
         tools_list.append([tab_name, pcls(rc)])
     rc.add_tools(tools_list)
