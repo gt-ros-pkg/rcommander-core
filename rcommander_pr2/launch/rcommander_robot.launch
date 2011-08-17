@@ -10,12 +10,14 @@
   	<param name="translation_tolerance" value=".015"/>	
         <param name="rotation_tolerance" value="5"/>
         <param name="timeout" value="30"/>
+        <param name="stall_time" value="3."/>
   </node>
 
   <node pkg="ptp_arm_action" type="ptp_arm_action_server.py" args="right" output="screen" name="ptp_action_right">
   	<param name="translation_tolerance" value=".015"/>	
         <param name="rotation_tolerance" value="5"/>
         <param name="timeout" value="30"/>
+        <param name="stall_time" value="3."/>
   </node>
 
 </launch>
