@@ -25,10 +25,10 @@ class PoseStampedScriptedActionServer:
 
     def setup_sm(self):
         #Setup state machine
-        self.graph_model = gm.GraphModel.load(path_to_action)
-        for k in self.graph_model.smach_states:
-            if hasattr(self.graph_model.smach_states[k], 'set_robot'):
-                self.graph_model.smach_states[k].set_robot(self.pr2)
+        self.graph_model = gm.GraphModel.load(path_to_action, self.pr2)
+        #for k in self.graph_model.smach_states:
+        #    if hasattr(self.graph_model.smach_states[k], 'set_robot'):
+        #        self.graph_model.smach_states[k].set_robot(self.pr2)
 
         #Find the first global node that is of the right type
         self.point_field_name = None

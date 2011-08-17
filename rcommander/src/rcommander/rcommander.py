@@ -418,8 +418,7 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
             filename = str(filenames[0])
 
             #Set this a the new model
-            self._set_model(gm.GraphModel.load(filename))
-            self._reconnect_smach_states()
+            self._set_model(gm.GraphModel.load(filename, self.robot))
 
             #Reset state of GUI
             self.nothing_cb(None)

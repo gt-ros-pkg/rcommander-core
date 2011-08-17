@@ -73,7 +73,7 @@ class GraphModel:
         self.document = document
 
     @staticmethod
-    def load(name):
+    def load(name, robot=None):
         state_pkl_names = glob.glob(pt.join(name, '*.state'))
 
         gm = GraphModel()
@@ -99,10 +99,10 @@ class GraphModel:
             pickle_file.close()
 
             if is_container(gm.smach_states[sname]):
-                gm.smach_states[sname] = gm.smach_states[sname].load_and_recreate()
-                if sname == 'gripper_event0':
-                    print "gripper_event0 REMAPPING IS"
-                    print gm.smach_states[sname].remapping
+                gm.smach_states[sname] = gm.smach_states[sname].load_and_recreate(robot)
+                #if sname == 'gripper_event0':
+                #    print "gripper_event0 REMAPPING IS"
+                #    print gm.smach_states[sname].remapping
 
         #Reconstruct graph
         graph_name = pt.join(name, GraphModel.EDGES_FILE)
@@ -113,6 +113,12 @@ class GraphModel:
             gm.gve.add_edge(node1, node2, label=n1_outcome, length=GraphModel.EDGE_LENGTH)
 
         gm.set_document(FSMDocument(name, modified=False, real_filename=True))
+
+        if robot != None:
+            for k in gm.smach_states:
+                if hasattr(gm.smach_states[k], 'set_robot'): 
+                    gm.smach_states[k].set_robot(robot)
+
         return gm
 
     def save(self, name):

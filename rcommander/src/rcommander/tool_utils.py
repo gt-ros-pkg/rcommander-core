@@ -387,9 +387,9 @@ class EmbeddableState(StateBase):
             child_gm.save(fname)
         self.document = child_gm.document
 
-    def load_and_recreate(self):
+    def load_and_recreate(self, robot=None):
         import graph_model as gm
-        child_gm = gm.GraphModel.load(self.document.get_filename())
+        child_gm = gm.GraphModel.load(self.document.get_filename(), robot=robot)
         return self.recreate(child_gm)
 
     def get_child_name(self):
