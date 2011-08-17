@@ -81,12 +81,12 @@ class GripperEventTool(tu.ToolBase):
 
 class GripperEventState(smach.State, tu.EmbeddableState): 
 
-    EVENT_LIST = ['acceleration', 'slip', 'finger side impact or acceleration', 'slip and acceleration', 'finger side impact, slip or acceleration']
-    EVENT_CODES = {'acceleration':                             gr.PR2GripperEventDetectorCommand.ACC,
+    EVENT_LIST = ['accel', 'slip', 'finger side or accel', 'slip and accel', 'finger side, slip or accel']
+    EVENT_CODES = {'accel':                             gr.PR2GripperEventDetectorCommand.ACC,
                    'slip':                                     gr.PR2GripperEventDetectorCommand.SLIP,
-                   'finger side impact or acceleration':       gr.PR2GripperEventDetectorCommand.FINGER_SIDE_IMPACT_OR_ACC,
-                   'slip and acceleration':                    gr.PR2GripperEventDetectorCommand.SLIP_AND_ACC,
-                   'finger side impact, slip or acceleration': gr.PR2GripperEventDetectorCommand.FINGER_SIDE_IMPACT_OR_SLIP_OR_ACC}
+                   'finger side or accel':       gr.PR2GripperEventDetectorCommand.FINGER_SIDE_IMPACT_OR_ACC,
+                   'slip and accel':                    gr.PR2GripperEventDetectorCommand.SLIP_AND_ACC,
+                   'finger side, slip or accel': gr.PR2GripperEventDetectorCommand.FINGER_SIDE_IMPACT_OR_SLIP_OR_ACC}
     EVENT_OUTCOME = 'detected_event'
 
     def __init__(self, name, child_gm, arm, event_type, accel, slip):
@@ -199,7 +199,7 @@ class GripperEventState(smach.State, tu.EmbeddableState):
 
         #send preempt to whatever is executing
         rthread.preempt()
-        rthread.except_preempt()
+        #rthread.except_preempt()
         #self.child_gm = None
         child_gm.sm_thread = {} #Reset sm thread dict
 
