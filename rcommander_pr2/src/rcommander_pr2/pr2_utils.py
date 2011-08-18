@@ -320,6 +320,7 @@ class PR2Torso(Joint):
 class PR2:
 
     def __init__(self, tf_listener):
+        self.tf_listener = tf_listener
         jl = GenericListener('joint_state_listener', sm.JointState, 'joint_states', 100)
         joint_provider = ft.partial(jl.read, allow_duplication=False, willing_to_wait=True, warn=False, quiet=True)
 

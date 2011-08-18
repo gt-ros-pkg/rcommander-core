@@ -94,12 +94,23 @@ class LinearMoveTool(tu.ToolBase):
             self.xline.setEnabled(False)
             self.yline.setEnabled(False)
             self.zline.setEnabled(False)
+
+            self.phi_line.setEnabled(False)
+            self.theta_line.setEnabled(False)
+            self.psi_line.setEnabled(False)
+
             self.frame_box.setEnabled(False)
             self.pose_button.setEnabled(False)
+
         else:
             self.xline.setEnabled(True)
             self.yline.setEnabled(True)
             self.zline.setEnabled(True)
+
+            self.phi_line.setEnabled(True)
+            self.theta_line.setEnabled(True)
+            self.psi_line.setEnabled(True)
+
             self.frame_box.setEnabled(True)
             self.pose_button.setEnabled(True)
 
@@ -209,6 +220,9 @@ class LinearMoveState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
         self.motion_type = motion_type
         self.frame = frame
 
+    def set_robot(self, pr2):
+        self.pr2 = pr2
+
     def ros_goal(self, userdata, default_goal):
         #print 'LinearMoveState: rosgoal called!!!!!!!!!!!!!!1'
         goal = ptp.LinearMovementGoal()
@@ -219,13 +233,19 @@ class LinearMoveState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
         else:
             raise RuntimeError('Invalid motion type given.')
 
+        quat = self._quat
         if self.source_for('point') != None:
             trans, frame = userdata.point
+            if self.arm == 'left':
+                tip = rospy.get_param('/l_cart/tip_name')
+            if self.arm == 'right':
+                tip = rospy.get_param('/r_cart/tip_name')
+            quat = self.pr2.tf_listener.lookupTransform(frame, tip, rospy.Time(0))[1]
         else:
             trans = self.trans
             frame = self.frame
 
-        pose = mat_to_pose(np.matrix(tr.translation_matrix(trans)) * np.matrix(tr.quaternion_matrix(self._quat)))
+        pose = mat_to_pose(np.matrix(tr.translation_matrix(trans)) * np.matrix(tr.quaternion_matrix(quat)))
         goal.goal = stamp_pose(pose, frame)
         goal.trans_vel = self.vels[0]
         goal.rot_vel = self.vels[1]
