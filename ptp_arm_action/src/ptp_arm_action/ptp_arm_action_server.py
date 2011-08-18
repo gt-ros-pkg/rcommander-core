@@ -181,9 +181,10 @@ class PTPArmActionServer:
                 rospy.loginfo('action_cb: stalled.')
                 break
 
-            if abs(ang) > min_ang_error and (cur_time - time_ang) > self.stall_time:
-                rospy.loginfo('action_cb: stalled.')
-                break
+            # tends to not stall on angle so don't look out for this case
+            #if abs(ang) > min_ang_error and (cur_time - time_ang) > self.stall_time:
+            #    rospy.loginfo('action_cb: stalled.')
+            #    break
 
             #Send controls
             clamped_target = self.clamp_pose(goal_ps, trans_vel, rot_vel, ref_pose=gripper_ps)
