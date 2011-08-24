@@ -132,7 +132,7 @@ class style:
         self.stroke      = _ctx.color(0.80, 0.80, 0.80, 0.75)
         self.strokewidth = 1.
         self.text        = _ctx.color(1.00, 1.00, 1.00, 0.85)
-        self.font        = "Verdana"
+        self.font        = "DejaVu Sans" #"Verdana"
         self.fontsize    = 12
         self.textwidth   = 100
         self.align       = 1
