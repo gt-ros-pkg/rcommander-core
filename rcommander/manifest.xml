@@ -9,7 +9,6 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/rcommander</url>
   <rosdep name="python-qt4-gl"/>
-  <rosdep name="msttcorefonts"/>
 
   <depend package="rospy"/>
   <depend package="nodebox_qt"/>
