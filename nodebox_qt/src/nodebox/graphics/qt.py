@@ -1477,11 +1477,11 @@ class Canvas(Grob):
             painter.fillRect(0,0, self.width, self.height, self.background.qColor)
             painter.restore()
         painter.setRenderHints(QPainter.Antialiasing | QPainter.TextAntialiasing | QPainter.SmoothPixmapTransform | QPainter.HighQualityAntialiasing)
-        GL.glHint(GL.GL_POLYGON_SMOOTH_HINT, GL.GL_NICEST);
-        GL.glEnable(GL.GL_LINE_SMOOTH)
-        GL.glEnable(GL.GL_POLYGON_SMOOTH)
-        GL.glEnable(GL.GL_MULTISAMPLE)
-        GL.glEnable(GL.GL_MULTISAMPLE_ARB)
+        #GL.glHint(GL.GL_POLYGON_SMOOTH_HINT, GL.GL_NICEST);
+        #GL.glEnable(GL.GL_LINE_SMOOTH)
+        #GL.glEnable(GL.GL_POLYGON_SMOOTH)
+        #GL.glEnable(GL.GL_MULTISAMPLE)
+        #GL.glEnable(GL.GL_MULTISAMPLE_ARB)
 
         for grob in self._grobs:
             # try-except block to run cases where Grob's don't follow the Qt's Grob interface (ie Colors library)

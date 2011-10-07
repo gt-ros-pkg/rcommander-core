@@ -8,7 +8,7 @@
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/rcommander_pr2</url>
-  <depend package="rcommander"/>
+  <depend package="rcommander_core"/>
   <depend package="pr2_common_action_msgs"/>
   <depend package="pr2_controllers_msgs"/>
   <depend package="geometry_msgs"/>
@@ -25,6 +25,7 @@
   <depend package="sound_play"/>
   <depend package="sensor_msgs"/>
   <depend package="std_msgs"/>
+  <depend package="actionlib"/>
 
   <export>
       <rcommander plugin="rcommander_pr2.tuck_tool"          robot="pr2" tab="Manipulation"/> 

@@ -1,5 +1,5 @@
 import roslib; roslib.load_manifest('rcommander_pr2')
-import rcommander.tool_utils as tu
+import rcommander_core.tool_utils as tu
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 import time

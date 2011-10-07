@@ -6,9 +6,9 @@ import pr2_gripper_sensor_msgs.msg as gr
 import actionlib_msgs.msg as am
 import actionlib
 import smach
-import rcommander.tool_utils as tu
-import rcommander.graph_model as gm
-import rcommander.sm_thread_runner as smtr
+import rcommander_core.tool_utils as tu
+import rcommander_core.graph_model as gm
+import rcommander_core.sm_thread_runner as smtr
 
 class GripperEventTool(tu.ToolBase):
 

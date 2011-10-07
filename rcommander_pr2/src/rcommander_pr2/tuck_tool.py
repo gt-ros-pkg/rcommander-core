@@ -1,7 +1,7 @@
 import roslib; roslib.load_manifest('rcommander_pr2')
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
-import rcommander.tool_utils as tu
+import rcommander_core.tool_utils as tu
 import time
 import pr2_common_action_msgs.msg as ca 
 

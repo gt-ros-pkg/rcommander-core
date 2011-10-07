@@ -1,29 +1,29 @@
 <package>
-  <description brief="rcommander">
+  <description brief="rcommander_core">
 
-     rcommander
+     rcommander_core
 
   </description>
   <author>Hai Nguyen</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/rcommander</url>
+  <url>http://ros.org/wiki/rcommander_core</url>
   <rosdep name="python-qt4-gl"/>
 
   <depend package="rospy"/>
   <depend package="nodebox_qt"/>
   <depend package="smach"/>
   <depend package="smach_ros"/>
-  <depend package="tf"/>
   <depend package="actionlib"/>
 
-  <depend package="move_base_msgs"/>
+  <!--<depend package="tf"/>-->
+  <!--<depend package="sound_play"/>-->
+  <!--<depend package="move_base_msgs"/>-->
   <!--<depend package="pr2_common_action_msgs"/>-->
   <!--<depend package="pr2_controllers_msgs"/>-->
   <!--<depend package="pr2_gripper_sensor_msgs"/>-->
   <!--<depend package="ptp_arm_action"/>-->
   <!--<depend package="pr2_interactive_manipulation"/>-->
-  <depend package="sound_play"/>
   <!--<depend package="pr2_controllers_msgs"/>-->
 
   

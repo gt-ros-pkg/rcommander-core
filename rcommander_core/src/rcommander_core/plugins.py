@@ -1,4 +1,4 @@
-import roslib; roslib.load_manifest('rcommander')
+import roslib; roslib.load_manifest('rcommander_core')
 import sys
 import pdb
 #pdb.set_trace()
@@ -13,7 +13,7 @@ def load_plugins(robot_namespaces):
     roswtf plugins
     @rtype: [fn], [fn]
     """
-    dependencies = roslib.rospack.rospack_depends_on_1('rcommander')
+    dependencies = roslib.rospack.rospack_depends_on_1('rcommander_core')
     plugin_classes = []
     for pkg in dependencies:
         m_filename = roslib.manifest.manifest_file(pkg, True)
@@ -39,7 +39,7 @@ def load_plugins(robot_namespaces):
                     if inspect.isclass(cls_obj) and (tu.ToolBase in inspect.getmro(cls_obj)):
                         plugin_classes.append([p_tab, cls_obj])
             except Exception, e:
-                print e
+                print e.__class__, e
                 print >> sys.stderr, "Unable to load plugin [%s] from package [%s]"% (p_module, pkg)
     return plugin_classes
 

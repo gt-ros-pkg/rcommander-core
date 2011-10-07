@@ -1,11 +1,11 @@
-import roslib; roslib.load_manifest('rcommander')
+import roslib; roslib.load_manifest('rcommander_core')
 
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 from rcommander_auto import Ui_RCommanderWindow
 
 import rospy
-import tf
+#import tf
 
 import sys
 import os.path as pt
@@ -79,8 +79,8 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
         self.status_bar_timer.start(100)
         
         #Connect to ROS & PR2 
-        if tf_listener == None:
-            tf_listener = tf.TransformListener()
+        #if tf_listener == None:
+        #    tf_listener = tf.TransformListener()
         self.tf_listener = tf_listener
         self.robot = robot
         #self.pr2 = pu.PR2(self.tf_listener)

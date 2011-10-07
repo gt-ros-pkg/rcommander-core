@@ -1,4 +1,4 @@
-import roslib; roslib.load_manifest('rcommander')
+import roslib; roslib.load_manifest('rcommander_core')
 
 import os.path
 import os

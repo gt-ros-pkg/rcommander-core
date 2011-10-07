@@ -1,5 +1,5 @@
 import roslib; roslib.load_manifest('rcommander_pr2')
-import rcommander.tool_utils as tu
+import rcommander_core.tool_utils as tu
 #import smach_ros
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
@@ -10,7 +10,7 @@ import numpy as np
 from object_manipulator.convert_functions import *
 import ptp_arm_action.msg as ptp
 import math
-import rcommander.point_tool as ptl
+import rcommander_core.point_tool as ptl
 
 #import move_base_msgs.msg as mm
 #import math
