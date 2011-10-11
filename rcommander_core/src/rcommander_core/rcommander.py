@@ -232,10 +232,10 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
     ####################################################################################################################
     # Graph tools
     ####################################################################################################################
-    def _reconnect_smach_states(self):
-        for k in self.graph_model.smach_states:
-            if hasattr(self.graph_model.smach_states[k], 'set_robot'):
-                self.graph_model.smach_states[k].set_robot(self.robot)
+    def _reconnect_states(self):
+        for k in self.graph_model.states_dict:
+            if hasattr(self.graph_model.get_state(k), 'set_robot'):
+                self.graph_model.get_state(k).set_robot(self.robot)
 
     def connection_changed(self, node_name, outcome_name, new_outcome):
         self.graph_model.connection_changed(node_name, outcome_name, new_outcome)
@@ -283,13 +283,13 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
                 QMessageBox.information(self, str(self.objectName()), 'Need to have another node selected to create an instance of this node.')
                 return
             else:
-                smach_state = self.graph_model.get_smach_state(self.selected_node)
-                tool_instance.set_child_node(smach_state)
+                state = self.graph_model.get_state(self.selected_node)
+                tool_instance.set_child_node(state)
 
-        smach_node = tool_instance.create_node()
-        self.graph_model.add_node(smach_node)
+        node = tool_instance.create_node()
+        self.graph_model.add_node(node)
         if self.selected_node == None:
-            self.node_cb(self.graph_model.node(smach_node.name))
+            self.node_cb(self.graph_model.node(node.name))
         else:
             snode = self.graph_model.node(self.selected_node)
             if snode != None:
@@ -313,9 +313,9 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
         #old_smach_node = self.graph_model.get_smach_state()
         old_node_name = tool_instance.get_current_node_name()
         # create a node with new settings
-        smach_node = tool_instance.create_node(unique=False)
+        node = tool_instance.create_node(unique=False)
         # 'delete' old smach node
-        self.graph_model.replace_node(smach_node, old_node_name)
+        self.graph_model.replace_node(node, old_node_name)
         #print 'TRANS!', smach_node.vels
         #self.graph_model.set_smach_state(old_smach_node.get_name(), smach_node)
 
@@ -441,27 +441,27 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
         #print '================================= NODECB'
         self.set_selected_node(node.id)
         self.set_selected_edge(None, None, None)
-        smach_state = self.graph_model.get_smach_state(node.id)
+        state = self.graph_model.get_state(node.id)
 
         #if smach_state.__class__ == get.GripperEventState:
         #    print 'remapping for', node.id, 'is', smach_state.remapping
 
         #tool = self.tool_dict[smach_state.tool_name]['tool_obj']
-        tool = self.tool_dict[smach_state.__class__]['tool_obj']
+        tool = self.tool_dict[state.__class__]['tool_obj']
         tool.button.setChecked(True)
 
         #print '??????????'
-        tool.activate_cb(smach_state.get_name())
+        tool.activate_cb(state.get_name())
         #print '??????????'
 
         #self.set_selected_tool(smach_state.tool_name)
-        self.set_selected_tool(smach_state.__class__)
+        self.set_selected_tool(state.__class__)
 
         self.edit_mode()
         self.enable_buttons()
-        tool.node_selected(smach_state)
+        tool.node_selected(state)
 
-        if smach_state.is_runnable():
+        if state.is_runnable():
             self.ui.run_button.setDisabled(False)
         else:
             self.ui.run_button.setDisabled(True)
@@ -474,14 +474,14 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
 
     #Handler for double clicking on a node, descending a level
     def dclick_cb(self, node):
-        snode = self.graph_model.get_smach_state(node.id)
+        snode = self.graph_model.get_state(node.id)
         if gm.is_container(snode):
             self.fsm_stack.append(FSMStackElement(self.graph_model, self.graph_view, snode))
             self._set_model(snode.get_child())
-            self._reconnect_smach_states()
+            self._reconnect_states()
             self.nothing_cb(None)
 
-    #Handler for double clicing on circle, ascending a level
+    #Handler for double clicking on circle, ascending a level
     def dclick_container_cb(self, fsm_stack_element):
 
         #Store current model
@@ -494,20 +494,20 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
         # what to call this? recreate? update?
         #       input: old node
         #       output: new node
-        new_smach_node = last_fsm_el.node.recreate(self.graph_model)
+        new_node = last_fsm_el.node.recreate(self.graph_model)
         
         #replace old node in the graph, reserving links which exist
         # replace_node (fix it so that it works with new nodes of the same name)
         # restore_consistency
-        print 'new_smach_node', new_smach_node.get_name(), last_fsm_el.node.get_name()
-        last_fsm_el.model.replace_node(new_smach_node, last_fsm_el.node.get_name())
+        #print 'new_smach_node', new_smach_node.get_name(), last_fsm_el.node.get_name()
+        last_fsm_el.model.replace_node(new_node, last_fsm_el.node.get_name())
 
         #Shorten the stack to the element selected
         self.fsm_stack = self.fsm_stack[:self.fsm_stack.index(fsm_stack_element)]
 
         #Load the element we're given
         self._set_model(fsm_stack_element.model, view=fsm_stack_element.view)
-        self._reconnect_smach_states()
+        self._reconnect_states()
         self.nothing_cb(None)
 
     def _set_model(self, model, view=None):
@@ -544,9 +544,11 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
 
 def run(robot, tf_listener, plugin_namespace):
     import plugins 
-    import point_tool as ptl
     import state_machine_tool as smt
     import sleep_tool as st
+    import pointcloud_click_tool as ptl
+    #import point_tool as ptl
+
 
     app = QApplication(sys.argv)
     rc = RCommander(robot, tf_listener)
@@ -554,7 +556,14 @@ def run(robot, tf_listener, plugin_namespace):
     app.connect(rc.ui.action_quit, SIGNAL('clicked()'), app.quit)
 
     #Load plugins
-    tools_list = [['Graph', st.SleepTool(rc)], ['Graph', ptl.Point3DTool(rc)], ['Graph', smt.StateMachineTool(rc)]]
+    # tools_list = [['Graph', st.SleepTool(rc)], 
+    # ['Graph', ptl.Point3DTool(rc)], 
+    # ['Graph', smt.StateMachineTool(rc)]]
+
+    tools_list = [['Graph', ptl.PointCloudClickTool(rc)], 
+            ['Graph', smt.StateMachineTool(rc)], 
+            ['Graph', st.SleepTool(rc)]]
+
     plugin_clses = plugins.load_plugins(plugin_namespace)
     for tab_name, pcls in plugin_clses:
         tools_list.append([tab_name, pcls(rc)])

@@ -38,6 +38,19 @@ class FSMDocument:
     def has_real_filename(self):
         return self.real_filename
 
+#class UserDataField:
+#
+#    def __init__(self, name, data_type):
+#        self.name = name
+#        self.data_type = data_type
+#        self.storing_outputs_from = []
+#
+#class UserData:
+#
+#    def __init__(self):
+#        self.variables = []
+
+
 class GraphModel:
 
     #Information about graph connectivity
@@ -51,22 +64,26 @@ class GraphModel:
     EDGE_LENGTH = 2.
 
     def __init__(self):
+
         self.gve = graph.create(depth=True)
-        self.smach_states = {}
+        #self.user_data = UserData()
+        self.states_dict = {}
+
+        self.document = FSMDocument.new_document()
         self.start_state = None
+
         self.node = self.gve.node
         self.edge = self.gve.edge
-
         self.sm_thread = {}
-        self.add_outcome(tu.InfoStateBase.GLOBAL_NAME)
-        self.document = FSMDocument.new_document()
+        #self.add_outcome(tu.InfoStateBase.GLOBAL_NAME)
 
     def get_start_state(self):
         return self.start_state
 
     def set_start_state(self, state):
-        if state == tu.InfoStateBase.GLOBAL_NAME or issubclass(self.smach_states[state].__class__, tu.InfoStateBase):
-            raise RuntimeError("Can\'t make info states start states")
+        #if state == tu.InfoStateBase.GLOBAL_NAME or issubclass(self.states_dict[state].__class__, tu.InfoStateBase):
+        #if issubclass(self.states_dict[state].__class__, tu.InfoStateBase):
+        #    raise RuntimeError("Can\'t make info states start states")
         self.start_state = state
 
     def set_document(self, document):
@@ -77,7 +94,7 @@ class GraphModel:
         state_pkl_names = glob.glob(pt.join(name, '*.state'))
 
         gm = GraphModel()
-        gm.smach_states = {}
+        gm.states_dict = {}
 
         #Get meta info
         nodes_fn = pt.join(name, GraphModel.NODES_FILE)
@@ -94,30 +111,28 @@ class GraphModel:
 
             pickle_file = open(fname, 'r')
             rospy.loginfo('Loading state %s' % sname)
-            gm.smach_states[sname] = pk.load(pickle_file)
+            gm.states_dict[sname] = pk.load(pickle_file)
             gm.gve.add_node(sname, GraphModel.NODE_RADIUS)
             pickle_file.close()
 
-            if is_container(gm.smach_states[sname]):
-                gm.smach_states[sname] = gm.smach_states[sname].load_and_recreate(name, robot)
-                #if sname == 'gripper_event0':
-                #    print "gripper_event0 REMAPPING IS"
-                #    print gm.smach_states[sname].remapping
+            if is_container(gm.states_dict[sname]):
+                print 'FIXME: load_and_recreate might not make sense anymore'
+                gm.states_dict[sname] = gm.states_dict[sname].load_and_recreate(name, robot)
 
         #Reconstruct graph
-        graph_name = pt.join(name, GraphModel.EDGES_FILE)
-        pickle_file = open(graph_name, 'r')
-        edges = pk.load(pickle_file)
-        pickle_file.close()
+        edges_filename = pt.join(name, GraphModel.EDGES_FILE)
+        edges_pickle_file = open(edges_filename, 'r')
+        edges = pk.load(edges_pickle_file)
+        edges_pickle_file.close()
         for node1, node2, n1_outcome in edges:
             gm.gve.add_edge(node1, node2, label=n1_outcome, length=GraphModel.EDGE_LENGTH)
 
         gm.set_document(FSMDocument(name, modified=False, real_filename=True))
 
         if robot != None:
-            for k in gm.smach_states:
-                if hasattr(gm.smach_states[k], 'set_robot'): 
-                    gm.smach_states[k].set_robot(robot)
+            for k in gm.states_dict:
+                if hasattr(gm.states_dict[k], 'set_robot'): 
+                    gm.states_dict[k].set_robot(robot)
 
         return gm
 
@@ -127,27 +142,17 @@ class GraphModel:
             os.mkdir(name)
 
         #Save each state
-        for state_name in self.smach_states.keys():
-            if is_container(self.smach_states[state_name]):
-                self.smach_states[state_name].save_child(name)
+        for state_name in self.states_dict.keys():
+            if is_container(self.states_dict[state_name]):
+                self.states_dict[state_name].save_child(name)
 
             state_fname = pt.join(name, state_name) + '.state'
             pickle_file = open(state_fname, 'w')
-            pk.dump(self.smach_states[state_name], pickle_file)
+            pk.dump(self.states_dict[state_name], pickle_file)
             pickle_file.close()
 
-            if is_container(self.smach_states[state_name]):
-                print 'document\'s path was', self.smach_states[state_name].document.get_filename()
-            #If the state has other stuff inside it
-               # child_gm = self.smach_states[state_name].get_child()
-               # # if this container has a path, save it to that path
-               # if child_gm.document.has_real_filename():
-               #     child_gm.save(child_gm.get_filename())
-               # # if this container does not have a path
-               # else:
-               #     fname = pt.join(name, state_name)
-               #     child_gm.save(fname)
-               #     child_gm.document = FSMDocument(fname, modified=False, real_filename=True)
+            if is_container(self.states_dict[state_name]):
+                print 'document\'s path was', self.states_dict[state_name].document.get_filename()
 
         #Save connections
         edge_list = []
@@ -161,12 +166,13 @@ class GraphModel:
 
         nodes_fn = pt.join(name, GraphModel.NODES_FILE)
         pickle_file = open(nodes_fn, 'w')
-        pk.dump({'start_state': self.start_state, 'state_names': self.smach_states.keys()}, pickle_file)
+        pk.dump({'start_state': self.start_state, 'state_names': self.states_dict.keys()}, pickle_file)
         pickle_file.close()
 
         self.document = FSMDocument(name, False, True)
 
     def create_singleton_statemachine(self, smach_state):
+        print 'FIXME: create singleton state machine needs to be fixed!!!!!'
         #if self.get_start_state() == None:
         #    self.set_start_state(smach_state.name)
         sm = self.create_state_machine(ignore_start_state=True)
@@ -175,31 +181,36 @@ class GraphModel:
         temp_gm.set_start_state(smach_state.name)
         return temp_gm.create_state_machine(sm.userdata)
 
-    def run(self, name="", state_machine=None, userdata=None):
-        if state_machine == None:
-            sm = child_gm.create_state_machine(userdata=userdata)
-        else:
-            sm = state_machine
 
+    def run(self, name="", state_machine=None, userdata=None):
+        #if state_machine == None:
+        #    sm = child_gm.create_state_machine(userdata=userdata)
+        #else:
+        #    sm = state_machine
+
+        sm = state_machine
         rthread = smtr.ThreadRunSM(name, sm)
         self.sm_thread['run_sm'] = rthread
         self.sm_thread['preempted'] = None
         rthread.start()
 
+
     def create_state_machine(self, userdata=None, ignore_start_state=False):
         print '>>>>>>>>>>>>>> create_state_machine', userdata
         sm = smach.StateMachine(outcomes = self.outcomes())
         print 'sm userdata', sm.userdata
-        for global_node_name in self.global_nodes(None):
-            global_node = self.smach_states[global_node_name]
-            global_variable_name = global_node.get_name()
-            value = global_node.get_info()
-            exec_str = "sm.userdata.%s = value" % global_variable_name
-            print 'executing', exec_str
-            exec exec_str
 
-        #Copy over input userdata into our state machine so that nodes inside
-        # us would have access
+        #Deprecated, global nodes are being replaced by nodes with outputs
+        #for global_node_name in self.global_nodes(None):
+        #    global_node = self.states_dict[global_node_name]
+        #    global_variable_name = global_node.get_name()
+        #    value = global_node.get_info()
+        #    exec_str = "sm.userdata.%s = value" % global_variable_name
+        #    print 'executing', exec_str
+        #    exec exec_str
+
+        # Copy over input userdata into current state machine so that nodes contained
+        # would have access
         if userdata != None:
             print 'userdata keys', userdata.keys()
             for key in userdata.keys():
@@ -208,24 +219,34 @@ class GraphModel:
                 exec ("print 'data in key is', sm.userdata.%s" % (key))
 
         with sm:
-            for node_name in self.nonoutcomes():
-                node = self.smach_states[node_name]
-                if issubclass(node.__class__, tu.InfoStateBase):
-                    continue
+            for node_name in self.real_states():
+                node = self.states_dict[node_name]
+                #if issubclass(node.__class__, tu.InfoStateBase):
+                #    continue
+
+                #if issubclass(node.__class__, tu.SimpleStateBase):
+                node_smach = node.get_state()
+
+                #if issubclass(node.__class__, tu.StateBase):
+                #    node_smach = node
 
                 transitions = {}
-                print node_name, 'input keys', node.get_registered_input_keys()
+                print node_name, 'input keys', node_smach.get_registered_input_keys()
                 for e in self.gve.node(node_name).edges:
                     if e.node1.id == node_name:
                         transitions[e.label] = e.node2.id
                         #print e.node1.id, e.label, e.node2.id
 
                 remapping = {}
-                for input_key in node.get_registered_input_keys():
+                for input_key in node_smach.get_registered_input_keys():
                     print 'source for', input_key, 'is', node.source_for(input_key)
                     remapping[input_key] = node.source_for(input_key)
+                
+                for output_key in node_smach.get_registered_output_keys():
+                    remapping[output_key] = node.source_for(output_key)
+
                 print '>> node_name', node_name, 'transitions', transitions, 'remapping', remapping
-                smach.StateMachine.add(node_name, node, transitions=transitions, remapping=remapping)
+                smach.StateMachine.add(node_name, node_smach, transitions=transitions, remapping=remapping)
 
         if ignore_start_state:
             return sm
@@ -237,13 +258,6 @@ class GraphModel:
         print '<<<<<<<<<<<<<<'
         return sm
 
-    def nonoutcomes(self):
-        noc = []
-        for node_name in self.smach_states.keys():
-            if self.smach_states[node_name].__class__ != ot.EmptyState:
-                noc.append(node_name)
-        return noc
-
     #@return a list of node names and outcomes
     #        e.g. [[edge_name, node_name], ...]
     def current_children_of(self, node_name):
@@ -254,29 +268,35 @@ class GraphModel:
             ret_list.append([edge.label, edge.node2.id])
         return ret_list
 
+    def real_states(self):
+        noc = []
+        for node_name in self.states_dict.keys():
+            if self.states_dict[node_name].__class__ != tu.EmptyState:
+                noc.append(node_name)
+        return noc
+
     def outcomes(self):
         #all empty states are outcomes
         oc = []
-        for node_name in self.smach_states.keys():
-            if self.smach_states[node_name].__class__ == ot.EmptyState and node_name != tu.InfoStateBase.GLOBAL_NAME:
+        for node_name in self.states_dict.keys():
+            if self.states_dict[node_name].__class__ == tu.EmptyState:
                 oc.append(node_name)
-        #print 'outcomes', oc
         return oc
 
-    def pop_smach_state(self, node_name):
-        return self.smach_states.pop(node_name)
+    def pop_state(self, node_name):
+        return self.states_dict.pop(node_name)
 
-    def get_smach_state(self, node_name):
-        #print self.smach_states.keys()
-        return self.smach_states[node_name]
+    def get_state(self, node_name):
+        #print self.states_dict.keys()
+        return self.states_dict[node_name]
 
-    def set_smach_state(self, node_name, state):
-        self.smach_states[node_name] = state
+    def set_state(self, node_name, state):
+        self.states_dict[node_name] = state
 
-    def replace_node(self, new_smach_node, old_node_name):
-        self.smach_states.pop(old_node_name)
-        self.smach_states[new_smach_node.get_name()] = new_smach_node
-        new_node_name = new_smach_node.get_name()
+    def replace_node(self, new_node, old_node_name):
+        self.states_dict.pop(old_node_name)
+        self.states_dict[new_node.get_name()] = new_node
+        new_node_name = new_node.get_name()
 
         #if the new node has the same name (possible to have different connections)
         #If the node is of a different name
@@ -285,6 +305,7 @@ class GraphModel:
             self.gve.add_node(new_node_name, self.NODE_RADIUS)
 
         #for each existing connection
+        new_smach_node = new_node.get_smach_state()
         new_outcomes = new_smach_node.get_registered_outcomes()
         for e in self.gve.node(old_node_name).edges:
         #   if it is an outcome in the new node
@@ -304,7 +325,7 @@ class GraphModel:
                     self.gve.remove_edge(e.node1.id, e.node2.id, label=e.label)
                     if not self.is_modifiable(e.node2.id) and len(e.node2.edges) < 1:
                         self.gve.remove_node(e.node2.id)
-                        self.smach_states.pop(e.node2.id)
+                        self.states_dict.pop(e.node2.id)
                 else:
                     self.gve.remove_edge(e.node1.id, e.node2.id, label=e.label)
                     self.gve.add_edge(e.node1.id, new_node_name, label=e.label, length=GraphModel.EDGE_LENGTH)
@@ -315,21 +336,7 @@ class GraphModel:
                 
         #for each new outcome
         #   if we don't have an edge for it, create that edge & its temporary node
-        self.restore_node_consistency(new_smach_node.get_name())
-
-        #if new_node_name != old_node_name:
-        #    self.gve.add_node(new_node_name, radius=self.NODE_RADIUS)
-        #    #remove edges to old node, add edges that point to the new node
-        #    for e in self.gve.node(old_node_name).edges:
-        #        self.gve.remove_edge(e.node1.id, e.node2.id, label=e.label)
-        #        if e.node1.id == old_node_name:
-        #            self.gve.add_edge(new_node_name, e.node2.id, label=e.label, length=GraphModel.EDGE_LENGTH)
-        #        else:
-        #            self.gve.add_edge(e.node1.id, new_node_name, label=e.label, length=GraphModel.EDGE_LENGTH)
-        #    self.gve.remove_node(old_node_name)
-
-    #def _outcome_name(self, node_name, outcome):
-    #    return node_name + '_' + outcome
+        self.restore_node_consistency(new_node.get_name())
 
     def connectable_nodes(self, node_name, outcome):
         #can't connect to
@@ -337,16 +344,13 @@ class GraphModel:
         allowed_nodes = []
         #outcome_name = self._outcome_name(node_name, outcome)
         #allowed_nodes.append(outcome_name)
-        for k in self.smach_states.keys():
+        for k in self.states_dict.keys():
             #If it's a temporary node and does not have the name of this outcome
             #if not self.is_modifiable(k) and k != outcome:
             if (not self.is_modifiable(k)) and (not self._is_type(k, outcome)):
                 continue
             #ignore our own name
             if node_name == k:
-                continue
-            #ignore special global node
-            if k == tu.InfoStateBase.GLOBAL_NAME:
                 continue
 
             allowed_nodes.append(k)
@@ -357,31 +361,10 @@ class GraphModel:
 
         return allowed_nodes
 
-    ##
-    # @return a list of nodes that are of subclass InfoStateBase
-    def global_nodes(self, class_filter):
-        allowed_nodes = []
-        for k in self.smach_states.keys():
-            state = self.smach_states[k]
-
-            #Only use things of subclass tu.InfoStateBase
-            if issubclass(state.__class__, tu.InfoStateBase):
-                #Ignore global
-                if k == tu.InfoStateBase.GLOBAL_NAME:
-                    continue 
-
-                #Only select objects of class given
-                if class_filter != None and state.__class__ == class_filter:
-                    allowed_nodes.append(k)
-                else:
-                    allowed_nodes.append(k)
-        allowed_nodes.sort()
-        return allowed_nodes
-
     def _create_outcome_name(self, outcome):
         idx = 0
         name = "%s%d" % (outcome, idx)
-        while self.smach_states.has_key(name):
+        while self.states_dict.has_key(name):
             idx = idx + 1
             name = "%s%d" % (outcome, idx)
         return name
@@ -393,38 +376,74 @@ class GraphModel:
         else:
             return True
 
-    def add_node(self, smach_node):
-        if self.smach_states.has_key(smach_node.name):
+    def add_node(self, node):
+        if self.states_dict.has_key(node.name):
             raise RuntimeError('Already has node of the same name.  This case should not happen.')
 
-        #if this is a regular singleton node
-        if not hasattr(smach_node, 'get_child_name') or not self.smach_states.has_key(smach_node.get_child_name()):
-            #Link this node to all its outcomes
-            self.gve.add_node(smach_node.name, radius=self.NODE_RADIUS)
-            self.smach_states[smach_node.name] = smach_node
-            #print 'adding node', smach_node.name, 'with outcomes', smach_node.get_registered_outcomes()
-            for outcome in smach_node.get_registered_outcomes():
-                #print smach_node.name, outcome
-                #outcome_name = self._outcome_name(smach_node.name, outcome)
-                if outcome == tu.InfoStateBase.GLOBAL_NAME:
-                    outcome_name = outcome
-                else:
-                    outcome_name = self._create_outcome_name(outcome)
-                #if not self.smach_states.has_key(outcome):
-                self.smach_states[outcome_name] = ot.EmptyState(outcome_name, temporary=True)
-                self.gve.add_node(outcome_name, radius=self.NODE_RADIUS)
-                #self.gve.add_edge(smach_node.name, outcome)
-                self._add_edge(smach_node.name, outcome_name, outcome)
-                #print '>>> adding edge between', smach_node.name, 'and', outcome_name, 'with label', outcome
+        #if this is a non-container node 
+        if not hasattr(node, 'get_child_name') or \
+                not self.states_dict.has_key(node.get_child_name()):
 
-        #If this node has a child node we replace its child node instead of performing an add
+            #Link this node to all its outcomes
+            self.gve.add_node(node.name, radius=self.NODE_RADIUS)
+            self.states_dict[node.name] = node
+
+            #Check all outcomes and make new nodes if needed
+            smach_node = node.get_smach_state()
+
+            #For each outcome
+            for outcome in smach_node.get_registered_outcomes():
+                #Create an empty state and add an edge to it
+                outcome_name = self._create_outcome_name(outcome)
+                self.states_dict[outcome_name] = tu.EmptyState(outcome_name, temporary=True)
+                self.gve.add_node(outcome_name, radius=self.NODE_RADIUS)
+                self._add_edge(node.name, outcome_name, outcome)
+
         else:
-            self.replace_node(smach_node, smach_node.get_child_name())
-            #self.restore_node_consistency(smach_node.name)
+            #If this node has a child node we replace its child node with it instead of performing an add
+            print 'FIXME: NESTING STATE MACHINES DOESN\'T WORK YET'
+            self.replace_node(node, node.get_child_name())
+
+    #def add_node_smach(self, smach_node):
+    #    if self.states_dict.has_key(smach_node.name):
+    #        raise RuntimeError('Already has node of the same name.  This case should not happen.')
+
+    #    #if this is a regular singleton node
+    #    if not hasattr(smach_node, 'get_child_name') or not self.states_dict.has_key(smach_node.get_child_name()):
+    #        #Link this node to all its outcomes
+    #        self.gve.add_node(smach_node.name, radius=self.NODE_RADIUS)
+    #        self.states_dict[smach_node.name] = smach_node
+    #        #print 'adding node', smach_node.name, 'with outcomes', smach_node.get_registered_outcomes()
+
+    #        for outcome in smach_node.get_registered_outcomes():
+    #            #print smach_node.name, outcome
+    #            #outcome_name = self._outcome_name(smach_node.name, outcome)
+    #            if outcome == tu.InfoStateBase.GLOBAL_NAME:
+    #                outcome_name = outcome
+    #            else:
+    #                outcome_name = self._create_outcome_name(outcome)
+
+    #            #if not self.states_dict.has_key(outcome):
+    #            self.states_dict[outcome_name] = tu.EmptyState(outcome_name, temporary=True)
+    #            self.gve.add_node(outcome_name, radius=self.NODE_RADIUS)
+    #            #self.gve.add_edge(smach_node.name, outcome)
+    #            self._add_edge(smach_node.name, outcome_name, outcome)
+    #            #print '>>> adding edge between', smach_node.name, 'and', outcome_name, 'with label', outcome
+
+    #    #If this node has a child node we replace its child node instead of performing an add
+    #    else:
+    #        self.replace_node(smach_node, smach_node.get_child_name())
+    #        #self.restore_node_consistency(smach_node.name)
+
+    #def add_node(self, node):
+    #    #if issubclass(node, tu.StateBase):
+    #    #    self.add_node_smach(node)
+    #    #elif issubclass(node, tu.SimpleStateBase):
+    #    self.add_node2(node)
 
     def add_outcome(self, outcome_name):
         self.gve.add_node(outcome_name, radius=self.NODE_RADIUS)
-        self.smach_states[outcome_name] = ot.EmptyState(outcome_name, False)
+        self.states_dict[outcome_name] = tu.EmptyState(outcome_name, False)
 
     def delete_node(self, node_name):
         node_obj = self.gve.node(node_name)
@@ -453,7 +472,7 @@ class GraphModel:
                 #Delete it
                 self.gve.remove_edge(node_name, e.node2.id, e.label)
                 self.gve.remove_node(e.node2.id)
-                self.smach_states.pop(e.node2.id)
+                self.states_dict.pop(e.node2.id)
             else:
                 filtered_children_edges.append(e)
 
@@ -489,7 +508,7 @@ class GraphModel:
                         #delete parent's temporary node if it is now unconnected
                         if len(self.gve.node(parent_outcome_node).edges) < 1:
                             self.gve.remove_node(parent_outcome_node)
-                            self.smach_states.pop(parent_outcome_node)
+                            self.states_dict.pop(parent_outcome_node)
                 #remove this edge
                 self.gve.remove_edge(edge.node1.id, edge.node2.id, edge.label)
 
@@ -505,7 +524,7 @@ class GraphModel:
             self.restore_node_consistency(parent_edge.node1.id)
 
         self.gve.remove_node(node_name)
-        self.smach_states.pop(node_name)
+        self.states_dict.pop(node_name)
         if self.start_state == node_name:
             self.start_state = None
 
@@ -522,9 +541,9 @@ class GraphModel:
             #print outcome_name, nn
 
         print 'current children of', node_name, clist
-        print 'registed outcomes are', self.smach_states[node_name].get_registered_outcomes()
+        print 'registed outcomes are', self.states_dict[node_name].get_smach_state().get_registered_outcomes()
 
-        registered_outcomes = self.smach_states[node_name].get_registered_outcomes()
+        registered_outcomes = self.states_dict[node_name].get_smach_state().get_registered_outcomes()
 
         #Remove things that are no longer outcomes
         for outcome in cdict.keys():
@@ -532,10 +551,10 @@ class GraphModel:
                 self.gve.remove_edge(node_name, cdict[outcome], outcome)
                 if (not self.is_modifiable(cdict[outcome])) and len(self.gve.node(cdict[outcome]).edges) < 1:
                     self.gve.remove_node(cdict[outcome])
-                    self.smach_states.pop(cdict[outcome])
+                    self.states_dict.pop(cdict[outcome])
 
-        #print self.smach_states[node_name].__class__
-        #print 'outcomes that we need', self.smach_states[node_name].get_registered_outcomes()
+        #print self.states_dict[node_name].__class__
+        #print 'outcomes that we need', self.states_dict[node_name].get_registered_outcomes()
 
         for outcome in registered_outcomes:
             if not cdict.has_key(outcome):
@@ -545,83 +564,17 @@ class GraphModel:
                 self._add_edge(node_name, new_outcome_name, outcome)
 
     def _add_temporary_outcome(self, outcome):
-        self.smach_states[outcome] = ot.EmptyState(outcome, temporary=True)
+        self.states_dict[outcome] = tu.EmptyState(outcome, temporary=True)
         self.gve.add_node(outcome, self.NODE_RADIUS)
 
-    #def delete_node_old(self, node_name):
-    #    #temporary nodes are only removable when the state transitions are linked to something else
-    #    if not self.is_modifiable(node_name):
-    #        return 
-
-    #    #Find parents and children
-    #    node_obj = self.gve.node(node_name)
-    #    children_edges = []
-    #    parent_edges = []
-    #    for cn in node_obj.links:
-    #        edge = self.gve.edge(node_name, cn.id)
-    #        if (edge.node1.id == node_name) and (edge.node2.id == node_name):
-    #            raise Exception('Self link detected on node %s! This isn\'t supposed to happen.' % node_name)
-    #        if edge.node1.id == node_name:
-    #            children_edges.append(edge)
-    #        elif edge.node2.id == node_name:
-    #            parent_edges.append(edge)
-
-    #    #Remove placeholder children nodes
-    #    filtered_children_edges = []
-    #    for e in children_edges:
-    #        if not self.is_modifiable(e.node2.id) and len(e.node2.edges) <= 1:
-    #            self.gve.remove_edge(node_name, e.node2.id)
-    #            self.gve.remove_node(e.node2.id)
-    #            self.smach_states.pop(e.node2.id)
-    #        else:
-    #            filtered_children_edges.append(e)
-
-    #    new_selected_node = None
-    #    #If we have one or more than one parent
-    #    if len(parent_edges) >= 1:
-    #        #Point edges on children to first parent
-    #        parent_node_id = parent_edges[0].node1.id
-    #        for e in filtered_children_edges:
-    #            self.gve.remove_edge(node_name, e.node2.id)
-    #            self.gve.add_edge(parent_node_id, e.node2.id)
-    #        new_selected_node = parent_node_id
-
-    #        #On each one of the parent, check to see if we are the terminal state
-    #        for e in parent_edges:
-    #            parent_id = e.node1.id
-    #            outcome_set = set(self.get_smach_state(parent_id).get_registered_outcomes())
-    #            if e.outcome in outcome_set:
-    #                self.connection_changed(parent_id, e.outcome, e.outcome)
-    #                #jjself.smach_states[e.outcome] = ot.EmptyState(e.outcome, temporary=True)
-    #                #self.gve.add_node(e.outcome)
-    #                #self._add_edge(parent_id, e.outcome, e.outcome)
-
-    #    #If no parents
-    #    elif len(parent_edges) == 0:
-    #        #just remove children edges
-    #        for e in filtered_children_edges:
-    #            self.gve.remove_edge(node_name, e.node2.id)
-
-    #        if len(filtered_children_edges) > 1:
-    #            new_selected_node = filtered_children_edges[0].node2.id
-    #        else:
-    #            if len(self.gve.nodes) > 0:
-    #                new_selected_node = self.gve.nodes[0].id
-    #            else:
-    #                new_selected_node = 'start'
-
-    #    self.gve.remove_node(node_name)
-    #    self.smach_states.pop(node_name)
-    #    return new_selected_node
-
     def is_modifiable(self, node_name):
-        if (self.smach_states[node_name].__class__ == ot.EmptyState) and self.smach_states[node_name].temporary:
+        if (self.states_dict[node_name].__class__ == tu.EmptyState) and self.states_dict[node_name].temporary:
             return False
         else:
             return True
 
     def _add_edge(self, n1, n2, n1_outcome):
-        if not self.smach_states.has_key(n1) or not self.smach_states.has_key(n2):
+        if not self.states_dict.has_key(n1) or not self.states_dict.has_key(n2):
             raise RuntimeError('One of the specified nodes does not exist.  Can\'t add edge.')
 
         if self.gve.edge(n1, n2, n1_outcome) != None:
@@ -656,9 +609,9 @@ class GraphModel:
         if node_name == None:
             return
 
-        if not self.smach_states.has_key(new_node):
+        if not self.states_dict.has_key(new_node):
             raise RuntimeError('Doesn\'t have state: %s' % new_node)
-        #self.get_smach_state(node_name).outcome_choices[outcome_name] = new_node
+        #self.get_state(node_name).outcome_choices[outcome_name] = new_node
 
         #find the old edge
         old_edge = None
@@ -684,21 +637,109 @@ class GraphModel:
             #print 'it has this many edges', len(self.gve.node(old_edge.node2.id).edges)
             if len(self.gve.node(old_edge.node2.id).edges) <= 0:
                 self.gve.remove_node(old_edge.node2.id)
-                self.smach_states.pop(old_edge.node2.id)
+                self.states_dict.pop(old_edge.node2.id)
 
         #add new connection
         if self.gve.node(new_node) == None:
             #print 'recreated node', new_node
-            self.smach_states[new_node] = ot.EmptyState(new_node, temporary=True)
+            self.states_dict[new_node] = tu.EmptyState(new_node, temporary=True)
             self.gve.add_node(new_node, self.NODE_RADIUS)
         #print 'calling add_edge with a', node_name, 'b', new_node, 'outcome', outcome_name
         self._add_edge(node_name, new_node, outcome_name)
 
+
+
+
+
+
+
+
+
         #print 'THE KEYS ARE'
-        #for k in self.smach_states.keys():
+        #for k in self.states_dict.keys():
         #    print k
 
         #print 'OUR NEW EDGES ARE'
         #for e in self.gve.node(node_name).edges:
         #    print e.node1.id, e.node2.id, e.label
+    #def delete_node_old(self, node_name):
+    #    #temporary nodes are only removable when the state transitions are linked to something else
+    #    if not self.is_modifiable(node_name):
+    #        return 
+
+    #    #Find parents and children
+    #    node_obj = self.gve.node(node_name)
+    #    children_edges = []
+    #    parent_edges = []
+    #    for cn in node_obj.links:
+    #        edge = self.gve.edge(node_name, cn.id)
+    #        if (edge.node1.id == node_name) and (edge.node2.id == node_name):
+    #            raise Exception('Self link detected on node %s! This isn\'t supposed to happen.' % node_name)
+    #        if edge.node1.id == node_name:
+    #            children_edges.append(edge)
+    #        elif edge.node2.id == node_name:
+    #            parent_edges.append(edge)
+
+    #    #Remove placeholder children nodes
+    #    filtered_children_edges = []
+    #    for e in children_edges:
+    #        if not self.is_modifiable(e.node2.id) and len(e.node2.edges) <= 1:
+    #            self.gve.remove_edge(node_name, e.node2.id)
+    #            self.gve.remove_node(e.node2.id)
+    #            self.states_dict.pop(e.node2.id)
+    #        else:
+    #            filtered_children_edges.append(e)
+
+    #    new_selected_node = None
+    #    #If we have one or more than one parent
+    #    if len(parent_edges) >= 1:
+    #        #Point edges on children to first parent
+    #        parent_node_id = parent_edges[0].node1.id
+    #        for e in filtered_children_edges:
+    #            self.gve.remove_edge(node_name, e.node2.id)
+    #            self.gve.add_edge(parent_node_id, e.node2.id)
+    #        new_selected_node = parent_node_id
+
+    #        #On each one of the parent, check to see if we are the terminal state
+    #        for e in parent_edges:
+    #            parent_id = e.node1.id
+    #            outcome_set = set(self.get_state(parent_id).get_registered_outcomes())
+    #            if e.outcome in outcome_set:
+    #                self.connection_changed(parent_id, e.outcome, e.outcome)
+    #                #jjself.states_dict[e.outcome] = tu.EmptyState(e.outcome, temporary=True)
+    #                #self.gve.add_node(e.outcome)
+    #                #self._add_edge(parent_id, e.outcome, e.outcome)
+
+    #    #If no parents
+    #    elif len(parent_edges) == 0:
+    #        #just remove children edges
+    #        for e in filtered_children_edges:
+    #            self.gve.remove_edge(node_name, e.node2.id)
+
+    #        if len(filtered_children_edges) > 1:
+    #            new_selected_node = filtered_children_edges[0].node2.id
+    #        else:
+    #            if len(self.gve.nodes) > 0:
+    #                new_selected_node = self.gve.nodes[0].id
+    #            else:
+    #                new_selected_node = 'start'
+
+    #    self.gve.remove_node(node_name)
+    #    self.states_dict.pop(node_name)
+    #    return new_selected_node
+
+        #if new_node_name != old_node_name:
+        #    self.gve.add_node(new_node_name, radius=self.NODE_RADIUS)
+        #    #remove edges to old node, add edges that point to the new node
+        #    for e in self.gve.node(old_node_name).edges:
+        #        self.gve.remove_edge(e.node1.id, e.node2.id, label=e.label)
+        #        if e.node1.id == old_node_name:
+        #            self.gve.add_edge(new_node_name, e.node2.id, label=e.label, length=GraphModel.EDGE_LENGTH)
+        #        else:
+        #            self.gve.add_edge(e.node1.id, new_node_name, label=e.label, length=GraphModel.EDGE_LENGTH)
+        #    self.gve.remove_node(old_node_name)
+
+    #def _outcome_name(self, node_name, outcome):
+    #    return node_name + '_' + outcome
+
 

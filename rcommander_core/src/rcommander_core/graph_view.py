@@ -189,13 +189,13 @@ class GraphView:
                 else:
                     self.set_node_style(n.id, 'marked')
 
-            if hasattr(self.graph_model.get_smach_state(n.id), 'get_child'):
+            if hasattr(self.graph_model.get_state(n.id), 'get_child'):
                 if self.get_node_style(n.id) == 'selected':
                     self.set_node_style(n.id, 'container_selected')
                 else:
                     self.set_node_style(n.id, 'container')
 
-        self.set_node_style(tu.InfoStateBase.GLOBAL_NAME, 'root')
+        #self.set_node_style(tu.InfoStateBase.GLOBAL_NAME, 'root')
 
         draw_func = None
         #if properties_dict['selected_edge'] != None:
@@ -239,6 +239,8 @@ class GraphView:
             [coords.append([n.x, n.y]) for n in g.nodes]
             coords = np.matrix(coords).T
             centroid = np.median(coords, 1)
+            if len(coords) == 0:
+                return
 
             #calculate where radii should be
             radius = np.max(np.power(np.sum(np.power((coords - centroid), 2), 0), .5)) + gm.GraphModel.NODE_RADIUS*2

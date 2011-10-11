@@ -2,29 +2,22 @@ import tool_utils as tu
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 
-TOOL_NAME = 'outcome'
 
-class EmptyState(tu.StateBase):
+#class EmptyState(tu.StateBase):
 
-    def __init__(self, name, temporary, tool_name=TOOL_NAME):
-        tu.StateBase.__init__(self, name)
-        self.set_runnable(False)
-        self.temporary = temporary
-        self.tool_name = tool_name
+    #def __getstate__(self):
+    #    state = tu.StateBase.__getstate__(self)
+    #    my_state = [self.temporary]
+    #    return {'parent_state': state, 'self': my_state}
 
-    def __getstate__(self):
-        state = tu.StateBase.__getstate__(self)
-        my_state = [self.temporary]
-        return {'parent_state': state, 'self': my_state}
-
-    def __setstate__(self, state):
-        tu.StateBase.__setstate__(self, state['parent_state'])
-        self.temporary = state['self'][0]
+    #def __setstate__(self, state):
+    #    tu.StateBase.__setstate__(self, state['parent_state'])
+    #    self.temporary = state['self'][0]
 
 class OutcomeTool(tu.ToolBase):
 
     def __init__(self, button, rcommander):
-        tu.ToolBase.__init__(self, rcommander, TOOL_NAME, 'Add Outcome', EmptyState)
+        tu.ToolBase.__init__(self, rcommander, tu.EmptyState.TOOL_NAME, 'Add Outcome', tu.EmptyState)
         self.button = button
         self.rcommander.connect(self.button, SIGNAL('clicked()'), self.activate_cb)
 
@@ -43,7 +36,7 @@ class OutcomeTool(tu.ToolBase):
             nname = self.name + str(self.counter)
         else:
             nname = name
-        state = EmptyState(nname, False) 
+        state = tu.EmptyState(nname, False) 
         return state
 
     def set_node_properties(self, node):

@@ -32,30 +32,46 @@ class SleepTool(tu.ToolBase):
     def reset(self):
         self.time_box.setValue(3.)
 
-class SleepState(smach.State, tu.StateBase): 
+class SleepState(tu.StateBase):
 
     def __init__(self, name, sleep_time):
-        self.name = name
+        tu.StateBase.__init__(self, name)
         self.sleep_time = sleep_time
-        self.__init_unpicklables__()
+
+    def get_smach_state(self):
+        return SleepSmachState(self.sleep_time)
+
+class SleepSmachState(smach.State):
+
+    def __init__(self, sleep_time):
+        smach.State.__init__(self, outcomes=['done'], input_keys=[], output_keys=[])
+        self.sleep_time = sleep_time
 
     def execute(self, userdata):
         rospy.sleep(self.sleep_time)
-        return 'done'
 
-    def __init_unpicklables__(self):
-        tu.StateBase.__init__(self, self.name)
-        smach.State.__init__(self, outcomes = ['done'], input_keys = [], output_keys = [])
-
-    def __getstate__(self):
-        state = tu.StateBase.__getstate__(self)
-        my_state = [self.name, self.sleep_time]
-        return {'state_base': state, 'self': my_state}
-
-    def __setstate__(self, state):
-        tu.StateBase.__setstate__(self, state['state_base'])
-        self.name, self.sleep_time = state['self']
-        self.__init_unpicklables__()
+#class SleepState(smach.State, tu.StateBase): 
+#
+#    def __init__(self, name, sleep_time):
+#        self.__init_unpicklables__()
+#
+#    def execute(self, userdata):
+#        rospy.sleep(self.sleep_time)
+#        return 'done'
+#
+#    def __init_unpicklables__(self):
+#        tu.StateBase.__init__(self, self.name)
+#        smach.State.__init__(self, outcomes = ['done'], input_keys = [], output_keys = [])
+#
+#    def __getstate__(self):
+#        state = tu.StateBase.__getstate__(self)
+#        my_state = [self.name, self.sleep_time]
+#        return {'state_base': state, 'self': my_state}
+#
+#    def __setstate__(self, state):
+#        tu.StateBase.__setstate__(self, state['state_base'])
+#        self.name, self.sleep_time = state['self']
+#        self.__init_unpicklables__()
 
 
 
