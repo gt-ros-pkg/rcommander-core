@@ -262,12 +262,12 @@ class LinearMoveState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
         
     angles = property(_get_angles, _set_angles)
 
-    def __getstate__(self):
-        state = tu.SimpleStateBase.__getstate__(self)
-        my_state = [self.trans, self._quat, self.arm, self.vels, self.motion_type, self.frame]
-        return {'simple_state': state, 'self': my_state}
+    #def __getstate__(self):
+    #    state = tu.SimpleStateBase.__getstate__(self)
+    #    my_state = [self.trans, self._quat, self.arm, self.vels, self.motion_type, self.frame]
+    #    return {'simple_state': state, 'self': my_state}
 
-    def __setstate__(self, state):
-        tu.SimpleStateBase.__setstate__(self, state['simple_state'])
-        self.trans, self._quat, self.arm, self.vels, self.motion_type, self.frame = state['self']
+    #def __setstate__(self, state):
+    #    tu.SimpleStateBase.__setstate__(self, state['simple_state'])
+    #    self.trans, self._quat, self.arm, self.vels, self.motion_type, self.frame = state['self']
 

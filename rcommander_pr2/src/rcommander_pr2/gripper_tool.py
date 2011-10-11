@@ -81,12 +81,12 @@ class GripperState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
         #    time.sleep(.01)
         return pm.Pr2GripperCommandGoal(pm.Pr2GripperCommand(position=self.gripper_size/100., max_effort=self.effort))
 
-    def __getstate__(self):
-        state = tu.SimpleStateBase.__getstate__(self)
-        my_state = [self.gripper_size, self.effort, self.arm]
-        return {'simple_state': state, 'self': my_state}
+    #def __getstate__(self):
+    #    state = tu.SimpleStateBase.__getstate__(self)
+    #    my_state = [self.gripper_size, self.effort, self.arm]
+    #    return {'simple_state': state, 'self': my_state}
 
-    def __setstate__(self, state):
-        tu.SimpleStateBase.__setstate__(self, state['simple_state'])
-        self.gripper_size, self.effort, self.arm = state['self']
+    #def __setstate__(self, state):
+    #    tu.SimpleStateBase.__setstate__(self, state['simple_state'])
+    #    self.gripper_size, self.effort, self.arm = state['self']
 

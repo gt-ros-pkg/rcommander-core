@@ -167,17 +167,35 @@ class JointSequenceTool(tu.ToolBase):
             exec('self.%s.setText(str(0.))' % name)
 
 
-class JointSequenceState(smach.State, tu.StateBase): 
-
-    TIME_OUT_FACTOR = 3.
+class JointSequenceState(tu.StateBase): 
 
     def __init__(self, name, arm, joint_waypoints):
-        self.name = name
         tu.StateBase.__init__(self, self.name)
         self.arm = arm
         self.joint_waypoints = joint_waypoints
         self.arm_obj = None
-        self.__init_unpicklables__()
+
+    def set_robot(self, pr2):
+        if self.arm == 'left':
+            self.arm_obj = pr2.left
+
+        if self.arm == 'right':
+            self.arm_obj = pr2.right
+
+    def get_smach_state(self):
+        sequence_state =  JointSequenceState(self.arm, self.joint_waypoints)
+        sequence_state.arm_obj = self.arm_obj
+        return sequence_state
+
+
+class JointSequenceStateSmach(smach.State): 
+
+    TIME_OUT_FACTOR = 3.
+
+    def __init__(self):
+        smach.State.__init__(self, outcomes = ['succeeded', 'preempted', 'failed'], 
+                             input_keys = [], output_keys = [])
+        self.controller_manager = ControllerManager()
 
     def execute(self, userdata):
         self.controller_manager.joint_mode(self.arm)
@@ -194,7 +212,7 @@ class JointSequenceState(smach.State, tu.StateBase):
         state = client.get_state()
 
         #Monitor execution
-        trajectory_time_out = JointSequenceState.TIME_OUT_FACTOR * np.sum(times)
+        trajectory_time_out = JointSequenceStateSmach.TIME_OUT_FACTOR * np.sum(times)
         succeeded = False
         preempted = False
         r = rospy.Rate(30)
@@ -233,25 +251,93 @@ class JointSequenceState(smach.State, tu.StateBase):
 
         return 'failed'
 
-    def set_robot(self, pr2):
-        if self.arm == 'left':
-            self.arm_obj = pr2.left
-
-        if self.arm == 'right':
-            self.arm_obj = pr2.right
-
-    def __init_unpicklables__(self):
-        smach.State.__init__(self, outcomes = ['succeeded', 'preempted', 'failed'], input_keys = [], output_keys = [])
-        self.controller_manager = ControllerManager()
-
-    def __getstate__(self):
-        state = tu.StateBase.__getstate__(self)
-        my_state = [self.name, self.arm, self.joint_waypoints] 
-        return {'state_base': state, 'self': my_state}
-
-    def __setstate__(self, state):
-        tu.StateBase.__setstate__(self, state['state_base'])
-        self.name, self.arm, self.joint_waypoints = state['self']
-        self.__init_unpicklables__()
+#    def __init_unpicklables__(self):
+#
+#class JointSequenceState(smach.State, tu.StateBase): 
+#
+#    TIME_OUT_FACTOR = 3.
+#
+#    def __init__(self, name, arm, joint_waypoints):
+#        self.name = name
+#        tu.StateBase.__init__(self, self.name)
+#        self.arm = arm
+#        self.joint_waypoints = joint_waypoints
+#        self.arm_obj = None
+#        self.__init_unpicklables__()
+#
+#    def execute(self, userdata):
+#        self.controller_manager.joint_mode(self.arm)
+#
+#        #Construct trajectory command
+#        times = []
+#        wps = []
+#        for d in self.joint_waypoints:
+#            wps.append(np.matrix(d['angs']).T)
+#            times.append(d['time'])
+#
+#        self.arm_obj.set_poses(np.column_stack(wps), np.cumsum(np.array(times)), block=False)
+#        client = self.arm_obj.client
+#        state = client.get_state()
+#
+#        #Monitor execution
+#        trajectory_time_out = JointSequenceState.TIME_OUT_FACTOR * np.sum(times)
+#        succeeded = False
+#        preempted = False
+#        r = rospy.Rate(30)
+#        start_time = rospy.get_time()
+#        while True:
+#            #we have been preempted
+#            if self.preempt_requested():
+#                rospy.loginfo('JointSequenceState: preempt requested')
+#                client.cancel_goal()
+#                self.service_preempt()
+#                preempted = True
+#                break
+#
+#            if (rospy.get_time() - start_time) > trajectory_time_out:
+#                client.cancel_goal()
+#                rospy.loginfo('JointSequenceState: timed out!')
+#                succeeded = False
+#                break
+#
+#            #print tu.goal_status_to_string(state)
+#            if (state not in [am.GoalStatus.ACTIVE, am.GoalStatus.PENDING]):
+#                if state == am.GoalStatus.SUCCEEDED:
+#                    rospy.loginfo('JointSequenceState: Succeeded!')
+#                    succeeded = True
+#                break
+#
+#            state = client.get_state()
+#
+#            r.sleep()
+#
+#        if preempted:
+#            return 'preempted'
+#
+#        if succeeded:
+#            return 'succeeded'
+#
+#        return 'failed'
+#
+#    def set_robot(self, pr2):
+#        if self.arm == 'left':
+#            self.arm_obj = pr2.left
+#
+#        if self.arm == 'right':
+#            self.arm_obj = pr2.right
+#
+#    def __init_unpicklables__(self):
+#        smach.State.__init__(self, outcomes = ['succeeded', 'preempted', 'failed'], input_keys = [], output_keys = [])
+#        self.controller_manager = ControllerManager()
+#
+#    def __getstate__(self):
+#        state = tu.StateBase.__getstate__(self)
+#        my_state = [self.name, self.arm, self.joint_waypoints] 
+#        return {'state_base': state, 'self': my_state}
+#
+#    def __setstate__(self, state):
+#        tu.StateBase.__setstate__(self, state['state_base'])
+#        self.name, self.arm, self.joint_waypoints = state['self']
+#        self.__init_unpicklables__()
 
 

@@ -134,19 +134,19 @@ class NavigateState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
 
     #xy = property(_get_xy, _set_xy)
 
-    def __getstate__(self):
-        state = tu.SimpleStateBase.__getstate__(self)
-        my_state = [self.xy, self.r, self.frame]
-        return {'simple_state': state, 'self': my_state}
+    #def __getstate__(self):
+    #    state = tu.SimpleStateBase.__getstate__(self)
+    #    my_state = [self.xy, self.r, self.frame]
+    #    return {'simple_state': state, 'self': my_state}
 
-    def __setstate__(self, state):
-        #print 'NavigateState setting state', state
-        tu.SimpleStateBase.__setstate__(self, state['simple_state'])
-        xy, r, fr = state['self']
-        self.xy = xy
-        self.r = r
-        self.frame = fr
-        #NavigateState.__init__(self, name, xy, t, fr)
+    #def __setstate__(self, state):
+    #    #print 'NavigateState setting state', state
+    #    tu.SimpleStateBase.__setstate__(self, state['simple_state'])
+    #    xy, r, fr = state['self']
+    #    self.xy = xy
+    #    self.r = r
+    #    self.frame = fr
+    #    #NavigateState.__init__(self, name, xy, t, fr)
 
 
 

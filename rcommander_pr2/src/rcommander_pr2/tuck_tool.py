@@ -45,6 +45,7 @@ class TuckTool(tu.ToolBase):
 
 
 class TuckState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
+
     def __init__(self, name, tuck_left, tuck_right):
         tu.SimpleStateBase.__init__(self, name, \
                 'tuck_arms', ca.TuckArmsAction, 

@@ -27,7 +27,7 @@ class GripperEventTool(tu.ToolBase):
 
         self.gripper_radio_boxes, self.gripper_radio_buttons = tu.make_radio_box(pbox, ['Left', 'Right'], 'gripper_event_arm')
         self.event_box = QComboBox(pbox)
-        for event in GripperEventState.EVENT_LIST:
+        for event in GripperEventStateSmach.EVENT_LIST:
             self.event_box.addItem(event)
         self.accel_box = tu.SliderBox(pbox, 8.25, 30, 0., .25, 'gripper_accel', units='m/s^2')
         self.slip_box = tu.SliderBox(pbox, .01, -.5, .5, .1, 'gripper_slip', units='')
@@ -74,40 +74,35 @@ class GripperEventTool(tu.ToolBase):
 
     def reset(self):
         self.gripper_radio_buttons[0].setChecked(True)
-        self.event_box.setCurrentIndex(self.event_box.findText(GripperEventState.EVENT_LIST[0]))
+        self.event_box.setCurrentIndex(self.event_box.findText(GripperEventStateSmach.EVENT_LIST[0]))
         self.accel_box.set_value(8.25)
         self.slip_box.set_value(.01)
         self.child_gm = None
 
-class GripperEventState(smach.State, tu.EmbeddableState): 
+
+class GripperEventStateSmach(smach.State): 
 
     EVENT_LIST = ['accel', 'slip', 'finger side or accel', 'slip and accel', 'finger side, slip or accel']
-    EVENT_CODES = {'accel':                             gr.PR2GripperEventDetectorCommand.ACC,
-                   'slip':                                     gr.PR2GripperEventDetectorCommand.SLIP,
+
+    EVENT_CODES = {'accel':                      gr.PR2GripperEventDetectorCommand.ACC,
+                   'slip':                       gr.PR2GripperEventDetectorCommand.SLIP,
                    'finger side or accel':       gr.PR2GripperEventDetectorCommand.FINGER_SIDE_IMPACT_OR_ACC,
-                   'slip and accel':                    gr.PR2GripperEventDetectorCommand.SLIP_AND_ACC,
+                   'slip and accel':             gr.PR2GripperEventDetectorCommand.SLIP_AND_ACC,
                    'finger side, slip or accel': gr.PR2GripperEventDetectorCommand.FINGER_SIDE_IMPACT_OR_SLIP_OR_ACC}
+
     EVENT_OUTCOME = 'detected_event'
 
     def __init__(self, name, child_gm, arm, event_type, accel, slip):
-        tu.EmbeddableState.__init__(self, name, child_gm)
-        self.arm = arm
-        self.event_type = event_type
-        self.accel = accel
-        self.slip = slip
-        self.__init_unpicklables__() 
-
-    def __init_unpicklables__(self):
-        #Init smach stuff
+        self.child_gm = child_gm 
         input_keys = []
         output_keys = []
         outcomes = []
 
-        if self.get_child() != None:
-            sm = self.get_child().create_state_machine()
+        if self.child_gm != None:
+            sm = self.child_gm.create_state_machine()
             input_keys = list(sm.get_registered_input_keys())
             output_keys = list(sm.get_registered_output_keys())
-            outcomes = list(sm.get_registered_outcomes()) + [GripperEventState.EVENT_OUTCOME]
+            outcomes = list(sm.get_registered_outcomes()) + [GripperEventStateSmach.EVENT_OUTCOME]
         smach.State.__init__(self, outcomes = outcomes, input_keys = input_keys, output_keys = output_keys)
 
         #Setup our action server
@@ -120,26 +115,12 @@ class GripperEventState(smach.State, tu.EmbeddableState):
         evd_name = a + '_gripper_sensor_controller/event_detector'
         self.action_client = actionlib.SimpleActionClient(evd_name, gr.PR2GripperEventDetectorAction)
 
-    #Can't pickle graph models, have to have other mechanisms saving it
-    def __getstate__(self):
-        state = tu.EmbeddableState.__getstate__(self)
-        my_state = [self.arm, self.event_type, self.accel, self.slip]
-        return {'embeddable': state, 'self': my_state}
-
-    #Can't pickle graph models, have to have other mechanisms saving it
-    def __setstate__(self, state):
-        tu.EmbeddableState.__setstate__(self, state['embeddable'])
-        self.arm, self.event_type, self.accel, self.slip = state['self']
-        self.__init_unpicklables__()
-
-    #must implement in embeddable nodes
-    def recreate(self, new_graph_model):
-        return GripperEventState(self.name, new_graph_model, self.arm, self.event_type, self.accel, self.slip)
 
     def _detected_event(self):
         state = self.action_client.get_state()
         gripper_event_detected = state not in [am.GoalStatus.ACTIVE, am.GoalStatus.PENDING]
         return gripper_event_detected
+
 
     def execute(self, userdata):
         print '>> executing, got userdata:', userdata, 'keys', userdata.keys()
@@ -149,7 +130,7 @@ class GripperEventState(smach.State, tu.EmbeddableState):
         goal = gr.PR2GripperEventDetectorGoal()
         goal.command.acceleration_trigger_magnitude = self.accel
         goal.command.slip_trigger_magnitude = self.slip
-        goal.command.trigger_conditions = GripperEventState.EVENT_CODES[self.event_type]
+        goal.command.trigger_conditions = GripperEventStateSmach.EVENT_CODES[self.event_type]
         #print 'ge: sending goal'
         self.action_client.send_goal(goal)
 
@@ -217,5 +198,45 @@ class GripperEventState(smach.State, tu.EmbeddableState):
             #        return outcome
             #if not found just return what we have
             return rthread.outcome
+
+
+class GripperEventState(tu.EmbeddableState):
+
+    def __init__(self, name, child_gm, arm, event_type, accel, slip):
+        tu.EmbeddableState.__init__(self, name, child_gm)
+        self.arm = arm
+        self.event_type = event_type
+        self.accel = accel
+        self.slip = slip
+
+    def get_smach_state(self):
+        return GripperEventStateSmach(self.get_name(), self.get_child(),
+                self.arm, self.event_type, self.accel, self.slip)
+
+    def recreate(self, new_graph_model):
+        return GripperEventStateSmach(self.get_name(), new_graph_model, 
+                self.arm, self.event_type, self.accel, self.slip)
+
+
+#class GripperEventState(smach.State, tu.EmbeddableState): 
+#
+#
+#    ##Can't pickle graph models, have to have other mechanisms saving it
+#    #def __getstate__(self):
+#    #    state = tu.EmbeddableState.__getstate__(self)
+#    #    my_state = [self.arm, self.event_type, self.accel, self.slip]
+#    #    return {'embeddable': state, 'self': my_state}
+#
+#    ##Can't pickle graph models, have to have other mechanisms saving it
+#    #def __setstate__(self, state):
+#    #    tu.EmbeddableState.__setstate__(self, state['embeddable'])
+#    #    self.arm, self.event_type, self.accel, self.slip = state['self']
+#    #    self.__init_unpicklables__()
+#
+#    #must implement in embeddable nodes
+#    #def recreate(self, new_graph_model):
+#    #    return GripperEventState(self.name, new_graph_model, self.arm, self.event_type, self.accel, self.slip)
+
+
 
 

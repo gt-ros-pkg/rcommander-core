@@ -35,33 +35,57 @@ class SpeakTool(tu.ToolBase):
         self.text.setText(SpeakTool.DEFAULT_TEXT)
 
 
-class SpeakNode(smach.State, tu.StateBase): 
+class SpeakNodeSmach(smach.State): 
 
-    def __init__(self, name, text, sound_client=None):
-        self.name = name
-        self.text = text
+    def __init__(self, sound_client):
+        smach.State.__init__(self, outcomes = ['done'], input_keys = [], output_keys = [])
+        if sound_client == None:
+            sound_client = SoundClient()
         self.sound_client = sound_client
-        self.__init_unpicklables__()
 
     def execute(self, userdata):
         self.sound_client.say(self.text)#, 'voice_kal_diphone')
         return 'done'
 
-    def __init_unpicklables__(self):
+
+class SpeakNode(tu.StateBase):
+
+    def __init__(self, name, text, sound_client=None):
         tu.StateBase.__init__(self, self.name)
-        smach.State.__init__(self, outcomes = ['done'], input_keys = [], output_keys = [])
-        if self.sound_client == None:
-            self.sound_client = SoundClient()
+        self.text = text
+        self.sound_client = sound_client
 
-    def __getstate__(self):
-        state = tu.StateBase.__getstate__(self)
-        my_state = [self.name, self.text]
-        return {'state_base': state, 'self': my_state}
+    def get_smach_state(self):
+        return SpeakNodeSmach(self.text, self.sound_client)
 
-    def __setstate__(self, state):
-        tu.StateBase.__setstate__(self, state['state_base'])
-        self.name, self.text = state['self']
-        self.__init_unpicklables__()
+
+#class SpeakNode(smach.State, tu.StateBase): 
+#
+#    def __init__(self, name, text, sound_client=None):
+#        self.name = name
+#        self.text = text
+#        self.sound_client = sound_client
+#        self.__init_unpicklables__()
+#
+#    def execute(self, userdata):
+#        self.sound_client.say(self.text)#, 'voice_kal_diphone')
+#        return 'done'
+#
+#    def __init_unpicklables__(self):
+#        tu.StateBase.__init__(self, self.name)
+#        smach.State.__init__(self, outcomes = ['done'], input_keys = [], output_keys = [])
+#        if self.sound_client == None:
+#            self.sound_client = SoundClient()
+#
+#    def __getstate__(self):
+#        state = tu.StateBase.__getstate__(self)
+#        my_state = [self.name, self.text]
+#        return {'state_base': state, 'self': my_state}
+#
+#    def __setstate__(self, state):
+#        tu.StateBase.__setstate__(self, state['state_base'])
+#        self.name, self.text = state['self']
+#        self.__init_unpicklables__()
 
 
 
