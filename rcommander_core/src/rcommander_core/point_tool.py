@@ -3,6 +3,7 @@ from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 import numpy as np
 
+
 class Point3DTool(tu.ToolBase):
 
     def __init__(self, rcommander):
@@ -48,6 +49,7 @@ class Point3DTool(tu.ToolBase):
         self.yline.setText(str(0.))
         self.zline.setText(str(0.))
         self.frameline.setText(self.default_frame)
+
 
 class Point3DState(tu.InfoStateBase):
     

@@ -10,7 +10,9 @@ import numpy as np
 from object_manipulator.convert_functions import *
 import ptp_arm_action.msg as ptp
 import math
-import rcommander_core.point_tool as ptl
+import geometry_msgs.msg as geo
+
+#import rcommander_core.point_tool as ptl
 
 #import move_base_msgs.msg as mm
 #import math
@@ -47,7 +49,8 @@ class LinearMoveTool(tu.ToolBase):
 
         self.source_box = QComboBox(pbox)
         self.source_box.addItem(' ')
-        nodes = self.rcommander.global_nodes(ptl.Point3DState)
+        #nodes = self.rcommander.outputs_of_type(ptl.Point3DState)
+        nodes = self.rcommander.outputs_of_type(geo.PointStamped)
         for n in nodes:
             self.source_box.addItem(n)
         self.rcommander.connect(self.source_box, SIGNAL('currentIndexChanged(int)'), self.source_changed)
@@ -209,7 +212,7 @@ class LinearMoveState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
         tu.SimpleStateBase.__init__(self, name, \
                 arm + '_ptp', ptp.LinearMovementAction, 
                 goal_cb_str = 'ros_goal', input_keys=['point']) 
-        self.set_source_for('point', source)
+        self.set_remapping_for('point', source)
         #self.register_input_keys(['point'])
         #print 'registered input keys', self.get_registered_input_keys()
 

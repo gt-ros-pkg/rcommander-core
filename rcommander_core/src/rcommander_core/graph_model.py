@@ -194,6 +194,15 @@ class GraphModel:
         self.sm_thread['preempted'] = None
         rthread.start()
 
+    def outputs_of_type(self, class_filter):
+        filtered_output_variables = []
+        for node_name in self.real_states():
+            node = self.get_state(node_name)
+            output_names = node.output_names()
+            for output_name in output_names:
+                if issubclass(node.output_type(output_name), class_filter):
+                    filtered_output_variables.append(output_name)
+        return filtered_output_variables
 
     def create_state_machine(self, userdata=None, ignore_start_state=False):
         print '>>>>>>>>>>>>>> create_state_machine', userdata
@@ -239,11 +248,15 @@ class GraphModel:
 
                 remapping = {}
                 for input_key in node_smach.get_registered_input_keys():
-                    print 'source for', input_key, 'is', node.source_for(input_key)
-                    remapping[input_key] = node.source_for(input_key)
+                    print 'source for variable', input_key, 'is', node.remapping_for(input_key)
+                    remapping[input_key] = node.remapping_for(input_key)
                 
+                #We assume that each output is to a SEPARATE variable
+                #with the same name as the node, we only need the node's
+                #name. Ex.  OUTPUT: GLOBAL
+                #           NODE_NAME: NODE_NAME
                 for output_key in node_smach.get_registered_output_keys():
-                    remapping[output_key] = node.source_for(output_key)
+                    remapping[output_key] = output_key
 
                 print '>> node_name', node_name, 'transitions', transitions, 'remapping', remapping
                 smach.StateMachine.add(node_name, node_smach, transitions=transitions, remapping=remapping)
@@ -268,6 +281,8 @@ class GraphModel:
             ret_list.append([edge.label, edge.node2.id])
         return ret_list
 
+    ##
+    # All nodes that has executable code (not outcomes/EmptyState)
     def real_states(self):
         noc = []
         for node_name in self.states_dict.keys():
@@ -403,6 +418,7 @@ class GraphModel:
             #If this node has a child node we replace its child node with it instead of performing an add
             print 'FIXME: NESTING STATE MACHINES DOESN\'T WORK YET'
             self.replace_node(node, node.get_child_name())
+
 
     #def add_node_smach(self, smach_node):
     #    if self.states_dict.has_key(smach_node.name):

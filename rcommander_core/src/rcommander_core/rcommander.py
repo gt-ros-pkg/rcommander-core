@@ -247,8 +247,8 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
     def connectable_nodes(self, node_name, outcome):
         return self.graph_model.connectable_nodes(node_name, outcome)
 
-    def global_nodes(self, class_filter):
-        return self.graph_model.global_nodes(class_filter)
+    def outputs_of_type(self, class_filter):
+        return self.graph_model.outputs_of_type(class_filter)
 
     def set_selected_node(self, name):
         self.selected_node = name

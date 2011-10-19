@@ -347,10 +347,17 @@ class ToolBase:
 
 class StateBase:
 
-    def __init__(self, name):
+    def __init__(self, name, outputs={}):
         self.name = name
         self.remapping = {}
         self.runnable = True
+        self.outputs = outputs
+
+    def output_names(self):
+        return self.outputs.keys()
+
+    def output_type(self, name):
+        return self.outputs[name]
         
     def set_name(self, name):
         self.name = name
@@ -372,6 +379,7 @@ class StateBase:
 
     def get_smach_state(self):
         raise RuntimeError('Unimplemented method: get_smach_state')
+
 
 class EmptyState(StateBase):
 
