@@ -61,6 +61,9 @@ class GraphView:
 
 
         self.refresh = self.gve.layout.refresh
+
+        old_outcome_style = g.styles.create('old_outcome')
+        active_node_style = g.styles.create('active_node')
         selected_style = g.styles.create('selected')
         normal_style   = g.styles.create('normal')
         normal_edge_style   = g.styles.create('normal_edge')
@@ -69,6 +72,8 @@ class GraphView:
         container = g.styles.create('container')
         container_selected = g.styles.create('container_selected')
 
+        copy_style(g.styles.important, old_outcome_style)
+        copy_style(g.styles.important, active_node_style)
         copy_style(g.styles.important, selected_style)
         copy_style(g.styles.default, normal_style)
         copy_style(g.styles.default, normal_edge_style)
@@ -93,6 +98,13 @@ class GraphView:
         selected_style.text = text_color
         selected_edge_style.stroke = self.context.color(0.80, 0.00, 0.00, 0.75)
         selected_edge_style.strokewidth = 1.0
+
+        active_node_style.text = text_color
+        active_node_style.fill = self.context.color(153./255, 255./255, 51/255, .75)
+        active_node_style.strokewidth = 3
+
+        old_outcome_style.text = text_color
+        old_outcome_style.fill = self.context.color(153./255, 255./255, 51/255, .4)
 
         self.radii_increment = 150
         self.fsm_start_color = 1.
@@ -145,7 +157,6 @@ class GraphView:
             self.ty = 0.
             self.tx = 0.
 
-
         #if self._ctx._ns["rightdown"]:
         #    #Make sure we're not in any nodes
         #    in_nodes = False
@@ -194,6 +205,16 @@ class GraphView:
                     self.set_node_style(n.id, 'container_selected')
                 else:
                     self.set_node_style(n.id, 'container')
+
+            if self.graph_model.is_running():
+                if len(set(self.graph_model.sm_thread['current_states']).intersection(set([n.id]))) > 0:
+                    self.set_node_style(n.id, 'active_node')
+
+            if self.graph_model.get_last_outcome() != None:
+                outcome, t = self.graph_model.get_last_outcome() 
+                if outcome == n.id:
+                    if time.time() - t < 10.:
+                        self.set_node_style(n.id, 'old_outcome')
 
         #self.set_node_style(tu.InfoStateBase.GLOBAL_NAME, 'root')
 
@@ -294,7 +315,6 @@ class GraphView:
             node_label_node = graph.node(g, radius=radius, id = properties_dict['name'])
             node_label_node.x, node_label_node.y = centroid[0,0], centroid[1,0] - radius
             gs.node_label(container_style, node_label_node, g.alpha)
-
 
         def detect_fsm_click():
             def in_node(x, y, n):

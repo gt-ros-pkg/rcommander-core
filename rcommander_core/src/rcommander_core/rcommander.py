@@ -74,9 +74,10 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
         self.fsm_stack = []
 
         #Setup animation timer
-        self.status_bar_timer = QTimer()
-        self.connect(self.status_bar_timer, SIGNAL('timeout()'), self.status_bar_check)
-        self.status_bar_timer.start(100)
+        #self.status_bar_timer = QTimer()
+        #self.connect(self.status_bar_timer, SIGNAL('timeout()'), self.status_bar_check)
+        #self.status_bar_timer.start(100)
+        self.status_bar_msg = ''
         
         #Connect to ROS & PR2 
         #if tf_listener == None:
@@ -173,9 +174,17 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
         self.selected_tool = tool_name
 
     def run_state_machine(self, sm):
-        if self.graph_model.sm_thread.has_key('run_sm'):
+        #if self.graph_model.sm_thread.has_key('run_sm'):
+        if self.graph_model.is_running():
             raise RuntimeError('Only state machine execution thread maybe be active at a time.')
-        self.graph_model.run(self.graph_model.document.get_name(), state_machine=sm)
+
+        self.graph_model.register_status_cb(self._state_machine_status_cb)
+        cur_sm_thread = self.graph_model.run(self.graph_model.document.get_name(), state_machine=sm)
+        #self.statusBar().showMessage('Running state machine %s.' % self.graph_model.document.get_name())
+
+    def _state_machine_status_cb(self, message):
+        self.status_bar_msg = message
+        #self.statusBar().showMessage(message)
 
     def check_current_document(self):
         if self.graph_model.document.modified:
@@ -360,9 +369,12 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
                 QMessageBox.information(self, str(self.objectName()), 'RuntimeError: ' + e.message)
 
     def stop_sm_cb(self):
-        if self.graph_model.sm_thread.has_key('run_sm'):
-            self.graph_model.sm_thread['run_sm'].preempt()
-            self.graph_model.sm_thread['preempted'] = time.time()
+        self.graph_model.preempt()
+        #if self.graph_model.is_running():
+        #    self.graph_model.preempt()
+        ##if self.graph_model.sm_thread.has_key('run_sm'):
+        #    self.graph_model.sm_thread['run_sm'].preempt()
+        #    self.graph_model.sm_thread['preempted'] = time.time()
 
     def new_sm_cb(self):
         #prompt user to save if document has been modifid
@@ -541,6 +553,9 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
         properties_dict['name'         ] = self.graph_model.document.get_name()
         properties_dict['fsm_stack'    ] = self.fsm_stack
         self.graph_view.draw(properties_dict)
+
+        if str(self.statusBar().currentMessage()) != self.status_bar_msg:
+            self.statusBar().showMessage(self.status_bar_msg)
 
 def run(robot, tf_listener, plugin_namespace):
     import plugins 

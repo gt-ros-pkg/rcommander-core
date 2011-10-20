@@ -20,24 +20,35 @@ class ThreadRunSM(threading.Thread):
         self.sm = sm
         self.sm_name = sm_name
         self.outcome = None
-        self.intro_server = None
+        #self.intro_server = None
         self.exception = None
+        self.termination_func = None
+
+    def register_termination_cb(self, func):
+        self.termination_func = func
 
     def run(self):
         rospy.loginfo('ThreadRunSM started with %s' % self.sm_name)
         try:
-            self.intro_server = smach_ros.IntrospectionServer(self.sm_name, self.sm, '/' + self.sm_name)
-            self.intro_server.start()
+            #self.intro_server = smach_ros.IntrospectionServer(self.sm_name, self.sm, '/' + self.sm_name)
+            #self.intro_server.start()
             self.outcome = self.sm.execute()
+            rospy.loginfo('ThreadRunSM.run: execution finished')
+
         except smach.InvalidTransitionError, e:
+            rospy.loginfo('ThreadRunSM: got InvalidTransitionError %s' % str(e))
             self.exception = e
-            self.intro_server.stop()
+
         except UserStoppedException, e:
-            self.intro_server.stop()
+            #self.intro_server.stop()
             self.exception = e
-            rospy.loginfo('ThreadRunSM: execution stopped')
-        self.intro_server.stop()
-        rospy.loginfo('ThreadRunSM finished')
+            rospy.loginfo('ThreadRunSM: execution stopped by user.')
+
+        if self.termination_func != None:
+            self.termination_func(self.exception)
+
+        #self.intro_server.stop()
+        rospy.loginfo('ThreadRunSM.run: exiting')
 
     def preempt(self):
         if self.isAlive():

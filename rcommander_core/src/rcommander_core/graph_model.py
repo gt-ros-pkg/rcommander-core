@@ -9,6 +9,7 @@ import smach
 import outcome_tool as ot
 import graph
 import sm_thread_runner as smtr
+import time
 
 def is_container(node):
     return hasattr(node, 'get_child_name') 
@@ -74,7 +75,10 @@ class GraphModel:
 
         self.node = self.gve.node
         self.edge = self.gve.edge
-        self.sm_thread = {}
+
+        self.sm_thread = None
+        self.status_cb_func = None
+        self.last_outcome = None
         #self.add_outcome(tu.InfoStateBase.GLOBAL_NAME)
 
     def get_start_state(self):
@@ -189,10 +193,76 @@ class GraphModel:
         #    sm = state_machine
 
         sm = state_machine
+        sm.register_transition_cb(self._state_machine_transition_cb)
+        sm.register_start_cb(self._state_machine_start_cb)
+        sm.register_termination_cb(self._state_machine_termination_cb)
+
         rthread = smtr.ThreadRunSM(name, sm)
+        rthread.register_termination_cb(self._sm_thread_termination_cb)
+
+        self.sm_thread = {}
         self.sm_thread['run_sm'] = rthread
         self.sm_thread['preempted'] = None
+        self.sm_thread['current_states'] = None
+        self.sm_thread['outcome'] = None
         rthread.start()
+        return rthread
+
+    def preempt(self):
+        if self.is_running():
+            self.sm_thread['run_sm'].preempt()
+            self.sm_thread['preempted'] = time.time()
+
+    def is_running(self):
+        return self.sm_thread != None
+
+    def register_status_cb(self, func):
+        self.status_cb_func = func
+
+    def _sm_thread_termination_cb(self, exception):
+        #print 'thread terminated'
+        if exception != None:
+            if self.status_cb_func != None:
+                self.status_cb_func('Error: %s' % str(exception))
+
+        elif self.sm_thread['preempted'] != None:
+            if self.status_cb_func != None:
+                self.status_cb_func('%s stopped.' % (self.document.get_name()))
+
+        self.sm_thread = None
+
+    def _state_machine_transition_cb(self, user_data, active_states):
+        self.sm_thread['current_states'] = active_states
+        if self.status_cb_func != None:
+            self.status_cb_func('At state %s' % (active_states[0]))
+
+        #print '_state_machine_transition_cb: called back with', args, kwargs
+        #print '_state_machine_transition_cb: _data', args[0]._data
+        #print '_state_machine_transition_cb: _locks', args[0]._locks
+        #print '_state_machine_transition_cb: args[1]', args[1]
+        #print '_state_machine_transition_cb initial states', self.sm_thread['run_sm'].sm.get_initial_states()
+        #print '_state_machine_transition_cb active states', self.sm_thread['run_sm'].sm.get_active_states()
+
+    def _state_machine_start_cb(self, userdata, initial_states):
+        self.sm_thread['current_states'] = initial_states
+        if self.status_cb_func != None:
+            self.status_cb_func('At state %s.' % (initial_states[0]))
+        #print '_state_machine_start_cb userdata      ', userdata
+        #print '_state_machine_start_cb initial_states', initial_states
+
+    def get_last_outcome(self):
+        return self.last_outcome
+
+    def _state_machine_termination_cb(self, userdata, terminal_states, container_outcome):
+        self.sm_thread['current_states'] = terminal_states
+        self.sm_thread['outcome'] = container_outcome
+        self.last_outcome = [container_outcome, time.time()]
+        if self.status_cb_func != None:
+            self.status_cb_func('Stopped with outcome %s' % container_outcome)
+
+        #print '_state_machine_termination_cb userdata         ', userdata
+        #print '_state_machine_termination_cb terminal_states  ', terminal_states
+        #print '_state_machine_termination_cb container_outcome', container_outcome
 
     def outputs_of_type(self, class_filter):
         filtered_output_variables = []
@@ -234,7 +304,7 @@ class GraphModel:
                 #    continue
 
                 #if issubclass(node.__class__, tu.SimpleStateBase):
-                node_smach = node.get_state()
+                node_smach = node.get_smach_state()
 
                 #if issubclass(node.__class__, tu.StateBase):
                 #    node_smach = node
@@ -245,6 +315,11 @@ class GraphModel:
                     if e.node1.id == node_name:
                         transitions[e.label] = e.node2.id
                         #print e.node1.id, e.label, e.node2.id
+
+                input_set = set(node_smach.get_registered_input_keys())
+                output_set = set(node_smach.get_registered_output_keys())
+                if len(input_set.intersection(output_set)) > 0:
+                    raise RuntimeError('Input keys has the same name as output_keys.')
 
                 remapping = {}
                 for input_key in node_smach.get_registered_input_keys():

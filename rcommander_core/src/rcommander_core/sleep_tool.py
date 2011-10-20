@@ -49,6 +49,7 @@ class SleepSmachState(smach.State):
 
     def execute(self, userdata):
         rospy.sleep(self.sleep_time)
+        return 'done'
 
 #class SleepState(smach.State, tu.StateBase): 
 #
