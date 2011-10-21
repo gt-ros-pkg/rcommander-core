@@ -106,9 +106,9 @@ class GripperEventStateSmach(smach.State):
         smach.State.__init__(self, outcomes = outcomes, input_keys = input_keys, output_keys = output_keys)
 
         #Setup our action server
-        if self.arm == 'left':
+        if arm == 'left':
             a = 'l'
-        elif self.arm == 'right':
+        elif arm == 'right':
             a = 'r'
         else:
             raise RuntimeError('Error')
@@ -214,7 +214,7 @@ class GripperEventState(tu.EmbeddableState):
                 self.arm, self.event_type, self.accel, self.slip)
 
     def recreate(self, new_graph_model):
-        return GripperEventStateSmach(self.get_name(), new_graph_model, 
+        return GripperEventState(self.get_name(), new_graph_model, 
                 self.arm, self.event_type, self.accel, self.slip)
 
 

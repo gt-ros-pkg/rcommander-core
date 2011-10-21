@@ -172,7 +172,7 @@ class LinearMoveTool(tu.ToolBase):
         self.trans_vel_line.setText(str(node.vels[0]))
         self.rot_vel_line.setText(str(node.vels[1]))
 
-        source_name = node.source_for('point')
+        source_name = node.remapping_for('point')
         if source_name == None:
             source_name = ' '
             index = self.source_box.findText(source_name)

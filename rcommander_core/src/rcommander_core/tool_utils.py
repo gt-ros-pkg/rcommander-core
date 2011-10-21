@@ -418,11 +418,11 @@ class EmbeddableState(StateBase):
         #Look inside state machine and look for things with remaps
         if child_gm != None:
             self.document = child_gm.document
-            for node_name in child_gm.smach_states.keys():
-                mapping = child_gm.get_smach_state(node_name).remapping
+            for node_name in child_gm.states_dict.keys():
+                mapping = child_gm.get_state(node_name).remapping
                 for input_key in mapping.keys():
                     source = mapping[input_key]
-                    self.set_remmaping_for(source, source)
+                    self.set_remapping_for(source, source)
 
     def get_child(self):
         return self.child_gm
@@ -491,18 +491,19 @@ class SimpleStateBase(StateBase):
         self.output_keys = output_keys
 
     def get_smach_state(self):
-        return SimpleStateBaseSmach(self.action_name, self.action_type, self.goal_cb_str,
+        return SimpleStateBaseSmach(self.action_name, self.action_type, self, self.goal_cb_str,
                 self.input_keys, self.output_keys)
 
 
 class SimpleStateBaseSmach(smach_ros.SimpleActionState):
 
-    def __init__(self, action_name, action_type, goal_cb_str, input_keys, output_keys):
+    def __init__(self, action_name, action_type, goal_obj, goal_cb_str, input_keys, output_keys):
         smach_ros.SimpleActionState.__init__(self, action_name, action_type, 
-                goal_cb = SimpleStateCB(eval('self.%s' % goal_cb_str), input_keys, output_keys))
+                goal_cb = SimpleStateCB(eval('goal_obj.%s' % goal_cb_str), input_keys, output_keys))
+        self.goal_obj = goal_obj
 
     def __call__(self, userdata, default_goal): 
-        f = eval('self.%s' % self.goal_cb_str)
+        f = eval('self.goal_obj.%s' % self.goal_cb_str)
         return f(userdata, default_goal)
 
 #class SimpleStateBase(smach_ros.SimpleActionState, StateBase):

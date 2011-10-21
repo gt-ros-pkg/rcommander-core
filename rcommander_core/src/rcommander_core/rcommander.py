@@ -517,6 +517,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         # what to call this? recreate? update?
         #       input: old node
         #       output: new node
+        # Recreate replaces the old subtree with the current one being edited.
         new_node = last_fsm_el.node.recreate(self.graph_model)
         
         #replace old node in the graph, reserving links which exist

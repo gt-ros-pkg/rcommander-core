@@ -83,7 +83,7 @@ class SafeMoveArmState(tu.StateBase):
     # @param name
     # @param arm 'left' or 'right'
     def __init__(self, name, arm, joints):
-        tu.StateBase.__init__(self, self.name)
+        tu.StateBase.__init__(self, name)
         self.arm = arm
         self.joints = joints
 

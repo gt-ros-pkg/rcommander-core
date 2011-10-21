@@ -170,10 +170,10 @@ class JointSequenceTool(tu.ToolBase):
 class JointSequenceState(tu.StateBase): 
 
     def __init__(self, name, arm, joint_waypoints):
-        tu.StateBase.__init__(self, self.name)
+        tu.StateBase.__init__(self, name)
         self.arm = arm
         self.joint_waypoints = joint_waypoints
-        self.arm_obj = None
+        self.arm_obj = None #FIX ME
 
     def set_robot(self, pr2):
         if self.arm == 'left':
@@ -183,19 +183,21 @@ class JointSequenceState(tu.StateBase):
             self.arm_obj = pr2.right
 
     def get_smach_state(self):
-        sequence_state =  JointSequenceState(self.arm, self.joint_waypoints)
-        sequence_state.arm_obj = self.arm_obj
-        return sequence_state
+        return JointSequenceStateSmach(self.arm, self.joint_waypoints, self.arm_obj)
 
 
 class JointSequenceStateSmach(smach.State): 
 
     TIME_OUT_FACTOR = 3.
 
-    def __init__(self):
+    def __init__(self, arm, joint_waypoints, arm_obj):
         smach.State.__init__(self, outcomes = ['succeeded', 'preempted', 'failed'], 
                              input_keys = [], output_keys = [])
+
+        self.arm = arm
         self.controller_manager = ControllerManager()
+        self.joint_waypoints = joint_waypoints
+        self.arm_obj = arm_obj
 
     def execute(self, userdata):
         self.controller_manager.joint_mode(self.arm)

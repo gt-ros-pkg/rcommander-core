@@ -37,10 +37,11 @@ class SpeakTool(tu.ToolBase):
 
 class SpeakNodeSmach(smach.State): 
 
-    def __init__(self, sound_client):
+    def __init__(self, text, sound_client):
         smach.State.__init__(self, outcomes = ['done'], input_keys = [], output_keys = [])
         if sound_client == None:
             sound_client = SoundClient()
+        self.text = text
         self.sound_client = sound_client
 
     def execute(self, userdata):
@@ -51,7 +52,7 @@ class SpeakNodeSmach(smach.State):
 class SpeakNode(tu.StateBase):
 
     def __init__(self, name, text, sound_client=None):
-        tu.StateBase.__init__(self, self.name)
+        tu.StateBase.__init__(self, name)
         self.text = text
         self.sound_client = sound_client
 

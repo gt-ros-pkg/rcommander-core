@@ -61,11 +61,13 @@ class TuckState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
         print 'GOAL', goal.tuck_left, goal.tuck_right
         return goal
 
-    def __getstate__(self):
-        state = tu.SimpleStateBase.__getstate__(self)
-        my_state = [self.tuck_left, self.tuck_right]
-        return {'simple_state': state, 'self': my_state}
+    #def get_smach_state(self):
+    #
+    #def __getstate__(self):
+    #    state = tu.SimpleStateBase.__getstate__(self)
+    #    my_state = [self.tuck_left, self.tuck_right]
+    #    return {'simple_state': state, 'self': my_state}
 
-    def __setstate__(self, state):
-        tu.SimpleStateBase.__setstate__(self, state['simple_state'])
-        self.tuck_left, self.tuck_right = state['self']
+    #def __setstate__(self, state):
+    #    tu.SimpleStateBase.__setstate__(self, state['simple_state'])
+    #    self.tuck_left, self.tuck_right = state['self']
