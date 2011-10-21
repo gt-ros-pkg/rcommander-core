@@ -123,6 +123,7 @@ class GraphModel:
                 print 'FIXME: load_and_recreate might not make sense anymore'
                 gm.states_dict[sname] = gm.states_dict[sname].load_and_recreate(name, robot)
 
+
         #Reconstruct graph
         edges_filename = pt.join(name, GraphModel.EDGES_FILE)
         edges_pickle_file = open(edges_filename, 'r')
@@ -141,7 +142,7 @@ class GraphModel:
         return gm
 
     def save(self, name):
-        print '@@@ saving to', name
+        rospy.loginfo('GraphModel: saving to %s' % name)
         if not pt.exists(name):
             os.mkdir(name)
 
@@ -275,9 +276,9 @@ class GraphModel:
         return filtered_output_variables
 
     def create_state_machine(self, userdata=None, ignore_start_state=False):
-        print '>>>>>>>>>>>>>> create_state_machine', userdata
+        #print '>>>>>>>>>>>>>> create_state_machine', userdata
         sm = smach.StateMachine(outcomes = self.outcomes())
-        print 'sm userdata', sm.userdata
+        #print 'sm userdata', sm.userdata, self.outcomes()
 
         #Deprecated, global nodes are being replaced by nodes with outputs
         #for global_node_name in self.global_nodes(None):
@@ -291,10 +292,10 @@ class GraphModel:
         # Copy over input userdata into current state machine so that nodes contained
         # would have access
         if userdata != None:
-            print 'userdata keys', userdata.keys()
+            #print 'userdata keys', userdata.keys()
             for key in userdata.keys():
                 exec ("sm.userdata.%s = userdata.%s" % (key, key))
-                print 'copying key', key
+                #print 'copying key', key
                 exec ("print 'data in key is', sm.userdata.%s" % (key))
 
         with sm:
@@ -310,7 +311,7 @@ class GraphModel:
                 #    node_smach = node
 
                 transitions = {}
-                print node_name, 'input keys', node_smach.get_registered_input_keys()
+                #print node_name, 'input keys', node_smach.get_registered_input_keys()
                 for e in self.gve.node(node_name).edges:
                     if e.node1.id == node_name:
                         transitions[e.label] = e.node2.id
@@ -337,13 +338,14 @@ class GraphModel:
                 smach.StateMachine.add(node_name, node_smach, transitions=transitions, remapping=remapping)
 
         if ignore_start_state:
+            #print 'IGNORING START STATE'
             return sm
 
         if self.start_state == None:
             raise RuntimeError('No start state set.')
-        print 'create_state_machine start state is', self.start_state
+        #print 'create_state_machine start state is', self.start_state
         sm.set_initial_state([self.start_state])
-        print '<<<<<<<<<<<<<<'
+        #print '<<<<<<<<<<<<<<'
         return sm
 
     #@return a list of node names and outcomes

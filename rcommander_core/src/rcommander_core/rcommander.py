@@ -1,7 +1,7 @@
 import roslib; roslib.load_manifest('rcommander_core')
 
-from PyQt4.QtGui import *
-from PyQt4.QtCore import *
+import PyQt4.QtGui as qtg
+import PyQt4.QtCore as qtc
 from rcommander_auto import Ui_RCommanderWindow
 
 import rospy
@@ -33,27 +33,27 @@ class FSMStackElement:
         self.graph_node = None
         self.node = node
 
-class RCommander(QMainWindow, nbg.NodeBoxGUI):
+class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
 
     def __init__(self, robot, tf_listener=None):
-        QMainWindow.__init__(self)
+        qtg.QMainWindow.__init__(self)
         self.ui = Ui_RCommanderWindow()
         self.ui.setupUi(self)
         nbg.NodeBoxGUI.__init__(self, self.ui.graphicsSuperView)
 
-        self.connect(self.ui.run_button,         SIGNAL('clicked()'), self.run_cb)
-        self.connect(self.ui.add_button,         SIGNAL('clicked()'), self.add_cb)
-        self.connect(self.ui.reset_button,       SIGNAL('clicked()'), self.reset_cb)
-        self.connect(self.ui.save_button,        SIGNAL('clicked()'), self.save_cb)
-        self.connect(self.ui.start_state_button, SIGNAL('clicked()'), self.start_state_cb)
+        self.connect(self.ui.run_button,         qtc.SIGNAL('clicked()'), self.run_cb)
+        self.connect(self.ui.add_button,         qtc.SIGNAL('clicked()'), self.add_cb)
+        self.connect(self.ui.reset_button,       qtc.SIGNAL('clicked()'), self.reset_cb)
+        self.connect(self.ui.save_button,        qtc.SIGNAL('clicked()'), self.save_cb)
+        self.connect(self.ui.start_state_button, qtc.SIGNAL('clicked()'), self.start_state_cb)
 
-        self.connect(self.ui.delete_button, SIGNAL('clicked()'), self.delete_cb)
-        self.connect(self.ui.action_Run, SIGNAL('triggered(bool)'), self.run_sm_cb)
-        self.connect(self.ui.action_stop, SIGNAL('triggered(bool)'), self.stop_sm_cb)
-        self.connect(self.ui.actionNew, SIGNAL('triggered(bool)'), self.new_sm_cb)
-        self.connect(self.ui.action_save, SIGNAL('triggered(bool)'), self.save_sm_cb)
-        self.connect(self.ui.action_save_as, SIGNAL('triggered(bool)'), self.save_as_sm_cb)
-        self.connect(self.ui.action_open, SIGNAL('triggered(bool)'), self.open_sm_cb)
+        self.connect(self.ui.delete_button, qtc.SIGNAL('clicked()'), self.delete_cb)
+        self.connect(self.ui.action_Run, qtc.SIGNAL('triggered(bool)'), self.run_sm_cb)
+        self.connect(self.ui.action_stop, qtc.SIGNAL('triggered(bool)'), self.stop_sm_cb)
+        self.connect(self.ui.actionNew, qtc.SIGNAL('triggered(bool)'), self.new_sm_cb)
+        self.connect(self.ui.action_save, qtc.SIGNAL('triggered(bool)'), self.save_sm_cb)
+        self.connect(self.ui.action_save_as, qtc.SIGNAL('triggered(bool)'), self.save_as_sm_cb)
+        self.connect(self.ui.action_open, qtc.SIGNAL('triggered(bool)'), self.open_sm_cb)
         self.ui.splitter.setSizes(split(self.width(), .83))
 
         self.empty_container(self.ui.properties_tab)
@@ -126,9 +126,9 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
     # GUI logic
     ####################################################################################################################
     def _create_tab(self, tab_name):
-        ntab = QWidget()
+        ntab = qtg.QWidget()
         ntab.setObjectName(tab_name)
-        QHBoxLayout(ntab)
+        qtg.QHBoxLayout(ntab)
         self.ui.tools_box.addTab(ntab, tab_name)
         self.ui.tools_box.setTabText(self.ui.tools_box.indexOf(ntab), tab_name)
         self.tabs[tab_name] = ntab
@@ -139,7 +139,7 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
     # @param list of [tab-name, tool-object] pairs
     def add_tools(self, tools_list):
         #add tools to the right tab, creating tabs if needed
-        self.button_group_tab = QButtonGroup()
+        self.button_group_tab = qtg.QButtonGroup()
         for tab_name, tool in tools_list:
             if not self.tabs.has_key(tab_name):
                 self._create_tab(tab_name)
@@ -178,6 +178,10 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
         if self.graph_model.is_running():
             raise RuntimeError('Only state machine execution thread maybe be active at a time.')
 
+        #print 'run_state_machine called', self.graph_model.document.get_name()
+        #print 'executing here'
+        #print sm.execute()
+        #print 'done executing'
         self.graph_model.register_status_cb(self._state_machine_status_cb)
         cur_sm_thread = self.graph_model.run(self.graph_model.document.get_name(), state_machine=sm)
         #self.statusBar().showMessage('Running state machine %s.' % self.graph_model.document.get_name())
@@ -188,17 +192,17 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
 
     def check_current_document(self):
         if self.graph_model.document.modified:
-            msg_box = QMessageBox()
+            msg_box = qtg.QMessageBox()
             msg_box.setText('Current state machine has not been saved.')
             msg_box.setInformativeText('Do you want to save it first?')
-            msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
-            msg_box.setDefaultButton(QMessageBox.Cancel)
+            msg_box.setStandardButtons(qtg.QMessageBox.Yes | qtg.QMessageBox.No | qtg.QMessageBox.Cancel)
+            msg_box.setDefaultButton(qtg.QMessageBox.Cancel)
             ret = msg_box.exec_()
 
-            if ret == QMessageBox.Cancel:
+            if ret == qtg.QMessageBox.Cancel:
                 return False
 
-            elif ret == QMessageBox.Yes:
+            elif ret == qtg.QMessageBox.Yes:
                 return self.save_sm_cb()
 
         return True
@@ -281,7 +285,7 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
             singleton_sm = self.graph_model.create_singleton_statemachine(node)
             self.run_state_machine(singleton_sm)
         except RuntimeError, e:
-            QMessageBox.information(self, str(self.objectName()), 'RuntimeError: ' + e.message)
+            qtg.QMessageBox.information(self, str(self.objectName()), 'RuntimeError: ' + e.message)
     
     def add_cb(self):
         if self.selected_tool == None:
@@ -289,7 +293,7 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
         tool_instance = self.tool_dict[self.selected_tool]['tool_obj']
         if hasattr(tool_instance, 'set_child_node'):
             if self.selected_node == None:
-                QMessageBox.information(self, str(self.objectName()), 'Need to have another node selected to create an instance of this node.')
+                qtg.QMessageBox.information(self, str(self.objectName()), 'Need to have another node selected to create an instance of this node.')
                 return
             else:
                 state = self.graph_model.get_state(self.selected_node)
@@ -337,7 +341,7 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
             try:
                 self.graph_model.set_start_state(self.selected_node)
             except RuntimeError, e:
-                QMessageBox.information(self, str(self.objectName()), 'RuntimeError: ' + e.message)
+                qtg.QMessageBox.information(self, str(self.objectName()), 'RuntimeError: ' + e.message)
 
     def delete_cb(self):
         if self.selected_node != None:
@@ -361,12 +365,12 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
         #TODO Disable all buttons.
         #TODO Reflect state of running graph.
         if self.graph_model.get_start_state() == None:
-            QMessageBox.information(self, str(self.objectName()), 'No start state set.  Select a state and click on \'Start State\' to set a new start state.')
+            qtg.QMessageBox.information(self, str(self.objectName()), 'No start state set.  Select a state and click on \'Start State\' to set a new start state.')
         else:
             try:
                 self.run_state_machine(self.graph_model.create_state_machine())
             except RuntimeError, e:
-                QMessageBox.information(self, str(self.objectName()), 'RuntimeError: ' + e.message)
+                qtg.QMessageBox.information(self, str(self.objectName()), 'RuntimeError: ' + e.message)
 
     def stop_sm_cb(self):
         self.graph_model.preempt()
@@ -395,7 +399,8 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
 
     def save_as_sm_cb(self):
         #popup file dialog
-        filename = str(QFileDialog.getSaveFileName(self, 'Save As', self.graph_model.document.get_filename()))
+        filename = str(qtg.QFileDialog.getSaveFileName(self, 'Save As', self.graph_model.document.get_filename()))
+        self._fix_shutdown_flag()
 
         #user canceled
         if len(filename) == 0:
@@ -403,13 +408,13 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
 
         if pt.exists(filename):
             #Ask if want to over write
-            msg_box = QMessageBox()
+            msg_box = qtg.QMessageBox()
             msg_box.setText('There is already a file with this name.')
             msg_box.setInformativeText('Do you want to overwrite it?')
-            msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
-            msg_box.setDefaultButton(QMessageBox.Cancel)
+            msg_box.setStandardButtons(qtg.QMessageBox.Yes | qtg.QMessageBox.No | qtg.QMessageBox.Cancel)
+            msg_box.setDefaultButton(qtg.QMessageBox.Cancel)
             ret = msg_box.exec_()
-            if ret == QMessageBox.No or ret == QMessageBox.Cancel:
+            if ret == qtg.QMessageBox.No or ret == qtg.QMessageBox.Cancel:
                 return False
 
         self.graph_model.save(filename)
@@ -418,14 +423,20 @@ class RCommander(QMainWindow, nbg.NodeBoxGUI):
         self.graph_model.document.modified = False
         return True
 
+    def _fix_shutdown_flag(self):
+        #Some messed up bug with QFileDialog!!!
+        import rospy.core as rpc
+        rpc._shutdown_flag = False
+
     def open_sm_cb(self):
         #prompt user if current document has not been saved
         if not self.check_current_document():
             return
 
-        dialog = QFileDialog(self, 'Open State Machine', '~')
-        dialog.setFileMode(QFileDialog.Directory)
-        dialog.setViewMode(QFileDialog.List)
+        dialog = qtg.QFileDialog(self, 'Open State Machine', '~')
+        dialog.setFileMode(qtg.QFileDialog.Directory)
+        dialog.setViewMode(qtg.QFileDialog.List)
+        self._fix_shutdown_flag()
         if dialog.exec_():
             filenames = dialog.selectedFiles()
             filename = str(filenames[0])
@@ -565,10 +576,10 @@ def run(robot, tf_listener, plugin_namespace):
     #import point_tool as ptl
 
 
-    app = QApplication(sys.argv)
+    app = qtg.QApplication(sys.argv)
     rc = RCommander(robot, tf_listener)
-    app.connect(app, SIGNAL('lastWindowClosed()'), app.quit)
-    app.connect(rc.ui.action_quit, SIGNAL('clicked()'), app.quit)
+    app.connect(app, qtc.SIGNAL('lastWindowClosed()'), app.quit)
+    app.connect(rc.ui.action_quit, qtc.SIGNAL('clicked()'), app.quit)
 
     #Load plugins
     # tools_list = [['Graph', st.SleepTool(rc)], 

@@ -28,12 +28,12 @@ class ThreadRunSM(threading.Thread):
         self.termination_func = func
 
     def run(self):
-        rospy.loginfo('ThreadRunSM started with %s' % self.sm_name)
+        rospy.loginfo('ThreadRunSM started %s' % self.sm_name)
         try:
             #self.intro_server = smach_ros.IntrospectionServer(self.sm_name, self.sm, '/' + self.sm_name)
             #self.intro_server.start()
             self.outcome = self.sm.execute()
-            rospy.loginfo('ThreadRunSM.run: execution finished')
+            rospy.loginfo('ThreadRunSM.run: execution finished outcome %s' % self.outcome)
 
         except smach.InvalidTransitionError, e:
             rospy.loginfo('ThreadRunSM: got InvalidTransitionError %s' % str(e))

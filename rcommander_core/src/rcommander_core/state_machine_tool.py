@@ -29,6 +29,11 @@ class StateMachineTool(tu.ToolBase):
         dialog = QFileDialog(self.rcommander, 'Open State Machine', '~')
         dialog.setFileMode(QFileDialog.Directory)
         dialog.setViewMode(QFileDialog.List)
+
+        #Fix messed up bug, weird interaction between file dialog and rospy!
+        import rospy.core as rpc
+        rpc._shutdown_flag = False
+
         if dialog.exec_():
             filenames = dialog.selectedFiles()
             filename = str(filenames[0])
