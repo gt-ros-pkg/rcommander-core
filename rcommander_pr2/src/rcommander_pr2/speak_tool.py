@@ -45,7 +45,7 @@ class SpeakNodeSmach(smach.State):
         self.sound_client = sound_client
 
     def execute(self, userdata):
-        self.sound_client.say(self.text)#, 'voice_kal_diphone')
+        self.sound_client.say(self.text, 'voice_kal_diphone')
         return 'done'
 
 
