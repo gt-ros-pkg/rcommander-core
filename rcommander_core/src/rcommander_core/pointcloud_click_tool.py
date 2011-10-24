@@ -20,8 +20,6 @@ class PointCloudClickTool(tu.ToolBase):
         self.yline = QLineEdit(pbox)
         self.zline = QLineEdit(pbox)
 
-        self.wait_check = QCheckBox(pbox)
-        #self.wait_check.setCheckState(False)
 
         self.time_out_box = QDoubleSpinBox(pbox)
         self.time_out_box.setMinimum(1.)
@@ -33,6 +31,10 @@ class PointCloudClickTool(tu.ToolBase):
         self.pose_button.setText('Get Point')
         #self.pose_button.setEnabled(True)
 
+        self.wait_check = QCheckBox(pbox)
+        self.wait_check.setTristate(False)
+        #self.wait_check.setCheckState(False)
+
         formlayout.addRow("&x", self.xline)
         formlayout.addRow("&y", self.yline)
         formlayout.addRow("&z", self.zline)
@@ -42,6 +44,7 @@ class PointCloudClickTool(tu.ToolBase):
         formlayout.addRow(self.pose_button)
 
         self.rcommander.connect(self.pose_button, SIGNAL('clicked()'), self.get_current_pose)
+        self.rcommander.connect(self.wait_check, SIGNAL('stateChanged(int)'), self.box_checked)
         self.reset()
         pbox.update()
 
@@ -59,12 +62,30 @@ class PointCloudClickTool(tu.ToolBase):
                 wait_for_msg=wait_for_msg,
                 time_out=time_out)
 
+    def box_checked(self, state):
+        if state == 0:
+            self.xline.setEnabled(True)
+            self.yline.setEnabled(True)
+            self.zline.setEnabled(True)
+            self.frameline.setEnabled(True)
+            self.pose_button.setEnabled(True)
+            
+        if state == 2:
+            self.xline.setEnabled(False)
+            self.yline.setEnabled(False)
+            self.zline.setEnabled(False)
+            self.frameline.setEnabled(False)
+            self.pose_button.setEnabled(False)
+
+
     def set_node_properties(self, node):
         self.xline.setText(str(node.point[0]))
         self.yline.setText(str(node.point[1]))
         self.zline.setText(str(node.point[2]))
         self.time_out_box.setValue(node.time_out)
-        self.wait_check.setCheckState(node.wait_for_msg)
+        if node.wait_for_msg:
+            self.wait_check.setCheckState(2)
+            
         self.frameline.setText(node.frame)
 
     def reset(self):
@@ -78,8 +99,8 @@ class PointCloudClickTool(tu.ToolBase):
     def get_current_pose(self):
         pose_stamped = rospy.wait_for_message('/cloud_click_point', geo.PoseStamped, 5.)
         self.xline.setText('%.3f' % pose_stamped.pose.position.x)
-        self.xline.setText('%.3f' % pose_stamped.pose.position.y)
-        self.xline.setText('%.3f' % pose_stamped.pose.position.z)
+        self.yline.setText('%.3f' % pose_stamped.pose.position.y)
+        self.zline.setText('%.3f' % pose_stamped.pose.position.z)
         self.frameline.setText(pose_stamped.header.frame_id)
 
 
@@ -89,7 +110,6 @@ class Point3DStateSmach(smach.State):
     #@param message if self.message is None we will wait for a message, else use provided message
     #@param time_out if we have to wait for a message specify how long to wait before timing out
     def __init__(self, output_variable_name, message = None, time_out = None):
-
         smach.State.__init__(self, 
                 outcomes = ['succeeded', 'preempted', 'timed_out'], 
                 input_keys = [], output_keys = [output_variable_name])
@@ -102,10 +122,13 @@ class Point3DStateSmach(smach.State):
 
         t_start = rospy.get_time()
         while point_stamped == None:
-            pose_stamped = rospy.wait_for_message('/cloud_click_point', geo.PoseStamped, .1)
-            point_stamped = geo.PointStamped()
-            point_stamped.header = pose_stamped.header
-            point_stamped.point = pose_stamped.pose.position
+            try:
+                pose_stamped = rospy.wait_for_message('/cloud_click_point', geo.PoseStamped, .1)
+                point_stamped = geo.PointStamped()
+                point_stamped.header = pose_stamped.header
+                point_stamped.point = pose_stamped.pose.position
+            except rospy.ROSException, e:
+                pass
 
             if self.preempt_requested():
                 self.service_preempt()
@@ -114,6 +137,7 @@ class Point3DStateSmach(smach.State):
             if (self.time_out != None) and ((rospy.get_time() - t_start) > self.time_out):
                 return 'timed_out'
 
+        print 'got point', point_stamped
         exec("userdata.%s = point_stamped" % self.output_variable_name)
         return 'succeeded'
 

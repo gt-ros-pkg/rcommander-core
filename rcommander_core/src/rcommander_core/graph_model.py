@@ -176,15 +176,16 @@ class GraphModel:
 
         self.document = FSMDocument(name, False, True)
 
-    def create_singleton_statemachine(self, smach_state):
-        print 'FIXME: create singleton state machine needs to be fixed!!!!!'
+    def create_singleton_statemachine(self, state):
+        #print 'FIXME: create singleton state machine needs to be fixed!!!!!'
         #if self.get_start_state() == None:
-        #    self.set_start_state(smach_state.name)
-        sm = self.create_state_machine(ignore_start_state=True)
+        #    self.set_start_state(state.name)
+        #sm = self.create_state_machine(ignore_start_state=True)
         temp_gm = GraphModel()
-        temp_gm.add_node(smach_state)
-        temp_gm.set_start_state(smach_state.name)
-        return temp_gm.create_state_machine(sm.userdata)
+        temp_gm.add_node(state)
+        temp_gm.set_start_state(state.name)
+        return temp_gm.create_state_machine()
+        #return temp_gm.create_state_machine(sm.userdata)
 
 
     def run(self, name="", state_machine=None, userdata=None):

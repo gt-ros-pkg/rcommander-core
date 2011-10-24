@@ -207,7 +207,16 @@ class GraphView:
                     self.set_node_style(n.id, 'container')
 
             if self.graph_model.is_running():
-                if len(set(self.graph_model.sm_thread['current_states']).intersection(set([n.id]))) > 0:
+                #try:
+                #    len(set(self.graph_model.sm_thread['current_states']).intersection(set([n.id]))) > 0
+                #except TypeError, e:
+                #    print 'got', e
+                #    print self.graph_model.sm_thread['current_states']
+                #    print set([n.id])
+                #    exit()
+
+                if self.graph_model.sm_thread['current_states'] != None and \
+                        (len(set(self.graph_model.sm_thread['current_states']).intersection(set([n.id]))) > 0):
                     self.set_node_style(n.id, 'active_node')
 
             if self.graph_model.get_last_outcome() != None:

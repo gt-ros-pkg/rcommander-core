@@ -104,6 +104,7 @@ class LinearMoveTool(tu.ToolBase):
 
             self.frame_box.setEnabled(False)
             self.pose_button.setEnabled(False)
+            self.motion_box.setCurrentIndex(self.motion_box.findText('absolute'))
 
         else:
             self.xline.setEnabled(True)

@@ -74,7 +74,7 @@ class JointSequenceTool(tu.ToolBase):
         for idx, name in enumerate(self.joint_name_fields):
             deg = np.degrees(pose_mat[idx, 0])
             exec('line_edit = self.%s' % name)
-            line_edit.setText(str(deg))
+            line_edit.setText('%.2f' % deg)
 
     def _has_name(self, test_name):
         for rec in self.joint_angs_list:
