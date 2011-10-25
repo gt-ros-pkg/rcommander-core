@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'RCommander.ui'
 #
-# Created: Mon Jul 25 02:55:05 2011
+# Created: Tue Oct 25 15:32:48 2011
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -66,6 +66,15 @@ class Ui_RCommanderWindow(object):
         self.delete_button.setAutoRaise(True)
         self.delete_button.setObjectName("delete_button")
         self.horizontalLayout.addWidget(self.delete_button)
+        self.add_to_library_button = QtGui.QToolButton(self.widget_3)
+        self.add_to_library_button.setAutoRaise(True)
+        self.add_to_library_button.setObjectName("add_to_library_button")
+        self.horizontalLayout.addWidget(self.add_to_library_button)
+        self.library_button = QtGui.QToolButton(self.widget_3)
+        self.library_button.setCheckable(True)
+        self.library_button.setAutoRaise(True)
+        self.library_button.setObjectName("library_button")
+        self.horizontalLayout.addWidget(self.library_button)
         spacerItem1 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem1)
         self.verticalLayout_2.addWidget(self.widget_3)
@@ -282,6 +291,8 @@ class Ui_RCommanderWindow(object):
         self.add_outcome_button.setText(QtGui.QApplication.translate("RCommanderWindow", "State Outcome", None, QtGui.QApplication.UnicodeUTF8))
         self.delete_button.setToolTip(QtGui.QApplication.translate("RCommanderWindow", "Delete Tool", None, QtGui.QApplication.UnicodeUTF8))
         self.delete_button.setText(QtGui.QApplication.translate("RCommanderWindow", "Delete", None, QtGui.QApplication.UnicodeUTF8))
+        self.add_to_library_button.setText(QtGui.QApplication.translate("RCommanderWindow", "Add to Library", None, QtGui.QApplication.UnicodeUTF8))
+        self.library_button.setText(QtGui.QApplication.translate("RCommanderWindow", "Library", None, QtGui.QApplication.UnicodeUTF8))
         self.label.setText(QtGui.QApplication.translate("RCommanderWindow", "TextLabel", None, QtGui.QApplication.UnicodeUTF8))
         self.label_3.setText(QtGui.QApplication.translate("RCommanderWindow", "TextLabel", None, QtGui.QApplication.UnicodeUTF8))
         self.label_4.setText(QtGui.QApplication.translate("RCommanderWindow", "HelloText", None, QtGui.QApplication.UnicodeUTF8))
@@ -320,5 +331,5 @@ class Ui_RCommanderWindow(object):
         self.action_stop.setText(QtGui.QApplication.translate("RCommanderWindow", "&Stop", None, QtGui.QApplication.UnicodeUTF8))
         self.action_stop.setShortcut(QtGui.QApplication.translate("RCommanderWindow", "Ctrl+X", None, QtGui.QApplication.UnicodeUTF8))
 
-#import resources_rc
-#import resources_rc
+import resources_rc
+import resources_rc

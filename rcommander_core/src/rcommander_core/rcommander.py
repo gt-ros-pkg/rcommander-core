@@ -18,6 +18,7 @@ import graph_view as gv
 import nodebox_gui as nbg
 import graph_model as gm
 import outcome_tool as ot
+import library_tool as lb
 #import pr2_utils as pu
 
 def split(num, factor):
@@ -46,6 +47,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         self.connect(self.ui.reset_button,       qtc.SIGNAL('clicked()'), self.reset_cb)
         self.connect(self.ui.save_button,        qtc.SIGNAL('clicked()'), self.save_cb)
         self.connect(self.ui.start_state_button, qtc.SIGNAL('clicked()'), self.start_state_cb)
+        self.connect(self.ui.add_to_library_button, qtc.SIGNAL('clicked()'), self.add_to_library_cb)
 
         self.connect(self.ui.delete_button, qtc.SIGNAL('clicked()'), self.delete_cb)
         self.connect(self.ui.action_Run, qtc.SIGNAL('triggered(bool)'), self.run_sm_cb)
@@ -151,23 +153,29 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         for tname in self.tabs.keys():
             self.tabs[tname].update()
 
+        #self.tool_dict[outcome_tool.get_name()] = {'tool_obj': outcome_tool}
         #Outcome tool is a specialized built in tool
         self.button_group_tab.addButton(self.ui.add_outcome_button)
         outcome_tool = ot.OutcomeTool(self.ui.add_outcome_button, self)
-        #self.tool_dict[outcome_tool.get_name()] = {'tool_obj': outcome_tool}
         self.tool_dict[outcome_tool.get_smach_class()] = {'tool_obj': outcome_tool}
 
+        self.button_group_tab.addButton(self.ui.library_button)
+        library_tool = lb.LibraryTool(self.ui.library_button, self)
+        self.tool_dict[library_tool.get_smach_class()] = {'tool_obj': library_tool}
+
     def empty_container(self, pbox): 
-        #pbox = self.ui.properties_tab
-        formlayout = pbox.layout()
-        for i in range(formlayout.count()):
-            item = formlayout.itemAt(0)
-            formlayout.removeItem(item)
+        layout = pbox.layout()
+
+        for i in range(layout.count()):
+            item = layout.itemAt(0)
+            layout.removeItem(item)
         children = pbox.children()
+
         for c in children[1:]:
-            formlayout.removeWidget(c)
+            layout.removeWidget(c)
             c.setParent(None)
-        formlayout.invalidate()
+
+        layout.invalidate()
         pbox.update()
 
     def set_selected_tool(self, tool_name):
@@ -241,6 +249,26 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
     def empty_properties_box(self):
         self.empty_container(self.ui.properties_tab)
         self.empty_container(self.ui.connections_tab)
+        self.empty_container(self.ui.properties_container)
+
+        ##
+        # Restore property tab's vbox
+        ##
+        container = self.ui.properties_container
+        #Remove current layout and items
+        cl = container.layout()
+        cl.deleteLater()
+        qtc.QCoreApplication.sendPostedEvents(cl, qtc.QEvent.DeferredDelete)
+        #add in a new layout
+        clayout = qtg.QVBoxLayout(container)
+
+        #add in a container widget
+        self.ui.properties_tab = qtg.QWidget(container)
+        pbox_layout = qtg.QFormLayout(self.ui.properties_tab)
+        clayout.addWidget(self.ui.properties_tab)
+        spacer = qtg.QSpacerItem(20, 40, qtg.QSizePolicy.Minimum, qtg.QSizePolicy.Expanding)
+        clayout.addItem(spacer)
+
 
     ####################################################################################################################
     # Graph tools
@@ -342,6 +370,10 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
                 self.graph_model.set_start_state(self.selected_node)
             except RuntimeError, e:
                 qtg.QMessageBox.information(self, str(self.objectName()), 'RuntimeError: ' + e.message)
+
+    def add_to_library_cb(self):
+        if self.selected_node != None:
+            self.tool_dict['library'].add_to_library(self.graph_model.get_state())
 
     def delete_cb(self):
         if self.selected_node != None:

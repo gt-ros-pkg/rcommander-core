@@ -128,6 +128,29 @@
                </widget>
               </item>
               <item>
+               <widget class="QToolButton" name="add_to_library_button">
+                <property name="text">
+                 <string>Add to Library</string>
+                </property>
+                <property name="autoRaise">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QToolButton" name="library_button">
+                <property name="text">
+                 <string>Library</string>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="autoRaise">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
                <spacer name="horizontalSpacer_2">
                 <property name="orientation">
                  <enum>Qt::Horizontal</enum>

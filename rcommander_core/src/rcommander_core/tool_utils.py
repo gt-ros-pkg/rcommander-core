@@ -112,8 +112,8 @@ class ToolBase:
 
     def __init__(self, rcommander, name, button_name, smach_class):
         self.rcommander = rcommander
-        self.properties_box = self.rcommander.ui.properties_tab
-        self.connections_box = self.rcommander.ui.connections_tab
+        #self.properties_box = self.rcommander.ui.properties_tab
+        #self.connections_box = self.rcommander.ui.connections_tab
 
         self.name = name
         self.name_input = None
@@ -136,15 +136,16 @@ class ToolBase:
         return self.button
 
     def activate_cb(self, loaded_node_name=None):
-        #print 'clicked on', self.name
         self.rcommander.enable_buttons()
         #self.loaded_node_name = None
         self.set_loaded_node_name(loaded_node_name)
         self.rcommander.add_mode()
         self.rcommander.empty_properties_box()
+
         if self.button.isChecked():
-            self.fill_property_box(self.properties_box)
-            self.fill_connections_box(self.connections_box)
+            #send fresh boxes out
+            self.fill_property_box(self.rcommander.ui.properties_tab)
+            self.fill_connections_box(self.rcommander.ui.connections_tab)
             #self.rcommander.set_selected_tool(self.get_name())
             #print 'setting selected tool to', self.get_smach_class()
             self.rcommander.set_selected_tool(self.get_smach_class())
@@ -169,10 +170,10 @@ class ToolBase:
         node_name = str(self.name_input.text())
 
         #empty box
-        self.rcommander.empty_container(self.connections_box)
+        self.rcommander.empty_container(self.rcommander.ui.connections_tab)
 
         #fill it back up
-        self.fill_connections_box(self.connections_box)
+        self.fill_connections_box(self.rcommander.ui.connections_tab)
 
         #replace defaults with saved values
         self.name_input.setText(node_name)
