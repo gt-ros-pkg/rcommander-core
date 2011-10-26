@@ -17,8 +17,8 @@ class SpeakTool(tu.ToolBase):
 
     def fill_property_box(self, pbox):
         formlayout = pbox.layout()
-        self.text = QLineEdit(pbox)
-        self.text.setText(SpeakTool.DEFAULT_TEXT)
+        self.text = QPlainTextEdit(pbox)
+        self.reset()
         formlayout.addRow('&Say', self.text)
 
     def new_node(self, name=None):
@@ -26,13 +26,19 @@ class SpeakTool(tu.ToolBase):
             nname = self.name + str(self.counter)
         else:
             nname = name
-        return SpeakNode(nname, str(self.text.text()), sound_client=self.sound_client)
+        return SpeakNode(nname, str(self.text.document().toPlainText()), sound_client=self.sound_client)
 
     def set_node_properties(self, my_node):
-        self.text.setText(my_node.text)
+        self.document = QTextDocument(my_node.text)
+        self.layout = QPlainTextDocumentLayout(self.document)
+        self.document.setDocumentLayout(self.layout)
+        self.text.setDocument(self.document)
 
     def reset(self):
-        self.text.setText(SpeakTool.DEFAULT_TEXT)
+        self.document = QTextDocument(self.DEFAULT_TEXT)
+        self.layout = QPlainTextDocumentLayout(self.document)
+        self.document.setDocumentLayout(self.layout)
+        self.text.setDocument(self.document)
 
 
 class SpeakNodeSmach(smach.State): 
