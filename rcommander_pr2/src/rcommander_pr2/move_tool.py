@@ -38,8 +38,28 @@ class JointSequenceTool(tu.ToolBase):
    
         #Controls for getting the current joint states
         self.joint_angs_list = []
-        self.list_widget = QListWidget(pbox)
+
+        self.list_box = QWidget(pbox)
+        self.list_box_layout = QHBoxLayout(self.list_box)
+        self.list_box_layout.setMargin(0)
+
+        self.list_widget = QListWidget(self.list_box)
         self.rcommander.connect(self.list_widget, SIGNAL('itemSelectionChanged()'), self.item_selection_changed_cb)
+
+        self.movement_buttons_widget = QWidget(self.list_box)
+        self.movement_buttons_widgetl = QVBoxLayout(self.movement_buttons_widget)
+        self.movement_buttons_widgetl.setMargin(0)
+
+        self.move_up_button = QPushButton(self.movement_buttons_widget)
+        self.move_up_button.setText('Up')
+        self.move_down_button = QPushButton(self.movement_buttons_widget)
+        self.move_down_button.setText('Down')
+
+        self.rcommander.connect(self.move_up_button, SIGNAL('clicked()'), self.move_up_cb)
+        self.rcommander.connect(self.move_down_button, SIGNAL('clicked()'), self.move_down_cb)
+        self.movement_buttons_widgetl.addWidget(self.move_up_button)
+        self.movement_buttons_widgetl.addWidget(self.move_down_button)
+
         self.list_widget_buttons = QWidget(pbox)
         self.lbb_hlayout = QHBoxLayout(self.list_widget_buttons)
 
@@ -60,9 +80,18 @@ class JointSequenceTool(tu.ToolBase):
         self.lbb_hlayout.addWidget(self.pose_button)
         self.lbb_hlayout.setContentsMargins(2, 2, 2, 2)
 
-        formlayout.addRow(self.list_widget)
+        self.list_box_layout.addWidget(self.list_widget)
+        self.list_box_layout.addWidget(self.movement_buttons_widget)
+
+        #formlayout.addRow(self.list_widget)
+        formlayout.addRow(self.list_box)
         formlayout.addRow(self.list_widget_buttons)
         self.reset()
+
+    def _refill_list_widget(self, joints_list):
+        self.list_widget.clear()
+        for d in joints_list:
+            self.list_widget.addItem(d['name'])
 
     def get_current_joint_angles(self):
         if ('left' == str(self.arm_box.currentText())):
@@ -105,8 +134,9 @@ class JointSequenceTool(tu.ToolBase):
     def add_joint_set_cb(self):
         #Create a new string, check to see whether it's in the current list
         name = self._create_name()
-        self.list_widget.addItem(name)
+        #self.list_widget.addItem(name)
         self.joint_angs_list.append({'name':name, 'time': self.time_box.value(), 'angs': self._read_joints_from_fields()})
+        self._refill_list_widget(self.joint_angs_list)
 
     def _find_index_of(self, name):
         for idx, tup in enumerate(self.joint_angs_list):
@@ -114,21 +144,57 @@ class JointSequenceTool(tu.ToolBase):
                 return idx
         return None
 
-    def remove_pose_cb(self):
+    def move_up_cb(self):
+        #get the current index
+        idx = self._selected_idx()
+        if idx == None:
+            return
+
+        #pop & insert it
+        item = self.joint_angs_list.pop(idx)
+        self.joint_angs_list.insert(idx-1, item)
+
+        #refresh
+        self._refill_list_widget(self.joint_angs_list)
+        self.list_widget.setCurrentItem(self.list_widget.item(idx-1))
+
+    def move_down_cb(self):
+        #get the current index
+        idx = self._selected_idx()
+        if idx == None:
+            return
+
+        #pop & insert it
+        item = self.joint_angs_list.pop(idx)
+        self.joint_angs_list.insert(idx+1, item)
+
+        #refresh
+        self._refill_list_widget(self.joint_angs_list)
+        self.list_widget.setCurrentItem(self.list_widget.item(idx+1))
+
+    def _selected_idx(self):
         #Get currently selected
         selected = self.list_widget.selectedItems()
         if len(selected) == 0:
-            return 
+            return None
         sname = str(selected[0].text())
 
         #Remove it from list_widget and joint_angs_list
         idx = self._find_index_of(sname)
-        self.list_widget.takeItem(idx)
+        return idx
+
+
+    def remove_pose_cb(self):
+        idx = self._selected_idx()
+        if idx == None:
+            return
+        #self.list_widget.takeItem(idx)
         #self.list_widget.removeItemWidget(selected[0])
         if idx == None:
             raise RuntimeError('Inconsistency detected in list')
         else:
             self.joint_angs_list.pop(idx)
+        self._refill_list_widget(self.joint_angs_list)
 
     def _read_joints_from_fields(self):
         joints = []
@@ -156,8 +222,9 @@ class JointSequenceTool(tu.ToolBase):
 
     def set_node_properties(self, my_node):
         self.joint_angs_list = my_node.joint_waypoints
-        for d in self.joint_angs_list:
-            self.list_widget.addItem(d['name'])
+        #for d in self.joint_angs_list:
+        #    self.list_widget.addItem(d['name'])
+        self._refill_list_widget(self.joint_angs_list)
         self.arm_box.setCurrentIndex(self.arm_box.findText(my_node.arm))
         self.list_widget.setCurrentItem(self.list_widget.item(0))
 
