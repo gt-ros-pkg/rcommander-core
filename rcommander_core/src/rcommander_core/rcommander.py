@@ -172,8 +172,11 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         children = pbox.children()
 
         for c in children[1:]:
-            layout.removeWidget(c)
-            c.setParent(None)
+            try:
+                layout.removeWidget(c)
+                c.setParent(None)
+            except TypeError, e:
+                pass
 
         layout.invalidate()
         pbox.update()
@@ -261,6 +264,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         qtc.QCoreApplication.sendPostedEvents(cl, qtc.QEvent.DeferredDelete)
         #add in a new layout
         clayout = qtg.QVBoxLayout(container)
+        clayout.setMargin(0)
 
         #add in a container widget
         self.ui.properties_tab = qtg.QWidget(container)
@@ -318,6 +322,9 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
     def add_cb(self):
         if self.selected_tool == None:
             return
+
+        #print 'selected tool ', self.selected_tool
+
         tool_instance = self.tool_dict[self.selected_tool]['tool_obj']
         if hasattr(tool_instance, 'set_child_node'):
             if self.selected_node == None:
@@ -328,6 +335,10 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
                 tool_instance.set_child_node(state)
 
         node = tool_instance.create_node()
+        if node == None:
+            rospy.loginfo('For some reason node wasn\'t created')
+            return
+
         self.graph_model.add_node(node)
         if self.selected_node == None:
             self.node_cb(self.graph_model.node(node.name))
@@ -373,7 +384,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
 
     def add_to_library_cb(self):
         if self.selected_node != None:
-            self.tool_dict['library'].add_to_library(self.graph_model.get_state())
+            self.tool_dict['library']['tool_obj'].add_to_library(self.graph_model.get_state(self.selected_node))
 
     def delete_cb(self):
         if self.selected_node != None:

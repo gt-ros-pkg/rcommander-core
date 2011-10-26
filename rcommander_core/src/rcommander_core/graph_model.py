@@ -325,7 +325,7 @@ class GraphModel:
 
                 remapping = {}
                 for input_key in node_smach.get_registered_input_keys():
-                    print 'source for variable', input_key, 'is', node.remapping_for(input_key)
+                    #print 'source for variable', input_key, 'is', node.remapping_for(input_key)
                     remapping[input_key] = node.remapping_for(input_key)
                 
                 #We assume that each output is to a SEPARATE variable
@@ -335,7 +335,7 @@ class GraphModel:
                 for output_key in node_smach.get_registered_output_keys():
                     remapping[output_key] = output_key
 
-                print '>> node_name', node_name, 'transitions', transitions, 'remapping', remapping
+                #print '>> node_name', node_name, 'transitions', transitions, 'remapping', remapping
                 smach.StateMachine.add(node_name, node_smach, transitions=transitions, remapping=remapping)
 
         if ignore_start_state:
@@ -470,16 +470,17 @@ class GraphModel:
             return True
 
     def add_node(self, node):
-        if self.states_dict.has_key(node.name):
-            raise RuntimeError('Already has node of the same name.  This case should not happen.')
+        if self.states_dict.has_key(node.get_name()):
+            node.set_name(node.get_name() + '_dup')
+            #raise RuntimeError('Already has node of the same name.  This case should not happen.')
 
         #if this is a non-container node 
         if not hasattr(node, 'get_child_name') or \
                 not self.states_dict.has_key(node.get_child_name()):
 
             #Link this node to all its outcomes
-            self.gve.add_node(node.name, radius=self.NODE_RADIUS)
-            self.states_dict[node.name] = node
+            self.gve.add_node(node.get_name(), radius=self.NODE_RADIUS)
+            self.states_dict[node.get_name()] = node
 
             #Check all outcomes and make new nodes if needed
             smach_node = node.get_smach_state()
@@ -490,7 +491,7 @@ class GraphModel:
                 outcome_name = self._create_outcome_name(outcome)
                 self.states_dict[outcome_name] = tu.EmptyState(outcome_name, temporary=True)
                 self.gve.add_node(outcome_name, radius=self.NODE_RADIUS)
-                self._add_edge(node.name, outcome_name, outcome)
+                self._add_edge(node.get_name(), outcome_name, outcome)
 
         else:
             #If this node has a child node we replace its child node with it instead of performing an add
