@@ -339,6 +339,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
             rospy.loginfo('For some reason node wasn\'t created')
             return
 
+
         self.graph_model.add_node(node)
         if self.selected_node == None:
             self.node_cb(self.graph_model.node(node.name))

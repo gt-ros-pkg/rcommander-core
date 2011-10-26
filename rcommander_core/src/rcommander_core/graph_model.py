@@ -214,6 +214,7 @@ class GraphModel:
         if self.is_running():
             self.sm_thread['run_sm'].preempt()
             self.sm_thread['preempted'] = time.time()
+            self.sm_thread['run_sm'].preempt()
 
     def is_running(self):
         return self.sm_thread != None
@@ -222,6 +223,7 @@ class GraphModel:
         self.status_cb_func = func
 
     def _sm_thread_termination_cb(self, exception):
+        print 'THREAD TERMINATED CALLED'
         #print 'thread terminated'
         if exception != None:
             if self.status_cb_func != None:
@@ -256,9 +258,11 @@ class GraphModel:
         return self.last_outcome
 
     def _state_machine_termination_cb(self, userdata, terminal_states, container_outcome):
+        print 'state machine termination CALLED'
         self.sm_thread['current_states'] = terminal_states
         self.sm_thread['outcome'] = container_outcome
         self.last_outcome = [container_outcome, time.time()]
+
         if self.status_cb_func != None:
             self.status_cb_func('Stopped with outcome %s' % container_outcome)
 

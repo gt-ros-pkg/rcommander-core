@@ -4,6 +4,7 @@ from PyQt4.QtCore import *
 import rcommander_core.tool_utils as tu
 import time
 import pr2_common_action_msgs.msg as ca 
+import rospy
 
 class TuckTool(tu.ToolBase):
 
@@ -58,7 +59,7 @@ class TuckState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
         goal = ca.TuckArmsGoal()
         goal.tuck_left = self.tuck_left
         goal.tuck_right = self.tuck_right
-        print 'GOAL', goal.tuck_left, goal.tuck_right
+        rospy.loginfo('TuckState: left %s right %s'% (str(goal.tuck_left), str(goal.tuck_right)))
         return goal
 
     #def get_smach_state(self):
