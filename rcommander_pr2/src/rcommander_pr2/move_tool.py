@@ -26,8 +26,19 @@ class JointSequenceTool(tu.ToolBase):
 
         #Controls for displaying the current joint states
         for name in self.joint_name_fields:
-            exec("self.%s = QLineEdit(pbox)" % name)
-            exec("formlayout.addRow(\"&\" + name, self.%s)" % name)
+            #exec("self.%s = QLineEdit(pbox)" % name)
+            exec("self.%s = QDoubleSpinBox(pbox)" % name)
+            exec('box = self.%s' % name)
+            box.setSingleStep(.5)
+            box.setMinimum(-9999999)
+            box.setMaximum(9999999)
+            formlayout.addRow("&%s" % name, box)
+
+            #exec("self.%s.setSingleStep(.5)" % name)
+            #exec("formlayout.addRow(\"&\" + name, self.%s)" % name)
+
+
+        #self.pose_button = QPushButton(self.list_widget_buttons)
 
         self.time_box = QDoubleSpinBox(pbox)
         self.time_box.setMinimum(0)
@@ -35,6 +46,11 @@ class JointSequenceTool(tu.ToolBase):
         self.time_box.setSingleStep(.2)
         self.time_box.setValue(1.)
         formlayout.addRow('&Time', self.time_box)
+
+        self.pose_button = QPushButton(pbox)
+        self.pose_button.setText('Pose')
+        self.rcommander.connect(self.pose_button, SIGNAL('clicked()'), self.get_current_joint_angles)
+        formlayout.addRow('    ', self.pose_button)
    
         #Controls for getting the current joint states
         self.joint_angs_list = []
@@ -45,23 +61,27 @@ class JointSequenceTool(tu.ToolBase):
 
         self.list_widget = QListWidget(self.list_box)
         self.rcommander.connect(self.list_widget, SIGNAL('itemSelectionChanged()'), self.item_selection_changed_cb)
+        self.list_box_layout.addWidget(self.list_widget)
 
-        self.movement_buttons_widget = QWidget(self.list_box)
-        self.movement_buttons_widgetl = QVBoxLayout(self.movement_buttons_widget)
-        self.movement_buttons_widgetl.setMargin(0)
-
-        self.move_up_button = QPushButton(self.movement_buttons_widget)
-        self.move_up_button.setText('Up')
-        self.move_down_button = QPushButton(self.movement_buttons_widget)
-        self.move_down_button.setText('Down')
-
-        self.rcommander.connect(self.move_up_button, SIGNAL('clicked()'), self.move_up_cb)
-        self.rcommander.connect(self.move_down_button, SIGNAL('clicked()'), self.move_down_cb)
-        self.movement_buttons_widgetl.addWidget(self.move_up_button)
-        self.movement_buttons_widgetl.addWidget(self.move_down_button)
+        #self.movement_buttons_widget = QWidget(self.list_box)
+        #self.movement_buttons_widgetl = QVBoxLayout(self.movement_buttons_widget)
+        #self.movement_buttons_widgetl.setMargin(0)
 
         self.list_widget_buttons = QWidget(pbox)
         self.lbb_hlayout = QHBoxLayout(self.list_widget_buttons)
+
+        self.move_up_button = QPushButton(self.list_widget_buttons)
+        self.move_up_button.setText('Up')
+        self.rcommander.connect(self.move_up_button, SIGNAL('clicked()'), self.move_up_cb)
+        self.lbb_hlayout.addWidget(self.move_up_button)
+
+        self.move_down_button = QPushButton(self.list_widget_buttons)
+        self.move_down_button.setText('Down')
+        self.rcommander.connect(self.move_down_button, SIGNAL('clicked()'), self.move_down_cb)
+        self.lbb_hlayout.addWidget(self.move_down_button)
+
+        spacer = QSpacerItem(40, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.lbb_hlayout.addItem(spacer)
 
         self.add_joint_set_button = QPushButton(self.list_widget_buttons)
         self.add_joint_set_button.setText('Add')
@@ -71,9 +91,6 @@ class JointSequenceTool(tu.ToolBase):
         self.remove_joint_set_button.setText('Remove')
         self.rcommander.connect(self.remove_joint_set_button, SIGNAL('clicked()'), self.remove_pose_cb)
 
-        self.pose_button = QPushButton(self.list_widget_buttons)
-        self.pose_button.setText('Pose')
-        self.rcommander.connect(self.pose_button, SIGNAL('clicked()'), self.get_current_joint_angles)
 
         self.save_button = QPushButton(self.list_widget_buttons)
         self.save_button.setText('Save')
@@ -81,14 +98,12 @@ class JointSequenceTool(tu.ToolBase):
 
         self.lbb_hlayout.addWidget(self.add_joint_set_button)
         self.lbb_hlayout.addWidget(self.remove_joint_set_button)
-        self.lbb_hlayout.addWidget(self.pose_button)
         self.lbb_hlayout.addWidget(self.save_button)
         self.lbb_hlayout.setContentsMargins(2, 2, 2, 2)
 
-        self.list_box_layout.addWidget(self.list_widget)
-        self.list_box_layout.addWidget(self.movement_buttons_widget)
-
+        #self.list_box_layout.addWidget(self.movement_buttons_widget)
         #formlayout.addRow(self.list_widget)
+
         formlayout.addRow(self.list_box)
         formlayout.addRow(self.list_widget_buttons)
         self.reset()
@@ -108,7 +123,8 @@ class JointSequenceTool(tu.ToolBase):
         for idx, name in enumerate(self.joint_name_fields):
             deg = np.degrees(pose_mat[idx, 0])
             exec('line_edit = self.%s' % name)
-            line_edit.setText('%.2f' % deg)
+            #line_edit.setText('%.2f' % deg)
+            line_edit.setValue(deg)
 
     def _has_name(self, test_name):
         for rec in self.joint_angs_list:
@@ -212,7 +228,8 @@ class JointSequenceTool(tu.ToolBase):
     def _read_joints_from_fields(self):
         joints = []
         for name in self.joint_name_fields:
-            exec('rad = np.radians(float(str(self.%s.text())))' % name)
+            #exec('rad = np.radians(float(str(self.%s.text())))' % name)
+            exec('rad = np.radians(self.%s.value())' % name)
             joints.append(rad)
         return joints
 
@@ -220,7 +237,7 @@ class JointSequenceTool(tu.ToolBase):
         for idx, name in enumerate(self.joint_name_fields):
             deg = np.degrees(joints[idx])
             exec('line_edit = self.%s' % name)
-            line_edit.setText(str(deg))
+            line_edit.setValue(deg)
 
     def new_node(self, name=None):
         if name == None:
