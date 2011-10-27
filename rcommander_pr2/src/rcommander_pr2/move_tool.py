@@ -261,7 +261,7 @@ class JointSequenceTool(tu.ToolBase):
     def reset(self):
         self.arm_box.setCurrentIndex(self.arm_box.findText('left'))
         for name in self.joint_name_fields:
-            exec('self.%s.setText(str(0.))' % name)
+            exec('self.%s.setValue(0)' % name)
 
 
 class JointSequenceState(tu.StateBase): 
