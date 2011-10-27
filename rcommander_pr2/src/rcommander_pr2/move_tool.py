@@ -75,9 +75,14 @@ class JointSequenceTool(tu.ToolBase):
         self.pose_button.setText('Pose')
         self.rcommander.connect(self.pose_button, SIGNAL('clicked()'), self.get_current_joint_angles)
 
+        self.save_button = QPushButton(self.list_widget_buttons)
+        self.save_button.setText('Save')
+        self.rcommander.connect(self.save_button, SIGNAL('clicked()'), self.save_button_cb)
+
         self.lbb_hlayout.addWidget(self.add_joint_set_button)
         self.lbb_hlayout.addWidget(self.remove_joint_set_button)
         self.lbb_hlayout.addWidget(self.pose_button)
+        self.lbb_hlayout.addWidget(self.save_button)
         self.lbb_hlayout.setContentsMargins(2, 2, 2, 2)
 
         self.list_box_layout.addWidget(self.list_widget)
@@ -183,6 +188,14 @@ class JointSequenceTool(tu.ToolBase):
         idx = self._find_index_of(sname)
         return idx
 
+    def save_button_cb(self):
+        idx = self._selected_idx()
+        if idx == None:
+            return
+        el = self.joint_angs_list[idx]
+        self.joint_angs_list[idx] = {'name': el['name'],
+            'time': self.time_box.value(), 
+            'angs': self._read_joints_from_fields()}
 
     def remove_pose_cb(self):
         idx = self._selected_idx()
