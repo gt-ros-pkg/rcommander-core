@@ -34,7 +34,7 @@ class TTSServer:
         finally:
             txt_file.close()
 
-        os.system("text2wave -eval '(%s)' %s -o %s" % (req.voice, txt_file_name, wav_file_name))
+        os.system("text2wave -eval '(%s)' %s -o %s" % ('voice_' + req.voice, txt_file_name, wav_file_name))
         os.system("aplay %s" % (wav_file_name))
         return SayResponse()
 
