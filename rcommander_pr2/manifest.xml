@@ -9,6 +9,7 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/rcommander_pr2</url>
   <depend package="rcommander_core"/>
+  <depend package="tts_server"/>
   <depend package="pr2_common_action_msgs"/>
   <depend package="pr2_controllers_msgs"/>
   <depend package="geometry_msgs"/>

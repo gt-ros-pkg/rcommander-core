@@ -34,7 +34,7 @@ class SpeakTool(tu.ToolBase):
             nname = name
         
         txt = str(self.text.document().toPlainText())
-        voice = str(self.source_box.currentText())
+        voice = str(self.voices_box.currentText())
         if voice == ' ':
             return None
         return SpeakNode(nname, txt, voice)
@@ -47,7 +47,7 @@ class SpeakTool(tu.ToolBase):
         self.layout = QPlainTextDocumentLayout(self.document)
         self.document.setDocumentLayout(self.layout)
         self.text.setDocument(self.document)
-        self.source_box.setCurrentIndex(0)
+        self.voices_box.setCurrentIndex(0)
 
 
 class SpeakNodeSmach(smach.State): 
@@ -58,7 +58,7 @@ class SpeakNodeSmach(smach.State):
         self.voice = voice
 
     def execute(self, userdata):
-        self.say = rospy.ServiceProxy('say')
+        self.say = rospy.ServiceProxy('say', Say)
         self.say(self.voice, self.text)
         return 'done'
 
