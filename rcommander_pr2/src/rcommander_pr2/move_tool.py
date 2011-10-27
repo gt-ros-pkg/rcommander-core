@@ -288,7 +288,7 @@ class JointSequenceStateSmach(smach.State):
     TIME_OUT_FACTOR = 3.
 
     def __init__(self, arm, joint_waypoints, arm_obj):
-        smach.State.__init__(self, outcomes = ['succeeded', 'preempted', 'failed'], 
+        smach.State.__init__(self, outcomes = ['succeeded', 'preempted', 'failed', 'aborted'], 
                              input_keys = [], output_keys = [])
 
         self.arm = arm
@@ -305,6 +305,10 @@ class JointSequenceStateSmach(smach.State):
         for d in self.joint_waypoints:
             wps.append(np.matrix(d['angs']).T)
             times.append(d['time'])
+
+        #print 'move_tool: sending poses'
+        #print 'MOVE_TOOL: wps', wps
+        #print 'MOVE_TOOL: times', times
 
         self.arm_obj.set_poses(np.column_stack(wps), np.cumsum(np.array(times)), block=False)
         client = self.arm_obj.client
@@ -342,11 +346,16 @@ class JointSequenceStateSmach(smach.State):
 
             r.sleep()
 
+        #print 'end STATE', state
+
         if preempted:
             return 'preempted'
 
         if succeeded:
             return 'succeeded'
+
+        if state == am.GoalStatus.ABORTED:
+            return 'aborted'
 
         return 'failed'
 

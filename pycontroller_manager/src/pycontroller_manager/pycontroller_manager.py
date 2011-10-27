@@ -24,15 +24,39 @@ class ControllerManager:
 
     def switch(self, start_con, stop_con):
         con = self.list_controllers()
+        valid_start = []
+        valid_stop = []
+
+        #Add the ones that are loaded but not running.
+        for idx, controller in enumerate(con.controllers):
+            if controller in start_con:
+                #print 'found', controller, 'it\'s state is', con.state[idx], len(con.state[idx]), con.state[idx].__class__
+                if con.state[idx] != 'running':
+                    #print 'ControllerManager: adding controller', controller
+                    valid_start.append(controller)
+                #else:
+                #    print 'ControllerManager: not adding', controller
+
+            if controller in stop_con:
+                if con.state[idx] != 'stopped':
+                    valid_stop.append(controller)
+
+            #print controller, con.state[idx]
+
+        #Add all controllers not loaded! But load them first
         for n in start_con:
             if not n in con.controllers:
-                print 'loading controller', n
+                #print 'loading controller', n
                 self.load(n)
-            else:
-                print n, 'already loaded'
+                valid_start.append(n)
 
-        resp = self._switch_controller(start_con, stop_con, pmm.SwitchControllerRequest.STRICT)
-        return resp.ok
+        if len(start_con) > 0:
+            #print 'ControllerManager: starting', valid_start, 'stopping', valid_stop
+            resp = self._switch_controller(valid_start, valid_stop, pmm.SwitchControllerRequest.STRICT)
+            return resp.ok
+        else:
+            #print 'ControllerManager: not starting or stopping any controllsers'
+            return None
 
     def joint_mode(self, arm):
         #get current state

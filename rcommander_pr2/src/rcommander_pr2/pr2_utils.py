@@ -180,17 +180,21 @@ class Joint:
         jt = tm.JointTrajectory()
         jt.joint_names = self.joint_names
         jt.points = points
-        jt.header.stamp = rospy.get_rostime()
+        jt.header.stamp = rospy.get_rostime() #+ rospy.Duration(1.)
         return jt
 
     def set_poses(self, pos_mat, times):
+        #pos_mat = np.column_stack([self.pose(), pos_mat])
+        #times = [0] + times
+        #times = times + .1
         joint_trajectory = self._create_trajectory(pos_mat, times)
         self.pub.publish(joint_trajectory)
 
+    def get_joint_names(self):
+        return self.joint_names
+
 
 class PR2Arm(Joint):
-
-
 
     def __init__(self, joint_provider, tf_listener, arm, use_kinematics=True):
         joint_controller_name = arm + '_arm_controller'
@@ -246,18 +250,24 @@ class PR2Arm(Joint):
     # @param pos_mat column matrix of poses
     # @param times array of times
     def set_poses(self, pos_mat, times, vel_mat=None, block=True):
-        p = self.pose()
-        for i in range(pos_mat.shape[1]):
-            pos_mat[4,i] = unwrap2(p[4,0], pos_mat[4,i])
-            pos_mat[6,i] = unwrap2(p[6,0], pos_mat[6,i])
-            p = pos_mat[:,i]
+        #p = self.pose()
+        #for i in range(pos_mat.shape[1]):
+        #    pos_mat[4,i] = unwrap2(p[4,0], pos_mat[4,i])
+        #    pos_mat[6,i] = unwrap2(p[6,0], pos_mat[6,i])
+        #    p = pos_mat[:,i]
 
+        pos_mat = np.column_stack([self.pose(), pos_mat])
+        #print 'SETPOSES', times, times.__class__
+        times   = np.concatenate(([0], times))
+        times = times + 5
+        #print "SET POSES", pos_mat.shape, len(times)
         joint_traj = Joint._create_trajectory(self, pos_mat, times, vel_mat)
 
         #Create goal msg
-        joint_traj.header.stamp = rospy.get_rostime() + rospy.Duration(1.)
+        #joint_traj.header.stamp = rospy.get_rostime() + rospy.Duration(5.)
         g = pm.JointTrajectoryGoal()
         g.trajectory = joint_traj
+        g.trajectory.header.stamp = rospy.get_rostime() + rospy.Duration(5.)
         self.client.send_goal(g)
         if block:
             return self.client.wait_for_result()
@@ -317,6 +327,18 @@ class PR2Torso(Joint):
         return self.torso.get_state()
 
 
+class PR2Head(Joint):
+
+    def __init__(self, joint_provider):
+        Joint.__init__(self, 'head_traj_controller', joint_provider)
+
+    def set_pose(self, pos, nsecs=5.):
+        for i in range(2):
+            cpos = self.pose()
+        min_time = .1
+        self.set_poses(np.column_stack([cpos, pos]), np.array([min_time, min_time+nsecs]))
+
+
 class PR2:
 
     def __init__(self, tf_listener):
@@ -327,3 +349,5 @@ class PR2:
         self.left = PR2Arm(joint_provider, tf_listener, 'l', use_kinematics=False)
         self.right = PR2Arm(joint_provider, tf_listener, 'r', use_kinematics=False)
         self.torso = PR2Torso(joint_provider)
+        self.head = PR2Head(joint_provider)
+
