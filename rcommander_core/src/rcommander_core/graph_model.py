@@ -94,7 +94,7 @@ class GraphModel:
         self.document = document
 
     @staticmethod
-    def load(name, robot=None):
+    def load(name):
         state_pkl_names = glob.glob(pt.join(name, '*.state'))
 
         gm = GraphModel()
@@ -119,9 +119,11 @@ class GraphModel:
             gm.gve.add_node(sname, GraphModel.NODE_RADIUS)
             pickle_file.close()
 
+            rospy.loginfo('Got an instance of %s' % str(gm.states_dict[sname].__class__))
+
             if is_container(gm.states_dict[sname]):
                 print 'FIXME: load_and_recreate might not make sense anymore'
-                gm.states_dict[sname] = gm.states_dict[sname].load_and_recreate(name, robot)
+                gm.states_dict[sname] = gm.states_dict[sname].load_and_recreate(name)
 
 
         #Reconstruct graph
@@ -134,10 +136,10 @@ class GraphModel:
 
         gm.set_document(FSMDocument(name, modified=False, real_filename=True))
 
-        if robot != None:
-            for k in gm.states_dict:
-                if hasattr(gm.states_dict[k], 'set_robot'): 
-                    gm.states_dict[k].set_robot(robot)
+        # if robot != None:
+        #     for k in gm.states_dict:
+        #         if hasattr(gm.states_dict[k], 'set_robot'): 
+        #             gm.states_dict[k].set_robot(robot)
 
         return gm
 
@@ -176,7 +178,7 @@ class GraphModel:
 
         self.document = FSMDocument(name, False, True)
 
-    def create_singleton_statemachine(self, state):
+    def create_singleton_statemachine(self, state, robot):
         #print 'FIXME: create singleton state machine needs to be fixed!!!!!'
         #if self.get_start_state() == None:
         #    self.set_start_state(state.name)
@@ -184,7 +186,8 @@ class GraphModel:
         temp_gm = GraphModel()
         temp_gm.add_node(state)
         temp_gm.set_start_state(state.name)
-        return temp_gm.create_state_machine()
+        print 'in create_singleton_statemachine'
+        return temp_gm.create_state_machine(robot)
         #return temp_gm.create_state_machine(sm.userdata)
 
 
@@ -280,7 +283,7 @@ class GraphModel:
                     filtered_output_variables.append(output_name)
         return filtered_output_variables
 
-    def create_state_machine(self, userdata=None, ignore_start_state=False):
+    def create_state_machine(self, robot, userdata=None, ignore_start_state=False):
         #print '>>>>>>>>>>>>>> create_state_machine', userdata
         sm = smach.StateMachine(outcomes = self.outcomes())
         #print 'sm userdata', sm.userdata, self.outcomes()
@@ -306,21 +309,17 @@ class GraphModel:
         with sm:
             for node_name in self.real_states():
                 node = self.states_dict[node_name]
-                #if issubclass(node.__class__, tu.InfoStateBase):
-                #    continue
 
-                #if issubclass(node.__class__, tu.SimpleStateBase):
                 node_smach = node.get_smach_state()
-
-                #if issubclass(node.__class__, tu.StateBase):
-                #    node_smach = node
+                print 'got smach state', node_smach.__class__
+                if hasattr(node_smach, 'set_robot'): 
+                    print 'setting its robot variable'
+                    node_smach.set_robot(robot)
 
                 transitions = {}
-                #print node_name, 'input keys', node_smach.get_registered_input_keys()
                 for e in self.gve.node(node_name).edges:
                     if e.node1.id == node_name:
                         transitions[e.label] = e.node2.id
-                        #print e.node1.id, e.label, e.node2.id
 
                 input_set = set(node_smach.get_registered_input_keys())
                 output_set = set(node_smach.get_registered_output_keys())
@@ -329,7 +328,6 @@ class GraphModel:
 
                 remapping = {}
                 for input_key in node_smach.get_registered_input_keys():
-                    #print 'source for variable', input_key, 'is', node.remapping_for(input_key)
                     remapping[input_key] = node.remapping_for(input_key)
                 
                 #We assume that each output is to a SEPARATE variable
@@ -339,18 +337,14 @@ class GraphModel:
                 for output_key in node_smach.get_registered_output_keys():
                     remapping[output_key] = output_key
 
-                #print '>> node_name', node_name, 'transitions', transitions, 'remapping', remapping
                 smach.StateMachine.add(node_name, node_smach, transitions=transitions, remapping=remapping)
 
         if ignore_start_state:
-            #print 'IGNORING START STATE'
             return sm
 
         if self.start_state == None:
             raise RuntimeError('No start state set.')
-        #print 'create_state_machine start state is', self.start_state
         sm.set_initial_state([self.start_state])
-        #print '<<<<<<<<<<<<<<'
         return sm
 
     #@return a list of node names and outcomes

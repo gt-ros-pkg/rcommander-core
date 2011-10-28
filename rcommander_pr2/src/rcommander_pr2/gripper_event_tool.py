@@ -79,7 +79,6 @@ class GripperEventTool(tu.ToolBase):
         self.slip_box.set_value(.01)
         self.child_gm = None
 
-
 class GripperEventStateSmach(smach.State): 
 
     EVENT_LIST = ['accel', 'slip', 'finger side or accel', 'slip and accel', 'finger side, slip or accel']
@@ -94,17 +93,6 @@ class GripperEventStateSmach(smach.State):
 
     def __init__(self, name, child_gm, arm, event_type, accel, slip):
         self.child_gm = child_gm 
-        input_keys = []
-        output_keys = []
-        outcomes = []
-
-        if self.child_gm != None:
-            sm = self.child_gm.create_state_machine()
-            input_keys = list(sm.get_registered_input_keys())
-            output_keys = list(sm.get_registered_output_keys())
-            outcomes = list(sm.get_registered_outcomes()) + [GripperEventStateSmach.EVENT_OUTCOME]
-        smach.State.__init__(self, outcomes = outcomes, input_keys = input_keys, output_keys = output_keys)
-
         #Setup our action server
         if arm == 'left':
             a = 'l'
@@ -115,12 +103,22 @@ class GripperEventStateSmach(smach.State):
         evd_name = a + '_gripper_sensor_controller/event_detector'
         self.action_client = actionlib.SimpleActionClient(evd_name, gr.PR2GripperEventDetectorAction)
 
+    def set_robot(self, robot):
+        self.robot = robot
+        input_keys = []
+        output_keys = []
+        outcomes = []
+        if self.child_gm != None:
+            sm = self.child_gm.create_state_machine(robot)
+            input_keys = list(sm.get_registered_input_keys())
+            output_keys = list(sm.get_registered_output_keys())
+            outcomes = list(sm.get_registered_outcomes()) + [GripperEventStateSmach.EVENT_OUTCOME]
+        smach.State.__init__(self, outcomes = outcomes, input_keys = input_keys, output_keys = output_keys)
 
     def _detected_event(self):
         state = self.action_client.get_state()
         gripper_event_detected = state not in [am.GoalStatus.ACTIVE, am.GoalStatus.PENDING]
         return gripper_event_detected
-
 
     def execute(self, userdata):
         print '>> executing, got userdata:', userdata, 'keys', userdata.keys()

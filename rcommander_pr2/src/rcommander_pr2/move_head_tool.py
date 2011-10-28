@@ -7,8 +7,7 @@ import numpy as np
 class MoveHeadTool(tu.ToolBase):
 
     def __init__(self, rcommander):
-        tu.ToolBase.__init__(self, rcommander, 'move_head', 'Move Head', MoveHeadState)
-
+        tu.ToolBase.__init__(self, rcommander, 'move_head_ang', 'Move Head (ang)', MoveHeadState)
 
     def fill_property_box(self, pbox):
         formlayout = pbox.layout()
@@ -25,7 +24,8 @@ class MoveHeadTool(tu.ToolBase):
 
         self.current_pose_button = QPushButton(pbox)
         self.current_pose_button.setText('Current Pose')
-        self.rcommander.connect(self.current_pose_button, SIGNAL('clicked()'), self.get_current_joint_angles_cb)
+        self.rcommander.connect(self.current_pose_button, 
+                SIGNAL('clicked()'), self.get_current_joint_angles_cb)
         formlayout.addRow('    ', self.current_pose_button)
         self.reset()
 
@@ -54,7 +54,29 @@ class MoveHeadTool(tu.ToolBase):
 
 class MoveHeadState(tu.StateBase):
 
-    def __init__(self, name, arm, joint_waypoints):
+    def __init__(self, name, arm, poses):
+        tu.StateBase.__init__(name)
+        self.poses = poses
+
+    def get_smach_state(self):
+        return MoveHeadState(poses)
+
+
+class MoveHeadStateSmach(smach.State):
+
+    def __init__(self, poses, mot_time):
+        smach.State.__init__(self, outcomes=['done'], input_keys=[], output_keys=[])
+        self.mot_time = mot_time
+        self.poses = poses
+        self.robot = None
+
+    def set_robot(self, robot):
+        self.head_obj = robot.head
+
+    def execute(self, userdata):
+        self.head_obj.set_pose(self.poses, self.mot_time)
+        return 'done'
+
 
 
 

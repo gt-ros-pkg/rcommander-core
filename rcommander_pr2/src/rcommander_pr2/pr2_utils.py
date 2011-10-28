@@ -9,6 +9,7 @@ import std_msgs.msg as stdm
 import pr2_controllers_msgs.msg as pm
 import geometry_msgs.msg as gm
 import time
+from pycontroller_manager.pycontroller_manager import ControllerManager
 
 #Test this
 def unwrap2(cpos, npos):
@@ -16,7 +17,6 @@ def unwrap2(cpos, npos):
     nin = npos % two_pi
     n_multiples_2pi = np.floor(cpos/two_pi)
     return nin + n_multiples_2pi*two_pi
-
 
 ##
 # Takes a normal ROS callback channel and gives it an on demand query style
@@ -32,11 +32,11 @@ class GenericListener:
     # @param queue_size ROS subscriber queue (None = infinite)
     def __init__(self, node_name, message_type, listen_channel,
                  frequency, message_extractor=None, queue_size=None):
-        try:
-            print node_name, ': inited node.'
-            rospy.init_node(node_name, anonymous=True)
-        except rospy.ROSException, e:
-            pass
+        #try:
+            #print node_name, ': inited node.'
+            #rospy.init_node(node_name, anonymous=True)
+        #except rospy.ROSException, e:
+        #    pass
         self.last_msg_returned   = None   #Last message returned to callers from this class
         self.last_call_back      = None   #Local time of last received message
         self.delay_tolerance     = 1/frequency #in seconds
@@ -91,7 +91,7 @@ class GenericListener:
         if not quiet:
             rospy.loginfo('%s: waiting for reading ...' % self.node_name)
         while self.reading['message'] == None and not rospy.is_shutdown():
-            time.sleep(0.1)
+            rospy.sleep(0.1)
             #if not quiet:
             #    print self.node_name, ': waiting for reading ...'
 
@@ -121,7 +121,7 @@ class GenericListener:
                 while self.reading['msg_id'] == self.last_msg_returned and not rospy.is_shutdown():
                     if warn:
                         self._check_for_delivery_hiccups()
-                    time.sleep(1/1000.0)
+                    rospy.sleep(1/1000.0)
                 reading = self.reading
                 self.last_msg_returned = reading['msg_id']
                 if self.message_extractor is not None:
@@ -151,14 +151,17 @@ class Joint:
         self.zeros = [0 for j in range(len(self.joint_names))]
 
     def pose(self, joint_states=None):
+        print 'POSE!!!'
         if joint_states == None:
             joint_states = self.joint_provider()
+        print 'JOINT STATE'
 
         if self.names_index == None:
             self.names_index = {}
             for i, n in enumerate(joint_states.name):
                 self.names_index[n] = i
             self.joint_idx = [self.names_index[n] for n in self.joint_names]
+        print 'GOT POSE. RETURNING'
 
         return (np.matrix(joint_states.position).T)[self.joint_idx, 0]
 
@@ -180,7 +183,7 @@ class Joint:
         jt = tm.JointTrajectory()
         jt.joint_names = self.joint_names
         jt.points = points
-        jt.header.stamp = rospy.get_rostime() #+ rospy.Duration(1.)
+        jt.header.stamp = rospy.get_rostime() + rospy.Duration(1.)
         return jt
 
     def set_poses(self, pos_mat, times):
@@ -202,6 +205,7 @@ class PR2Arm(Joint):
         Joint.__init__(self, joint_controller_name, joint_provider)
         self.arm = arm
         self.tf_listener = tf_listener
+        print 'PR2ARM; called CONTROLLERS'
         self.client = actionlib.SimpleActionClient('/%s/joint_trajectory_action' % joint_controller_name, pm.JointTrajectoryAction)
         self.joint_controller_name = joint_controller_name
 
@@ -267,7 +271,7 @@ class PR2Arm(Joint):
         #joint_traj.header.stamp = rospy.get_rostime() + rospy.Duration(5.)
         g = pm.JointTrajectoryGoal()
         g.trajectory = joint_traj
-        g.trajectory.header.stamp = rospy.get_rostime() + rospy.Duration(1.)
+        #g.trajectory.header.stamp = rospy.get_rostime() + rospy.Duration(1.)
         self.client.send_goal(g)
         if block:
             return self.client.wait_for_result()
@@ -287,7 +291,7 @@ class PR2Arm(Joint):
         joint_traj = Joint._create_trajectory(self, pos_mat, times, vel_mat)
 
         #Create goal msg
-        joint_traj.header.stamp = rospy.get_rostime() + rospy.Duration(1.)
+        #joint_traj.header.stamp = rospy.get_rostime() + rospy.Duration(1.)
         g = pm.JointTrajectoryGoal()
         g.trajectory = joint_traj
         self.client.send_goal(g)
@@ -332,22 +336,24 @@ class PR2Head(Joint):
     def __init__(self, joint_provider):
         Joint.__init__(self, 'head_traj_controller', joint_provider)
 
-    def set_pose(self, pos, nsecs=5.):
+    def set_pose(self, pos, length=5., block=False):
         for i in range(2):
             cpos = self.pose()
-        min_time = .1
-        self.set_poses(np.column_stack([cpos, pos]), np.array([min_time, min_time+nsecs]))
-
+        MIN_TIME = .1
+        self.set_poses(np.column_stack([cpos, pos]), np.array([MIN_TIME, MIN_TIME+length]))
 
 class PR2:
 
     def __init__(self, tf_listener):
+        print '===================================='
+        print 'PR2 OBJECT CREATED'
+        print '===================================='
         self.tf_listener = tf_listener
         jl = GenericListener('joint_state_listener', sm.JointState, 'joint_states', 100)
-        joint_provider = ft.partial(jl.read, allow_duplication=False, willing_to_wait=True, warn=False, quiet=True)
-
+        joint_provider = ft.partial(jl.read, allow_duplication=False, willing_to_wait=True, warn=True, quiet=False)
         self.left = PR2Arm(joint_provider, tf_listener, 'l', use_kinematics=False)
         self.right = PR2Arm(joint_provider, tf_listener, 'r', use_kinematics=False)
         self.torso = PR2Torso(joint_provider)
         self.head = PR2Head(joint_provider)
+        self.controller_manager = ControllerManager()
 

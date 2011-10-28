@@ -278,10 +278,14 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
     ####################################################################################################################
     # Graph tools
     ####################################################################################################################
-    def _reconnect_states(self):
-        for k in self.graph_model.states_dict:
-            if hasattr(self.graph_model.get_state(k), 'set_robot'):
-                self.graph_model.get_state(k).set_robot(self.robot)
+    #def _reconnect_states(self):
+    #    for k in self.graph_model.states_dict:
+    #        if hasattr(self.graph_model.get_state(k), 'set_robot'):
+    #            self.graph_model.get_state(k).set_robot(self.robot)
+
+    def connect_node(self, node):
+        if hasattr(node, 'set_robot'): 
+            node.set_robot(self.robot)
 
     def connection_changed(self, node_name, outcome_name, new_outcome):
         self.graph_model.connection_changed(node_name, outcome_name, new_outcome)
@@ -315,7 +319,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         try:
             tool_instance = self.tool_dict[self.selected_tool]['tool_obj']
             node = tool_instance.create_node(unique=False)
-            singleton_sm = self.graph_model.create_singleton_statemachine(node)
+            singleton_sm = self.graph_model.create_singleton_statemachine(node, self.robot)
             self.run_state_machine(singleton_sm)
         except RuntimeError, e:
             qtg.QMessageBox.information(self, str(self.objectName()), 'RuntimeError: ' + e.message)
@@ -325,7 +329,6 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
             return
 
         #print 'selected tool ', self.selected_tool
-
         tool_instance = self.tool_dict[self.selected_tool]['tool_obj']
         if hasattr(tool_instance, 'set_child_node'):
             if self.selected_node == None:
@@ -413,7 +416,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
             qtg.QMessageBox.information(self, str(self.objectName()), 'No start state set.  Select a state and click on \'Start State\' to set a new start state.')
         else:
             try:
-                self.run_state_machine(self.graph_model.create_state_machine())
+                self.run_state_machine(self.graph_model.create_state_machine(self.robot))
             except RuntimeError, e:
                 qtg.QMessageBox.information(self, str(self.objectName()), 'RuntimeError: ' + e.message)
 
@@ -444,7 +447,9 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
 
     def save_as_sm_cb(self):
         #popup file dialog
+        print 'save_as_sm_cb:before', rospy.is_shutdown()
         filename = str(qtg.QFileDialog.getSaveFileName(self, 'Save As', self.graph_model.document.get_filename()))
+        print 'save_as_sm_cb: after', rospy.is_shutdown()
         self._fix_shutdown_flag()
 
         #user canceled
@@ -469,6 +474,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         return True
 
     def _fix_shutdown_flag(self):
+        #TODO Figure out what this crap was about.
         #Some messed up bug with QFileDialog!!!
         import rospy.core as rpc
         rpc._shutdown_flag = False
@@ -478,16 +484,19 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         if not self.check_current_document():
             return
 
+        print 'open IS SHUTDOWN before', rospy.is_shutdown()
         dialog = qtg.QFileDialog(self, 'Open State Machine', '~')
         dialog.setFileMode(qtg.QFileDialog.Directory)
         dialog.setViewMode(qtg.QFileDialog.List)
+        print 'open IS SHUTDOWN after', rospy.is_shutdown()
+
         self._fix_shutdown_flag()
         if dialog.exec_():
             filenames = dialog.selectedFiles()
             filename = str(filenames[0])
 
             #Set this a the new model
-            self._set_model(gm.GraphModel.load(filename, self.robot))
+            self._set_model(gm.GraphModel.load(filename))
 
             #Reset state of GUI
             self.nothing_cb(None)
@@ -546,7 +555,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         if gm.is_container(snode):
             self.fsm_stack.append(FSMStackElement(self.graph_model, self.graph_view, snode))
             self._set_model(snode.get_child())
-            self._reconnect_states()
+            #self._reconnect_states()
             self.nothing_cb(None)
 
     #Handler for double clicking on circle, ascending a level
@@ -576,7 +585,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
 
         #Load the element we're given
         self._set_model(fsm_stack_element.model, view=fsm_stack_element.view)
-        self._reconnect_states()
+        #self._reconnect_states()
         self.nothing_cb(None)
 
     def _set_model(self, model, view=None):

@@ -53,22 +53,22 @@ class ControllerManager:
         if len(start_con) > 0:
             #print 'ControllerManager: starting', valid_start, 'stopping', valid_stop
             resp = self._switch_controller(valid_start, valid_stop, pmm.SwitchControllerRequest.STRICT)
-            return resp.ok
+            return resp.ok, valid_start, valid_stop
         else:
             #print 'ControllerManager: not starting or stopping any controllsers'
-            return None
+            return None, valid_start, valid_stop
 
     def joint_mode(self, arm):
         #get current state
         if arm == 'left' or arm == 'both':
-            self.switch([self.joint_controllers['l']], [self.cart_controllers['l']])
+            return self.switch([self.joint_controllers['l']], [self.cart_controllers['l']])
         if arm == 'right' or arm == 'both':
-            self.switch([self.joint_controllers['r']], [self.cart_controllers['r']])
+            return self.switch([self.joint_controllers['r']], [self.cart_controllers['r']])
 
     def cart_mode(self, arm):
         if arm == 'left' or arm == 'both':
             #print 'switchleft'
-            self.switch([self.cart_controllers['l']], [self.joint_controllers['l']])
+            return self.switch([self.cart_controllers['l']], [self.joint_controllers['l']])
         if arm == 'right' or arm == 'both':
             #print 'switchright'
-            self.switch([self.cart_controllers['r']], [self.joint_controllers['r']])
+            return self.switch([self.cart_controllers['r']], [self.joint_controllers['r']])

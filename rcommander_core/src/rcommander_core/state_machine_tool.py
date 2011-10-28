@@ -79,24 +79,25 @@ class StateMachineNode(tu.EmbeddableState):
 class StateMachineNodeSmach(smach.State):
 
     def __init__(self, child_gm):
-
         self.child_gm = child_gm
+
+    def set_robot(self, robot):
+        print 'StateMachineNodeSmach: SET ROBOT CALLED'
+        self.robot = robot
         input_keys = []
         output_keys = []
         outcomes = []
-
         if self.child_gm != None:
-            sm = self.child_gm.create_state_machine()
+            sm = self.child_gm.create_state_machine(robot)
             input_keys = list(sm.get_registered_input_keys())
             output_keys = list(sm.get_registered_output_keys())
             outcomes = list(sm.get_registered_outcomes())         
-
         smach.State.__init__(self, outcomes = outcomes, input_keys = input_keys, output_keys = output_keys)
 
 
     def execute(self, userdata):
         child_gm = self.child_gm
-        sm = child_gm.create_state_machine(userdata=userdata._ud)
+        sm = child_gm.create_state_machine(robot, userdata=userdata._ud)
         child_gm.run(self.child_gm.get_start_state(), state_machine=sm)
         rthread = child_gm.sm_thread['run_sm']
 

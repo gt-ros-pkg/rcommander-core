@@ -11,6 +11,8 @@ from object_manipulator.convert_functions import *
 import ptp_arm_action.msg as ptp
 import math
 import geometry_msgs.msg as geo
+import actionlib 
+import smach
 
 #import rcommander_core.point_tool as ptl
 
@@ -74,6 +76,11 @@ class LinearMoveTool(tu.ToolBase):
         self.pose_button.setText('Current Pose')
         self.rcommander.connect(self.pose_button, SIGNAL('clicked()'), self.get_current_pose)
 
+        self.time_box = QDoubleSpinBox(pbox)
+        self.time_box.setMinimum(0)
+        self.time_box.setMaximum(1000.)
+        self.time_box.setSingleStep(.2)
+
         formlayout.addRow("&Arm", self.arm_box)
         formlayout.addRow("&Mode", self.motion_box)
         formlayout.addRow("&Point Input", self.source_box)
@@ -88,6 +95,7 @@ class LinearMoveTool(tu.ToolBase):
         formlayout.addRow('&Translational Vel', self.trans_vel_line)
         formlayout.addRow('&Rotational Vel', self.rot_vel_line)
         formlayout.addRow("&frame", self.frame_box)
+        formlayout.addRow('&Time Out', self.time_box)
         formlayout.addRow(self.pose_button)
         self.reset()
 
@@ -145,6 +153,8 @@ class LinearMoveTool(tu.ToolBase):
         trans_vel = float(str(self.trans_vel_line.text()))
         rot_vel   = float(str(self.rot_vel_line.text()))
         source_name = str(self.source_box.currentText())
+        timeout = self.time_box.value()
+
         if source_name == ' ':
             source_name = None
 
@@ -155,7 +165,7 @@ class LinearMoveTool(tu.ToolBase):
 
         return LinearMoveState(nname, trans, angles, 
                 str(self.arm_box.currentText()), [trans_vel, rot_vel],
-                str(self.motion_box.currentText()), source_name, frame)
+                str(self.motion_box.currentText()), source_name, frame, timeout)
 
         #state = NavigateState(nname, xy, theta, frame)
         #return state
@@ -172,6 +182,7 @@ class LinearMoveTool(tu.ToolBase):
 
         self.trans_vel_line.setText(str(node.vels[0]))
         self.rot_vel_line.setText(str(node.vels[1]))
+        self.time_box.setValue(node.timeout)
 
         source_name = node.remapping_for('point')
         if source_name == None:
@@ -196,39 +207,61 @@ class LinearMoveTool(tu.ToolBase):
         self.motion_box.setCurrentIndex(self.motion_box.findText('relative'))
         self.trans_vel_line.setText(str(.02))
         self.rot_vel_line.setText(str(.16))
+        self.time_box.setValue(20)
 
 
-#
-# name maps to tool used to create it
-# model
-# is a state that can be stuffed into a state machine
-class LinearMoveState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
+class LinearMoveState(tu.StateBase): # smach_ros.SimpleActionState):
     ##
     #
     # @param name
     # @param trans list of 3 floats
     # @param angles in euler list of 3 floats
     # @param frame 
-    def __init__(self, name, trans, angles, arm, vels, motion_type, source, frame):
-        tu.SimpleStateBase.__init__(self, name, \
-                arm + '_ptp', ptp.LinearMovementAction, 
-                goal_cb_str = 'ros_goal', input_keys=['point']) 
+    def __init__(self, name, trans, angles, arm, vels, motion_type, source, frame, timeout):
+        tu.StateBase.__init__(self, name)
         self.set_remapping_for('point', source)
-        #self.register_input_keys(['point'])
-        #print 'registered input keys', self.get_registered_input_keys()
-
         self.trans = trans
         self.angles = angles #convert angles to _quat
         self.arm = arm
         self.vels = vels
         self.motion_type = motion_type
         self.frame = frame
+        self.timeout = timeout
 
-    def set_robot(self, pr2):
-        self.pr2 = pr2
+    def _set_angles(self, euler_angs):
+        ang_rad = [np.radians(e) for e in euler_angs]
+        #self._quat = tr.quaternion_from_euler(euler_angs[0], euler_angs[1], euler_angs[2])
+        self._quat = tr.quaternion_from_euler(*ang_rad)
+    
+    def _get_angles(self):
+        return [np.degrees(e) for e in tr.euler_from_quaternion(self._quat)]
+        
+    angles = property(_get_angles, _set_angles)
 
-    def ros_goal(self, userdata, default_goal):
-        #print 'LinearMoveState: rosgoal called!!!!!!!!!!!!!!1'
+    def get_smach_state(self):
+        return LinearMovementSmach(motion_type = self.motion_type, arm = self.arm, trans = self.trans, 
+                frame = self.frame, vels = self.vels, source_for_point = self.source_for('point'),
+                timeout=timeout)
+
+class LinearMovementSmach(smach.State):
+
+    def __init__(self, motion_type, arm, trans, frame, vels, source_for_point, timeout):
+        smach.State.__init__(self, outcomes = ['succeeded', 'preempted', 'failed'], input_keys = ['point'], output_keys = [])
+
+        self.motion_type = motion_type
+        self.arm = arm
+        self.trans = trans
+        self.frame = frame
+        self.vels = vels
+        self.source_for_point = source_for_point
+        self.timeout = timeout
+
+        self.action_client = actionlib.SimpleActionClient(arm + '_ptp', ptp.LinearMovementAction)
+
+    def set_robot(self, robot):
+        self.pr2 = robot
+
+    def ros_goal(self, userdata):
         goal = ptp.LinearMovementGoal()
         if self.motion_type == 'relative':
             goal.relative = True
@@ -238,7 +271,7 @@ class LinearMoveState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
             raise RuntimeError('Invalid motion type given.')
 
         quat = self._quat
-        if self.source_for('point') != None:
+        if self.source_for_point != None:
             trans, frame = userdata.point
             if self.arm == 'left':
                 tip = rospy.get_param('/l_cart/tip_name')
@@ -253,25 +286,145 @@ class LinearMoveState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
         goal.goal = stamp_pose(pose, frame)
         goal.trans_vel = self.vels[0]
         goal.rot_vel = self.vels[1]
-        #print 'returned goal'
         return goal
 
-    def _set_angles(self, euler_angs):
-        ang_rad = [np.radians(e) for e in euler_angs]
-        #self._quat = tr.quaternion_from_euler(euler_angs[0], euler_angs[1], euler_angs[2])
-        self._quat = tr.quaternion_from_euler(*ang_rad)
-    
-    def _get_angles(self):
-        return [np.degrees(e) for e in tr.euler_from_quaternion(self._quat)]
-        
-    angles = property(_get_angles, _set_angles)
+    #TODO abstract this out!
+    def execute(self, userdata):
+        goal = self.ros_goal(userdata)
+        self.action_client.send_goal(goal)
+       
+        succeeded = False
+        preempted = False
+        r = rospy.Rate(30)
+        start_time = rospy.get_time()
 
-    #def __getstate__(self):
-    #    state = tu.SimpleStateBase.__getstate__(self)
-    #    my_state = [self.trans, self._quat, self.arm, self.vels, self.motion_type, self.frame]
-    #    return {'simple_state': state, 'self': my_state}
+        while True:
+            #we have been preempted
+            if self.preempt_requested():
+                rospy.loginfo('LinearMoveStateSmach: preempt requested')
+                self.action_client.cancel_goal()
+                self.service_preempt()
+                preempted = True
+                break
 
-    #def __setstate__(self, state):
-    #    tu.SimpleStateBase.__setstate__(self, state['simple_state'])
-    #    self.trans, self._quat, self.arm, self.vels, self.motion_type, self.frame = state['self']
+            if (rospy.get_time() - start_time) > self.time_out:
+                self.action_client.cancel_goal()
+                rospy.loginfo('LinearMoveStateSmach: timed out!')
+                succeeded = False
+                break
 
+            #print tu.goal_status_to_string(state)
+            if (state not in [am.GoalStatus.ACTIVE, am.GoalStatus.PENDING]):
+                if state == am.GoalStatus.SUCCEEDED:
+                    rospy.loginfo('LinearMoveStateSmach: Succeeded!')
+                    succeeded = True
+                break
+
+            state = client.get_state()
+            r.sleep()
+
+        if preempted:
+            return 'preempted'
+
+        if succeeded:
+            return 'succeeded'
+
+        return 'failed'
+
+
+##
+## name maps to tool used to create it
+## model
+## is a state that can be stuffed into a state machine
+#class LinearMoveState(tu.SimpleStateBase): # smach_ros.SimpleActionState):
+#    ##
+#    #
+#    # @param name
+#    # @param trans list of 3 floats
+#    # @param angles in euler list of 3 floats
+#    # @param frame 
+#    def __init__(self, name, trans, angles, arm, vels, motion_type, source, frame):
+#        tu.SimpleStateBase.__init__(self, name, \
+#                arm + '_ptp', ptp.LinearMovementAction, 
+#                goal_cb_str = 'ros_goal', input_keys=['point']) 
+#        self.set_remapping_for('point', source)
+#        #self.register_input_keys(['point'])
+#        #print 'registered input keys', self.get_registered_input_keys()
+#
+#        self.trans = trans
+#        self.angles = angles #convert angles to _quat
+#        self.arm = arm
+#        self.vels = vels
+#        self.motion_type = motion_type
+#        self.frame = frame
+#
+#    def set_robot(self, pr2):
+#        self.pr2 = pr2
+#
+#    def get_smach_state(self):
+#        state = tu.SimpleStateBase.get_smach_state(self)
+#        state.set_robot = self.
+#
+#    def ros_goal(self, userdata, default_goal):
+#        #print 'LinearMoveState: rosgoal called!!!!!!!!!!!!!!1'
+#        goal = ptp.LinearMovementGoal()
+#        if self.motion_type == 'relative':
+#            goal.relative = True
+#        elif self.motion_type == 'absolute':
+#            goal.relative = False
+#        else:
+#            raise RuntimeError('Invalid motion type given.')
+#
+#        quat = self._quat
+#        if self.source_for('point') != None:
+#            trans, frame = userdata.point
+#            if self.arm == 'left':
+#                tip = rospy.get_param('/l_cart/tip_name')
+#            if self.arm == 'right':
+#                tip = rospy.get_param('/r_cart/tip_name')
+#            quat = self.pr2.tf_listener.lookupTransform(frame, tip, rospy.Time(0))[1]
+#        else:
+#            trans = self.trans
+#            frame = self.frame
+#
+#        pose = mat_to_pose(np.matrix(tr.translation_matrix(trans)) * np.matrix(tr.quaternion_matrix(quat)))
+#        goal.goal = stamp_pose(pose, frame)
+#        goal.trans_vel = self.vels[0]
+#        goal.rot_vel = self.vels[1]
+#        #print 'returned goal'
+#        return goal
+#
+#    def _set_angles(self, euler_angs):
+#        ang_rad = [np.radians(e) for e in euler_angs]
+#        #self._quat = tr.quaternion_from_euler(euler_angs[0], euler_angs[1], euler_angs[2])
+#        self._quat = tr.quaternion_from_euler(*ang_rad)
+#    
+#    def _get_angles(self):
+#        return [np.degrees(e) for e in tr.euler_from_quaternion(self._quat)]
+#        
+#    angles = property(_get_angles, _set_angles)
+#
+#    #def __getstate__(self):
+#    #    state = tu.SimpleStateBase.__getstate__(self)
+#    #    my_state = [self.trans, self._quat, self.arm, self.vels, self.motion_type, self.frame]
+#    #    return {'simple_state': state, 'self': my_state}
+#
+#    #def __setstate__(self, state):
+#    #    tu.SimpleStateBase.__setstate__(self, state['simple_state'])
+#    #    self.trans, self._quat, self.arm, self.vels, self.motion_type, self.frame = state['self']
+#
+#class SimpleStateBaseSmach(smach_ros.SimpleActionState):
+#
+#    def __init__(self, action_name, action_type, goal_obj, goal_cb_str, input_keys, output_keys):
+#        smach_ros.SimpleActionState.__init__(self, action_name, action_type, 
+#                goal_cb = SimpleStateCB(eval('goal_obj.%s' % goal_cb_str), input_keys, output_keys))
+#        self.goal_obj = goal_obj
+#
+#    def __call__(self, userdata, default_goal): 
+#        f = eval('self.goal_obj.%s' % self.goal_cb_str)
+#        return f(userdata, default_goal)
+#
+#===============================================================================
+#===============================================================================
+#===============================================================================
+#===============================================================================

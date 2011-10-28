@@ -1,6 +1,7 @@
-from PyQt4 import QtGui
-from PyQt4.QtGui import *
-from PyQt4.QtCore import *
+import PyQt4.QtGui as qtg
+import PyQt4.QtCore as qtc
+#from PyQt4.QtGui import *
+#from PyQt4.QtCore import *
 import smach_ros
 import functools as ft
 import actionlib_msgs.msg as am
@@ -21,8 +22,8 @@ def goal_status_to_string(status):
     return status_dict[status]
 
 def create_tool_button(name, container):
-    button = QtGui.QToolButton(container)
-    sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed)
+    button = qtg.QToolButton(container)
+    sizePolicy = qtg.QSizePolicy(qtg.QSizePolicy.Expanding, qtg.QSizePolicy.Fixed)
     sizePolicy.setHorizontalStretch(0)
     sizePolicy.setVerticalStretch(0)
     sizePolicy.setHeightForWidth(button.sizePolicy().hasHeightForWidth())
@@ -31,19 +32,19 @@ def create_tool_button(name, container):
     button.setObjectName("button")
     button.setCheckable(True)
     container.layout().addWidget(button)
-    button.setText(QtGui.QApplication.translate("RCommanderWindow", name, None, QtGui.QApplication.UnicodeUTF8))
+    button.setText(qtg.QApplication.translate("RCommanderWindow", name, None, qtg.QApplication.UnicodeUTF8))
     return button
 
 def make_radio_box(parent, options, name_preffix):
     container_name = name_preffix + '_radio_box'
 
-    container = QWidget(parent)
+    container = qtg.QWidget(parent)
     container.setObjectName(container_name)
-    hlayout = QHBoxLayout(container)
+    hlayout = qtg.QHBoxLayout(container)
     radio_buttons = []
 
     for option in options:
-        r = QRadioButton(container)
+        r = qtg.QRadioButton(container)
         r.setObjectName(name_preffix + '_' + option)
         r.setText(option)
         hlayout.addWidget(r)
@@ -67,23 +68,23 @@ class SliderBox:
         tick_size = int(round(100. / nticks))
         tick_pos = self._units_to_slider(initial_value)
 
-        container = QWidget(parent)
+        container = qtg.QWidget(parent)
         container.setObjectName(container_name)
         
-        disp = QLabel(container)
+        disp = qtg.QLabel(container)
         disp.setObjectName(disp_name)
         disp.setText('%.2f %s' % (initial_value, units))
 
-        slider = QSlider(container)
+        slider = qtg.QSlider(container)
         slider.setSingleStep(1)
-        slider.setOrientation(Qt.Horizontal)
-        slider.setTickPosition(QSlider.TicksBelow)
+        slider.setOrientation(qtc.Qt.Horizontal)
+        slider.setTickPosition(qtg.QSlider.TicksBelow)
         slider.setTickInterval(tick_size)
         slider.setObjectName(slider_name)
         slider.setSliderPosition(tick_size)
         slider.setValue(tick_pos)
 
-        hlayout = QVBoxLayout(container)
+        hlayout = qtg.QVBoxLayout(container)
         hlayout.addWidget(slider)
         hlayout.addWidget(disp)
 
@@ -196,8 +197,11 @@ class ToolBase:
         else:
             current_node = self.rcommander.graph_model.get_state(self.get_current_node_name())
 
+        current_node_smach = current_node.get_smach_state()
+        self.rcommander.connect_node(current_node_smach)
+
         current_node_name = current_node.get_name()
-        self.name_input = QLineEdit()
+        self.name_input = qtg.QLineEdit()
         self.name_input.setText(current_node_name)
         formlayout.addRow('Name', self.name_input)
 
@@ -207,9 +211,9 @@ class ToolBase:
         if issubclass(current_node.__class__, EmptyState):
             return 
 
-        for outcome in current_node.get_smach_state().get_registered_outcomes(): #self.get_outcomes():
+        for outcome in current_node_smach.get_registered_outcomes(): #self.get_outcomes():
             #Make a new combobox and add available choices to it
-            input_box = QComboBox(pbox)
+            input_box = qtg.QComboBox(pbox)
             nodes = self.rcommander.connectable_nodes(self.get_current_node_name(), outcome)
 
             nodes.sort()
@@ -249,13 +253,13 @@ class ToolBase:
         #print 'node name', node.get_name()
         outcome_list = self.rcommander.current_children_of(node.get_name())
         #print 'outcome_list', outcome_list
-        for outcome_name, connected_node in outcome_list:
+        for outcome_name, connect_node in outcome_list:
             if not self.outcome_inputs.has_key(outcome_name):
                 continue
             widget = self.outcome_inputs[outcome_name]
-            #print 'connected_node', connected_node
-            #print 'widget returned', widget.findText(connected_node)
-            widget.setCurrentIndex(widget.findText(connected_node))
+            #print 'connect_node', connect_node
+            #print 'widget returned', widget.findText(connect_node)
+            widget.setCurrentIndex(widget.findText(connect_node))
         #print 'returned'
 
         #Set default choices to new node info
@@ -392,6 +396,9 @@ class EmptyState(StateBase):
         self.temporary = temporary
         self.tool_name = tool_name
 
+    def get_smach_state(self):
+        return self
+
 #class InfoStateBase(StateBase):
 #
 #    GLOBAL_NAME = 'Global'
@@ -437,11 +444,11 @@ class EmbeddableState(StateBase):
             child_gm.save(fname)
         self.document = child_gm.document
 
-    def load_and_recreate(self, base_path, robot=None):
+    def load_and_recreate(self, base_path):
         import graph_model as gm
 
         fname = pt.join(base_path, pt.split(self.document.get_filename())[1])
-        child_gm = gm.GraphModel.load(fname, robot=robot)
+        child_gm = gm.GraphModel.load(fname)
         return self.recreate(child_gm)
 
     def get_child_name(self):

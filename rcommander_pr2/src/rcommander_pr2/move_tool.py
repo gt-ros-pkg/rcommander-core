@@ -6,7 +6,6 @@ import rcommander_core.tool_utils as tu
 import numpy as np
 import actionlib_msgs.msg as am
 import smach
-from pycontroller_manager.pycontroller_manager import ControllerManager
 
 
 class JointSequenceTool(tu.ToolBase):
@@ -91,7 +90,6 @@ class JointSequenceTool(tu.ToolBase):
         self.remove_joint_set_button.setText('Remove')
         self.rcommander.connect(self.remove_joint_set_button, SIGNAL('clicked()'), self.remove_pose_cb)
 
-
         self.save_button = QPushButton(self.list_widget_buttons)
         self.save_button.setText('Save')
         self.rcommander.connect(self.save_button, SIGNAL('clicked()'), self.save_button_cb)
@@ -119,7 +117,10 @@ class JointSequenceTool(tu.ToolBase):
         else:
             arm_obj = self.rcommander.robot.right
 
+        print 'getting pose!'
         pose_mat = arm_obj.pose()
+        print 'getting pose 2'
+
         for idx, name in enumerate(self.joint_name_fields):
             deg = np.degrees(pose_mat[idx, 0])
             exec('line_edit = self.%s' % name)
@@ -247,13 +248,11 @@ class JointSequenceTool(tu.ToolBase):
     
         #sstate = JointSequenceState(nname, str(self.arm_box.currentText()), self._read_joints_from_fields())
         sstate = JointSequenceState(nname, str(self.arm_box.currentText()), self.joint_angs_list)
-        sstate.set_robot(self.rcommander.robot)
+        #sstate.set_robot(self.rcommander.robot)
         return sstate
 
     def set_node_properties(self, my_node):
         self.joint_angs_list = my_node.joint_waypoints
-        #for d in self.joint_angs_list:
-        #    self.list_widget.addItem(d['name'])
         self._refill_list_widget(self.joint_angs_list)
         self.arm_box.setCurrentIndex(self.arm_box.findText(my_node.arm))
         self.list_widget.setCurrentItem(self.list_widget.item(0))
@@ -270,34 +269,32 @@ class JointSequenceState(tu.StateBase):
         tu.StateBase.__init__(self, name)
         self.arm = arm
         self.joint_waypoints = joint_waypoints
-        self.arm_obj = None #FIX ME
-
-    def set_robot(self, pr2):
-        if self.arm == 'left':
-            self.arm_obj = pr2.left
-
-        if self.arm == 'right':
-            self.arm_obj = pr2.right
 
     def get_smach_state(self):
-        return JointSequenceStateSmach(self.arm, self.joint_waypoints, self.arm_obj)
-
+        return JointSequenceStateSmach(self.arm, self.joint_waypoints)
 
 class JointSequenceStateSmach(smach.State): 
 
     TIME_OUT_FACTOR = 3.
 
-    def __init__(self, arm, joint_waypoints, arm_obj):
+    def __init__(self, arm, joint_waypoints):
         smach.State.__init__(self, outcomes = ['succeeded', 'preempted', 'failed', 'aborted'], 
                              input_keys = [], output_keys = [])
-
         self.arm = arm
-        self.controller_manager = ControllerManager()
         self.joint_waypoints = joint_waypoints
-        self.arm_obj = arm_obj
+        self.arm_obj = None
+
+    def set_robot(self, pr2):
+        print 'JointSequenceStateSmach: SET ROBOT CALLED, creating controller manager'
+        if self.arm == 'left':
+            self.arm_obj = pr2.left
+
+        if self.arm == 'right':
+            self.arm_obj = pr2.right
+        self.controller_manager = pr2.controller_manager
 
     def execute(self, userdata):
-        self.controller_manager.joint_mode(self.arm)
+        status, started, stopped = self.controller_manager.joint_mode(self.arm)
 
         #Construct trajectory command
         times = []
@@ -347,6 +344,8 @@ class JointSequenceStateSmach(smach.State):
             r.sleep()
 
         #print 'end STATE', state
+
+        self.controller_manager.switch(stopped, started)
 
         if preempted:
             return 'preempted'
