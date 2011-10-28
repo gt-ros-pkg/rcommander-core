@@ -259,7 +259,7 @@ class PR2Arm(Joint):
         pos_mat = np.column_stack([self.pose(), pos_mat])
         #print 'SETPOSES', times, times.__class__
         times   = np.concatenate(([0], times))
-        times = times + 5
+        times = times + .1
         #print "SET POSES", pos_mat.shape, len(times)
         joint_traj = Joint._create_trajectory(self, pos_mat, times, vel_mat)
 
@@ -267,7 +267,7 @@ class PR2Arm(Joint):
         #joint_traj.header.stamp = rospy.get_rostime() + rospy.Duration(5.)
         g = pm.JointTrajectoryGoal()
         g.trajectory = joint_traj
-        g.trajectory.header.stamp = rospy.get_rostime() + rospy.Duration(5.)
+        g.trajectory.header.stamp = rospy.get_rostime() + rospy.Duration(1.)
         self.client.send_goal(g)
         if block:
             return self.client.wait_for_result()

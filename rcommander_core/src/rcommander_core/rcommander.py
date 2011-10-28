@@ -19,6 +19,7 @@ import nodebox_gui as nbg
 import graph_model as gm
 import outcome_tool as ot
 import library_tool as lb
+import trigger_tool as tt
 #import pr2_utils as pu
 
 def split(num, factor):
@@ -632,8 +633,9 @@ def run(robot, tf_listener, plugin_namespace):
     # ['Graph', smt.StateMachineTool(rc)]]
 
     tools_list = [['Graph', ptl.PointCloudClickTool(rc)], 
-            ['Graph', smt.StateMachineTool(rc)], 
-            ['Graph', st.SleepTool(rc)]]
+                  ['Graph', smt.StateMachineTool(rc)], 
+                  ['Graph', st.SleepTool(rc)],
+                  ['Graph', tt.TriggerTool(rc)]]
 
     plugin_clses = plugins.load_plugins(plugin_namespace)
     for tab_name, pcls in plugin_clses:
