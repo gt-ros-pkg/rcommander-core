@@ -1,7 +1,7 @@
 import roslib; roslib.load_manifest('rcommander_core')
-from PyQt4.QtGui import *
-from PyQt4.QtCore import *
-from PyQt4.QtOpenGL import *
+import PyQt4.QtGui as qtg
+import PyQt4.QtCore as qtc
+import PyQt4.QtOpenGL as qtl
 from nodebox import graphics
 
 import time
@@ -27,27 +27,34 @@ class NodeBoxGUI:
 
     def __init__(self, graphics_view):
 
+        #print 'GUI IS SHUTDOWN??1', rospy.is_shutdown()
         #add scene to QGraphicsView
-        scene = QGraphicsScene()
-        graphics_view.setViewport(QGLWidget())
+        scene = qtg.QGraphicsScene()
+        graphics_view.setViewport(qtl.QGLWidget())
+        #print 'GUI IS SHUTDOWN??11', rospy.is_shutdown()
         self.drawing_widget = NodeBoxGUIHelper(graphics_view.viewport(), scene)
+        #print 'GUI IS SHUTDOWN??111', rospy.is_shutdown()
         graphics_view.setScene(scene)
         # TODO: graphics_view._scene = scene
-        scene.setItemIndexMethod(QGraphicsScene.NoIndex)
+        #print 'GUI IS SHUTDOWN??112', rospy.is_shutdown()
+        scene.setItemIndexMethod(qtg.QGraphicsScene.NoIndex)
+        #print 'GUI IS SHUTDOWN??113', rospy.is_shutdown()
         scene.addItem(self.drawing_widget)
+        #print 'GUI IS SHUTDOWN??2', rospy.is_shutdown()
 
         #Add NB to scene
         self.namespace = {}
         self.canvas = graphics.Canvas()
         #print 'text scale', QPixmap(1, 1).logicalDpiX() / 72.0
-        self.canvas._setTextScaleFactor(QPixmap(1, 1).logicalDpiX() / 72.0)
+        self.canvas._setTextScaleFactor(qtg.QPixmap(1, 1).logicalDpiX() / 72.0)
         self.context = graphics.Context(self.canvas, self.namespace)
 
         #Setup the scene
         self.setup()
-        self.animationTimer = QTimer(self)
-        self.connect(self.animationTimer, SIGNAL("timeout()"), self._draw)
+        self.animationTimer = qtc.QTimer(self)
+        self.connect(self.animationTimer, qtc.SIGNAL("timeout()"), self._draw)
         self.animationTimer.start(1000.0 / self.canvas.speed)
+        #print 'GUI IS SHUTDOWN??3', rospy.is_shutdown()
 
         #self.animation_runner = AnimationRunner(self._draw)
         #self.animation_runner.start()
@@ -80,16 +87,16 @@ class NodeBoxGUI:
     def setup(self):
         pass
 
-class NodeBoxGUIHelper(QGraphicsWidget):
+class NodeBoxGUIHelper(qtg.QGraphicsWidget):
 
     def __init__(self, viewport, scene, parent=None):
-        QGraphicsWidget.__init__(self, parent)
-        self.setFlag(QGraphicsItem.ItemClipsToShape, True)
-        self.setFocusPolicy(Qt.StrongFocus)
+        qtg.QGraphicsWidget.__init__(self, parent)
+        self.setFlag(qtg.QGraphicsItem.ItemClipsToShape, True)
+        self.setFocusPolicy(qtc.Qt.StrongFocus)
 
         self.mousedown = False
         self.rightdown = False
-        self.mousePosition = QPointF(0, 0)
+        self.mousePosition = qtc.QPointF(0, 0)
         self.mousedoubleclick = False
         self.keydown = False
         self.key = None
@@ -101,23 +108,23 @@ class NodeBoxGUIHelper(QGraphicsWidget):
         self._canvas = None
         self._viewPort = viewport
         self._scene = scene
-        self._rect = QRectF(0, 0, 1000, 1000)
-        self._shape = QPainterPath()
+        self._rect = qtc.QRectF(0, 0, 1000, 1000)
+        self._shape = qtg.QPainterPath()
         self._shape.addRect(self._rect)
 
     def mousePressEvent(self, event):
         self.mousePosition = event.scenePos()
 
-        if event.button() == Qt.LeftButton:
+        if event.button() == qtc.Qt.LeftButton:
             self.mousedown = True 
 
-        if event.button() == Qt.RightButton:
+        if event.button() == qtc.Qt.RightButton:
             self.rightdown = True
 
         self.setFocus()
 
     def mouseDoubleClickEvent(self, event):
-        if event.button() == Qt.LeftButton:
+        if event.button() == qtc.Qt.LeftButton:
             self.mousedoubleclick = True
             self.setFocus()
 
@@ -126,9 +133,9 @@ class NodeBoxGUIHelper(QGraphicsWidget):
 
     def mouseReleaseEvent(self, event): 
         self.mousePosition = event.scenePos()
-        if event.button() == Qt.LeftButton: 
+        if event.button() == qtc.Qt.LeftButton: 
            	self.mousedown = False 
-        if event.button() == Qt.RightButton: 
+        if event.button() == qtc.Qt.RightButton: 
             self.rightdown = False
 
     def keyPressEvent(self, event): 
@@ -160,9 +167,9 @@ class NodeBoxGUIHelper(QGraphicsWidget):
             if size != self.get_canvas().size:
                 width, height = self.get_canvas().size
                 scene = self._scene
-                self._rect = rect = QRectF(0, 0, width, height)
+                self._rect = rect = qtc.QRectF(0, 0, width, height)
                 scene.setSceneRect(rect)
-                self._shape = shape = QPainterPath()
+                self._shape = shape = qtg.QPainterPath()
                 shape.addRect(rect)
         #self._check_cache()
         self._dirty = True      #signal that we want to be redrawn to paint

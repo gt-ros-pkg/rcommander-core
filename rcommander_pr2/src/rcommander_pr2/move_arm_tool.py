@@ -40,10 +40,10 @@ class SafeMoveArmTool(tu.ToolBase):
 
 
     def get_current_joint_angles(self):
-        if ('Left' == str(self.arm_box.currentText())):
-            arm_obj = self.rcommander.left_arm
+        if ('left' == str(self.arm_box.currentText())):
+            arm_obj = self.rcommander.robot.left
         else:
-            arm_obj = self.rcommander.right_arm
+            arm_obj = self.rcommander.robot.right
 
         pose_mat = arm_obj.pose()
         for idx, name in enumerate(self.joint_name_fields):

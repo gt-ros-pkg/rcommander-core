@@ -36,7 +36,6 @@ class JointSequenceTool(tu.ToolBase):
             #exec("self.%s.setSingleStep(.5)" % name)
             #exec("formlayout.addRow(\"&\" + name, self.%s)" % name)
 
-
         #self.pose_button = QPushButton(self.list_widget_buttons)
 
         self.time_box = QDoubleSpinBox(pbox)

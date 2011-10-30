@@ -91,7 +91,7 @@ class SliderBox:
         def slider_moved_cb(disp, value):
             cv = self._slider_to_units(value)
             disp.setText('%3.2f %s' % (cv, units))
-        parent.connect(slider, SIGNAL('sliderMoved(int)'), ft.partial(slider_moved_cb, disp))
+        parent.connect(slider, qtc.SIGNAL('sliderMoved(int)'), ft.partial(slider_moved_cb, disp))
 
         self.container = container
         self.slider = slider
@@ -133,7 +133,7 @@ class ToolBase:
 
     def create_button(self, container):
         self.button = create_tool_button(self.button_name, container)
-        self.rcommander.connect(self.button, SIGNAL('clicked()'), self.activate_cb)
+        self.rcommander.connect(self.button, qtc.SIGNAL('clicked()'), self.activate_cb)
         return self.button
 
     def activate_cb(self, loaded_node_name=None):
@@ -234,7 +234,7 @@ class ToolBase:
                 new_outcome = str(self.outcome_inputs[outcome].currentText())
                 self.rcommander.connection_changed(self.get_current_node_name(), outcome, new_outcome)
             outcome_cb = ft.partial(cb, outcome)
-            self.rcommander.connect(input_box, SIGNAL('currentIndexChanged(int)'), outcome_cb)
+            self.rcommander.connect(input_box, qtc.SIGNAL('currentIndexChanged(int)'), outcome_cb)
 
 
     def set_loaded_node_name(self, name):

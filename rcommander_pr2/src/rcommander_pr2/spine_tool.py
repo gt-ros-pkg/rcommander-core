@@ -31,7 +31,6 @@ class SpineTool(tu.ToolBase):
     def reset(self):
         self.spine_box.set_value(15.)
 
-
 class SpineState(tu.SimpleStateBase): 
 
     def __init__(self, name, position):
@@ -44,13 +43,13 @@ class SpineState(tu.SimpleStateBase):
     def ros_goal(self, userdata, default_goal):
         return pm.SingleJointPositionGoal(position = self.position)
 
-    def __getstate__(self):
-        state = tu.SimpleStateBase.__getstate__(self)
-        my_state = [self.position]
-        return {'simple_state': state, 'self': my_state}
+    #def __getstate__(self):
+    #    state = tu.SimpleStateBase.__getstate__(self)
+    #    my_state = [self.position]
+    #    return {'simple_state': state, 'self': my_state}
 
-    def __setstate__(self, state):
-        tu.SimpleStateBase.__setstate__(self, state['simple_state'])
-        self.position = state['self'][0]
+    #def __setstate__(self, state):
+    #    tu.SimpleStateBase.__setstate__(self, state['simple_state'])
+    #    self.position = state['self'][0]
 
 

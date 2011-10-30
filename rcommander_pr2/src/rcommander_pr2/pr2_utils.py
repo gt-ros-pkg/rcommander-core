@@ -191,6 +191,7 @@ class Joint:
         #times = [0] + times
         #times = times + .1
         joint_trajectory = self._create_trajectory(pos_mat, times)
+        print 'Sending message', joint_trajectory
         self.pub.publish(joint_trajectory)
 
     def get_joint_names(self):

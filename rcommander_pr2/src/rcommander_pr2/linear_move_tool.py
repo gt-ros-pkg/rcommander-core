@@ -240,8 +240,8 @@ class LinearMoveState(tu.StateBase): # smach_ros.SimpleActionState):
 
     def get_smach_state(self):
         return LinearMovementSmach(motion_type = self.motion_type, arm = self.arm, trans = self.trans, 
-                frame = self.frame, vels = self.vels, source_for_point = self.source_for('point'),
-                timeout=timeout)
+                frame = self.frame, vels = self.vels, source_for_point = self.remapping_for('point'),
+                timeout=self.timeout)
 
 class LinearMovementSmach(smach.State):
 

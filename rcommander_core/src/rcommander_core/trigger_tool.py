@@ -1,4 +1,6 @@
 import tool_utils as tu
+import PyQt4.QtGui as qtg
+import PyQt4.QtCore as qtc
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 import smach
@@ -16,14 +18,14 @@ class TriggerTool(tu.ToolBase):
     def fill_property_box(self, pbox):
         formlayout = pbox.layout()
 
-        self.time_out_box = QDoubleSpinBox(pbox)
+        self.time_out_box = qtg.QDoubleSpinBox(pbox)
         self.time_out_box.setMinimum(1.)
         self.time_out_box.setMaximum(1000.)
         self.time_out_box.setSingleStep(1.)
 
-        self.trigger_button = QPushButton(pbox)
+        self.trigger_button = qtg.QPushButton(pbox)
         self.trigger_button.setText('Send Trigger')
-        self.rcommander.connect(self.trigger_button, SIGNAL('clicked()'), self.send_trigger_cb)
+        self.rcommander.connect(self.trigger_button, qtc.SIGNAL('clicked()'), self.send_trigger_cb)
 
         formlayout.addRow('&Time out', self.time_out_box)
         formlayout.addRow(self.trigger_button)

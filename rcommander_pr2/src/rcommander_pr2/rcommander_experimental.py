@@ -9,4 +9,5 @@ rospy.init_node('rcommander', anonymous=True)
 tf = tf.TransformListener()
 #pr2 = pu.PR2(tf)
 pr2 = None
+#print 'RCOMMANDER EXP IS SHUTDOWN', rospy.is_shutdown()
 rc.run(pr2, tf, ['experimental'])
