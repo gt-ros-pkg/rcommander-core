@@ -195,7 +195,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
     def set_selected_tool(self, tool_name):
         self.selected_tool = tool_name
 
-    def run_state_machine(self, sm):
+    def run_state_machine(self, sm, graph_model):
         #if self.graph_model.sm_thread.has_key('run_sm'):
         if self.graph_model.is_running():
             raise RuntimeError('Only state machine execution thread maybe be active at a time.')
@@ -204,9 +204,9 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         #print 'executing here'
         #print sm.execute()
         #print 'done executing'
-        self.graph_model.register_status_cb(self._state_machine_status_cb)
-        cur_sm_thread = self.graph_model.run(self.graph_model.document.get_name(), state_machine=sm)
-        #self.statusBar().showMessage('Running state machine %s.' % self.graph_model.document.get_name())
+        graph_model.register_status_cb(self._state_machine_status_cb)
+        cur_sm_thread = graph_model.run(graph_model.document.get_name(), state_machine=sm)
+        #self.statusBar().showMessage('Running state machine %s.' % graph_model.document.get_name())
 
     def _state_machine_status_cb(self, message):
         self.status_bar_msg = message
@@ -329,8 +329,8 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         try:
             tool_instance = self.tool_dict[self.selected_tool]['tool_obj']
             node = tool_instance.create_node(unique=False)
-            singleton_sm = self.graph_model.create_singleton_statemachine(node, self.robot)
-            self.run_state_machine(singleton_sm)
+            singleton_sm, graph_model = self.graph_model.create_singleton_statemachine(node, self.robot)
+            self.run_state_machine(singleton_sm, graph_model)
         except RuntimeError, e:
             qtg.QMessageBox.information(self, str(self.objectName()), 'RuntimeError: ' + e.message)
     
@@ -423,10 +423,11 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         #TODO Disable all buttons.
         #TODO Reflect state of running graph.
         if self.graph_model.get_start_state() == None:
-            qtg.QMessageBox.information(self, str(self.objectName()), 'No start state set.  Select a state and click on \'Start State\' to set a new start state.')
+            qtg.QMessageBox.information(self, str(self.objectName()), \
+		'No start state set.  Select a state and click on \'Start State\' to set a new start state.')
         else:
             try:
-                self.run_state_machine(self.graph_model.create_state_machine(self.robot))
+                self.run_state_machine(self.graph_model.create_state_machine(self.robot), self.graph_model)
             except RuntimeError, e:
                 qtg.QMessageBox.information(self, str(self.objectName()), 'RuntimeError: ' + e.message)
 

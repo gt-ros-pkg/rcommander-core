@@ -186,8 +186,8 @@ class GraphModel:
         temp_gm = GraphModel()
         temp_gm.add_node(state)
         temp_gm.set_start_state(state.name)
-        print 'in create_singleton_statemachine'
-        return temp_gm.create_state_machine(robot)
+        #print 'in create_singleton_statemachine'
+        return temp_gm.create_state_machine(robot), temp_gm
         #return temp_gm.create_state_machine(sm.userdata)
 
 

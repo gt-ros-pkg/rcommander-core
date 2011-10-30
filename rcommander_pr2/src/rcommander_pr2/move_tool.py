@@ -16,6 +16,10 @@ class JointSequenceTool(tu.ToolBase):
                                   "elbow_flex_joint", "forearm_roll_joint", "wrist_flex_joint", "wrist_roll_joint"]
         self.joint_angs_list = None
 
+        self.status_bar_timer = QTimer()
+        self.rcommander.connect(self.status_bar_timer, SIGNAL('timeout()'), self.get_current_joint_angles)
+
+
     def fill_property_box(self, pbox):
         formlayout = pbox.layout()
         self.arm_box = QComboBox(pbox)
@@ -44,6 +48,11 @@ class JointSequenceTool(tu.ToolBase):
         self.time_box.setSingleStep(.2)
         self.time_box.setValue(1.)
         formlayout.addRow('&Time', self.time_box)
+    
+        self.update_checkbox = QCheckBox(pbox) 
+        self.update_checkbox.setTristate(False)
+        formlayout.addRow('&Live Update', self.update_checkbox)
+        self.rcommander.connect(self.update_checkbox, SIGNAL('stateChanged(int)'), self.update_selected_cb)
 
         self.pose_button = QPushButton(pbox)
         self.pose_button.setText('Pose')
@@ -105,6 +114,17 @@ class JointSequenceTool(tu.ToolBase):
         formlayout.addRow(self.list_widget_buttons)
         self.reset()
 
+    def update_selected_cb(self, state):
+        # checked
+        if state == 2:
+            self.status_bar_timer.start(30)
+            self.pose_button.setEnabled(False)
+
+        # unchecked
+        if state == 0:
+            self.status_bar_timer.stop()
+            self.pose_button.setEnabled(True)
+
     def _refill_list_widget(self, joints_list):
         self.list_widget.clear()
         for d in joints_list:
@@ -116,9 +136,9 @@ class JointSequenceTool(tu.ToolBase):
         else:
             arm_obj = self.rcommander.robot.right
 
-        print 'getting pose!'
+        #print 'getting pose!'
         pose_mat = arm_obj.pose()
-        print 'getting pose 2'
+        #print 'getting pose 2'
 
         for idx, name in enumerate(self.joint_name_fields):
             deg = np.degrees(pose_mat[idx, 0])
@@ -260,7 +280,7 @@ class JointSequenceTool(tu.ToolBase):
         self.arm_box.setCurrentIndex(self.arm_box.findText('left'))
         for name in self.joint_name_fields:
             exec('self.%s.setValue(0)' % name)
-
+        self.update_checkbox.setCheckState(False)
 
 class JointSequenceState(tu.StateBase): 
 
