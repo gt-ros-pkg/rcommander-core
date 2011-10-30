@@ -280,7 +280,10 @@ class JointSequenceTool(tu.ToolBase):
         self.arm_box.setCurrentIndex(self.arm_box.findText('left'))
         for name in self.joint_name_fields:
             exec('self.%s.setValue(0)' % name)
+
         self.update_checkbox.setCheckState(False)
+        self.status_bar_timer.stop()
+        self.pose_button.setEnabled(True)
 
 class JointSequenceState(tu.StateBase): 
 
