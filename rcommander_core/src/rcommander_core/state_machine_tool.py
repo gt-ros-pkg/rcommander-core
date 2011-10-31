@@ -82,7 +82,6 @@ class StateMachineNodeSmach(smach.State):
         self.child_gm = child_gm
 
     def set_robot(self, robot):
-        #print 'StateMachineNodeSmach: SET ROBOT CALLED'
         self.robot = robot
         input_keys = []
         output_keys = []
@@ -91,18 +90,18 @@ class StateMachineNodeSmach(smach.State):
             sm = self.child_gm.create_state_machine(robot)
             input_keys = list(sm.get_registered_input_keys())
             output_keys = list(sm.get_registered_output_keys())
-            outcomes = list(sm.get_registered_outcomes())         
+            outcomes = list(sm.get_registered_outcomes()) + ['preempted']
         smach.State.__init__(self, outcomes = outcomes, input_keys = input_keys, output_keys = output_keys)
 
 
     def execute(self, userdata):
         child_gm = self.child_gm
-        sm = child_gm.create_state_machine(robot, userdata=userdata._ud)
+        sm = child_gm.create_state_machine(self.robot, userdata=userdata._ud)
         child_gm.run(self.child_gm.get_start_state(), state_machine=sm)
         rthread = child_gm.sm_thread['run_sm']
 
         preempted = False
-        r = rospy.Rate(100)
+        r = rospy.Rate(30)
         while True:
             if rthread.exception != None:
                 raise rthread.exception
@@ -117,13 +116,14 @@ class StateMachineNodeSmach(smach.State):
 
             if self.preempt_requested():
                 rospy.loginfo('State Machine Node: preempt requested')
+                rthread.preempt()
                 self.service_preempt()
                 preempted = True
                 break
 
-        rthread.preempt()
-        rthread.except_preempt()
-        child_gm.sm_thread = {} #Reset sm thread dict
+            r.sleep()
+
+        #child_gm.sm_thread = {} #Reset sm thread dict
         if preempted:
             return 'preempted'
         else:
