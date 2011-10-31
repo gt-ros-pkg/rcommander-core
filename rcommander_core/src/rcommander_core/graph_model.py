@@ -433,24 +433,34 @@ class GraphModel:
         #can't connect to
         #  temporary nodes already connected whose name is not current outcome
         allowed_nodes = []
-        #outcome_name = self._outcome_name(node_name, outcome)
-        #allowed_nodes.append(outcome_name)
-        for k in self.states_dict.keys():
-            #If it's a temporary node and does not have the name of this outcome
-            #if not self.is_modifiable(k) and k != outcome:
-            if (not self.is_modifiable(k)) and (not self._is_type(k, outcome)):
-                continue
-            #ignore our own name
-            if node_name == k:
+
+        for state_name in self.states_dict.keys():
+	    #  An outcome node             AND (is not the type of outcome)
+            if (not self.is_modifiable(state_name)) and (not self._is_type(state_name, outcome)):
                 continue
 
-            allowed_nodes.append(k)
+            #ignore our own name
+            if node_name == state_name:
+                continue
+
+            allowed_nodes.append(state_name)
 
         if node_name == None:
-            allowed_nodes.append(self._create_outcome_name(outcome))
-            allowed_nodes = list(set(allowed_nodes))
+            return []
+            #allowed_nodes.append(self._create_outcome_name(outcome))
+            #allowed_nodes = list(set(allowed_nodes))
+            #print 'node name was NONE!', outcome, allowed_nodes
+        else:
+	    for edge in self.gve.node(node_name).edges:
+                #if this node currently has outcome remapped to a node that is not a dummy outcome
+                if edge.label == outcome and edge.node1.id == node_name and (not self._is_type(edge.node2.id, outcome)):
+                    #make the outcome an option
+                    allowed_nodes.append(self._create_outcome_name(outcome))
 
-        return allowed_nodes
+            allowed_nodes.sort()
+            return allowed_nodes
+
+        #return allowed_nodes
 
     def _create_outcome_name(self, outcome):
         idx = 0
@@ -698,12 +708,15 @@ class GraphModel:
 
     def connection_changed(self, node_name, outcome_name, new_node):
         #node is not valid or hasn't been created yet
-
         if node_name == None:
             return
 
+        #if the new node is not in our database, just create it as an outcome node
         if not self.states_dict.has_key(new_node):
-            raise RuntimeError('Doesn\'t have state: %s' % new_node)
+            self.states_dict[new_node] = tu.EmptyState(new_node, temporary=True)
+            self.gve.add_node(new_node, radius=self.NODE_RADIUS)
+            #raise RuntimeError('Doesn\'t have state: %s' % new_node)
+
         #self.get_state(node_name).outcome_choices[outcome_name] = new_node
 
         #find the old edge

@@ -76,7 +76,8 @@ class MoveHeadState(tu.StateBase):
 class MoveHeadStateSmach(smach.State):
 
     def __init__(self, poses, mot_time):
-        smach.State.__init__(self, outcomes=['done'], input_keys=[], output_keys=[])
+        smach.State.__init__(self, outcomes=['preempted', 'done'], 
+			     input_keys=[], output_keys=[])
         self.mot_time = mot_time
         self.poses = poses
         self.robot = None
@@ -86,6 +87,14 @@ class MoveHeadStateSmach(smach.State):
 
     def execute(self, userdata):
         self.head_obj.set_pose(self.poses, self.mot_time)
+
+        r = rospy.Rate(30)
+        start_time = rospy.get_time()
+        while (rospy.get_time() - start_time) < self.mot_time:
+            r.sleep()
+            if self.preempt_requested():
+                self.services_preempt()
+                return 'preempted'
         return 'done'
 
 

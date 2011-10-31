@@ -82,7 +82,7 @@ class StateMachineNodeSmach(smach.State):
         self.child_gm = child_gm
 
     def set_robot(self, robot):
-        print 'StateMachineNodeSmach: SET ROBOT CALLED'
+        #print 'StateMachineNodeSmach: SET ROBOT CALLED'
         self.robot = robot
         input_keys = []
         output_keys = []

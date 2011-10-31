@@ -210,8 +210,9 @@ class ToolBase:
         #for outcome in self.get_outcomes():
         if issubclass(current_node.__class__, EmptyState):
             return 
-
-        for outcome in current_node_smach.get_registered_outcomes(): #self.get_outcomes():
+        registered_outcomes = list(current_node_smach.get_registered_outcomes())
+        registered_outcomes.sort()
+        for outcome in registered_outcomes: #self.get_outcomes():
             #Make a new combobox and add available choices to it
             input_box = qtg.QComboBox(pbox)
             nodes = self.rcommander.connectable_nodes(self.get_current_node_name(), outcome)
@@ -224,7 +225,6 @@ class ToolBase:
             formlayout.addRow(outcome, input_box)
             #set outcome as default
             #TODO abstract this line out
-            #outcome_name = self.get_current_node_name() + '_' + outcome
             input_box.setCurrentIndex(input_box.findText(outcome))
             #store object
             self.outcome_inputs[outcome] = input_box
@@ -233,6 +233,7 @@ class ToolBase:
             def cb(outcome, new_index):
                 new_outcome = str(self.outcome_inputs[outcome].currentText())
                 self.rcommander.connection_changed(self.get_current_node_name(), outcome, new_outcome)
+
             outcome_cb = ft.partial(cb, outcome)
             self.rcommander.connect(input_box, qtc.SIGNAL('currentIndexChanged(int)'), outcome_cb)
 

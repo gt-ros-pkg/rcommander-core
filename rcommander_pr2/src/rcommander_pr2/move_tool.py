@@ -307,7 +307,6 @@ class JointSequenceStateSmach(smach.State):
         self.arm_obj = None
 
     def set_robot(self, pr2):
-        print 'JointSequenceStateSmach: SET ROBOT CALLED, creating controller manager'
         if self.arm == 'left':
             self.arm_obj = pr2.left
 
