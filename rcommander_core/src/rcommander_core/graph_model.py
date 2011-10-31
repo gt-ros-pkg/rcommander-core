@@ -204,12 +204,12 @@ class GraphModel:
 
         rthread = smtr.ThreadRunSM(name, sm)
         rthread.register_termination_cb(self._sm_thread_termination_cb)
-
         self.sm_thread = {}
         self.sm_thread['run_sm'] = rthread
         self.sm_thread['preempted'] = None
         self.sm_thread['current_states'] = None
         self.sm_thread['outcome'] = None
+
         rthread.start()
         return rthread
 
@@ -217,7 +217,7 @@ class GraphModel:
         if self.is_running():
             self.sm_thread['run_sm'].preempt()
             self.sm_thread['preempted'] = time.time()
-            self.sm_thread['run_sm'].preempt()
+            #self.sm_thread['run_sm'].preempt()
 
     def is_running(self):
         return self.sm_thread != None
@@ -495,6 +495,8 @@ class GraphModel:
 
             #Check all outcomes and make new nodes if needed
             smach_node = node.get_smach_state()
+            if hasattr(smach_node, 'set_robot'): 
+                smach_node.set_robot(None)
 
             #For each outcome
             for outcome in smach_node.get_registered_outcomes():

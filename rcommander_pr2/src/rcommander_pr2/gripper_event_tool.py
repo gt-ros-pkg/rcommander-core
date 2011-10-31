@@ -16,11 +16,11 @@ class GripperEventTool(tu.ToolBase):
         tu.ToolBase.__init__(self, rcommander, 'gripper_event', 'Gripper Event', GripperEventState)
         self.child_gm = None
 
-    def set_child_node(self, child_smach):
+    def set_child_node(self, child_node):
         self.child_gm = gm.GraphModel()
-        self.child_gm.add_node(child_smach)
-        self.child_gm.set_start_state(child_smach.get_name())
-        self.child_gm.set_document(gm.FSMDocument(child_smach.get_name(), modified=False, real_filename=False))
+        self.child_gm.add_node(child_node)
+        self.child_gm.set_start_state(child_node.get_name())
+        self.child_gm.set_document(gm.FSMDocument(child_node.get_name(), modified=False, real_filename=False))
 
     def fill_property_box(self, pbox):
         formlayout = pbox.layout()
@@ -91,7 +91,7 @@ class GripperEventStateSmach(smach.State):
 
     EVENT_OUTCOME = 'detected_event'
 
-    def __init__(self, name, child_gm, arm, event_type, accel, slip):
+    def __init__(self, child_gm, arm, event_type, accel, slip):
         self.child_gm = child_gm 
         #Setup our action server
         if arm == 'left':
@@ -102,9 +102,13 @@ class GripperEventStateSmach(smach.State):
             raise RuntimeError('Error')
         evd_name = a + '_gripper_sensor_controller/event_detector'
         self.action_client = actionlib.SimpleActionClient(evd_name, gr.PR2GripperEventDetectorAction)
+        self.event_type = event_type
+        self.accel = accel
+        self.slip = slip
         #self.init = False
 
     def set_robot(self, robot):
+        print 'ROBOT set to', robot
         self.robot = robot
         input_keys = []
         output_keys = []
@@ -136,18 +140,16 @@ class GripperEventStateSmach(smach.State):
 
         #Let state machine execute, but kill its thread if we detect an event
         #print 'ge: creating sm and running'
-        child_gm = self.get_child()
         #self.child = child_gm
 
         #print dir(userdata)
-        sm = child_gm.create_state_machine(userdata=userdata._ud)
+        sm = self.child_gm.create_state_machine(self.robot, userdata=userdata._ud)
         #child_gm.run(self.child_smach_node.get_name(), state_machine=sm)
-        child_gm.run(self.child_gm.get_start_state(), state_machine=sm)
-        rthread = child_gm.sm_thread['run_sm']
+        self.child_gm.run(self.child_gm.get_start_state(), state_machine=sm)
+        rthread = self.child_gm.sm_thread['run_sm']
 
         #rthread = smtr.ThreadRunSM(self.child_smach_node.get_name(), sm)
         #rthread.start()
-
         
         event = self._detected_event()
         preempted = False
@@ -166,6 +168,7 @@ class GripperEventStateSmach(smach.State):
 
             if self.preempt_requested():
                 rospy.loginfo('Gripper Event Tool: preempt requested')
+                rthread.preempt()
                 self.service_preempt()
                 preempted = True
                 break
@@ -173,16 +176,15 @@ class GripperEventStateSmach(smach.State):
             event = self._detected_event() 
             if event:
                 rospy.loginfo('Gripper Event Tool: DETECTED EVENT')
+                rthread.preempt()
 
             r.sleep()
 
         #print 'ge: sm finished'
-
         #send preempt to whatever is executing
-        rthread.preempt()
         #rthread.except_preempt()
         #self.child_gm = None
-        child_gm.sm_thread = {} #Reset sm thread dict
+        #self.child_gm.sm_thread = {} #Reset sm thread dict
 
         if preempted:
             return 'preempted'
@@ -210,7 +212,7 @@ class GripperEventState(tu.EmbeddableState):
         self.slip = slip
 
     def get_smach_state(self):
-        return GripperEventStateSmach(self.get_name(), self.get_child(),
+        return GripperEventStateSmach(self.get_child(),
                 self.arm, self.event_type, self.accel, self.slip)
 
     def recreate(self, new_graph_model):
