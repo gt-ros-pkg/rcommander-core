@@ -210,6 +210,7 @@ class ToolBase:
         #for outcome in self.get_outcomes():
         if issubclass(current_node.__class__, EmptyState):
             return 
+
         registered_outcomes = list(current_node_smach.get_registered_outcomes())
         registered_outcomes.sort()
         for outcome in registered_outcomes: #self.get_outcomes():

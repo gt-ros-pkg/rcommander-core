@@ -13,6 +13,7 @@ import math
 import geometry_msgs.msg as geo
 import actionlib 
 import smach
+import actionlib_msgs.msg as am
 
 #import rcommander_core.point_tool as ptl
 
@@ -173,7 +174,7 @@ class LinearMoveTool(tu.ToolBase):
     def set_node_properties(self, node):
         for value, vr in zip(node.trans, [self.xline, self.yline, self.zline]):
             vr.setText(str(value))
-        for value, vr in zip(node.angles, [self.phi_line, self.theta_line, self.psi_line]):
+        for value, vr in zip(node.get_angles(), [self.phi_line, self.theta_line, self.psi_line]):
             vr.setText(str(value))
 
         self.frame_box.setCurrentIndex(self.frame_box.findText(str(node.frame)))
@@ -221,37 +222,41 @@ class LinearMoveState(tu.StateBase): # smach_ros.SimpleActionState):
         tu.StateBase.__init__(self, name)
         self.set_remapping_for('point', source)
         self.trans = trans
-        self.angles = angles #convert angles to _quat
+        #self.angles = angles #convert angles to _quat
+        self.set_angles(angles)
         self.arm = arm
         self.vels = vels
         self.motion_type = motion_type
         self.frame = frame
         self.timeout = timeout
 
-    def _set_angles(self, euler_angs):
+    def set_angles(self, euler_angs):
         ang_rad = [np.radians(e) for e in euler_angs]
         #self._quat = tr.quaternion_from_euler(euler_angs[0], euler_angs[1], euler_angs[2])
-        self._quat = tr.quaternion_from_euler(*ang_rad)
+        self.quat = tr.quaternion_from_euler(*ang_rad)
     
-    def _get_angles(self):
-        return [np.degrees(e) for e in tr.euler_from_quaternion(self._quat)]
+    def get_angles(self):
+        return [np.degrees(e) for e in tr.euler_from_quaternion(self.quat)]
         
-    angles = property(_get_angles, _set_angles)
+    #angles = property(_get_angles, _set_angles)
 
     def get_smach_state(self):
         return LinearMovementSmach(motion_type = self.motion_type, arm = self.arm, trans = self.trans, 
-                frame = self.frame, vels = self.vels, source_for_point = self.remapping_for('point'),
-                timeout=self.timeout)
+                quat = self.quat, frame = self.frame, vels = self.vels, 
+                source_for_point = self.remapping_for('point'), timeout=self.timeout)
 
 class LinearMovementSmach(smach.State):
 
-    def __init__(self, motion_type, arm, trans, frame, vels, source_for_point, timeout):
+    def __init__(self, motion_type, arm, trans, quat, frame, vels, source_for_point, timeout):
         smach.State.__init__(self, outcomes = ['succeeded', 'preempted', 'failed'], input_keys = ['point'], output_keys = [])
 
         self.motion_type = motion_type
         self.arm = arm
+
         self.trans = trans
+        self.quat = quat
         self.frame = frame
+
         self.vels = vels
         self.source_for_point = source_for_point
         self.timeout = timeout
@@ -270,7 +275,8 @@ class LinearMovementSmach(smach.State):
         else:
             raise RuntimeError('Invalid motion type given.')
 
-        quat = self._quat
+        #quat = self._quat
+        quat = self.quat
         if self.source_for_point != None:
             trans, frame = userdata.point
             if self.arm == 'left':
@@ -307,20 +313,20 @@ class LinearMovementSmach(smach.State):
                 preempted = True
                 break
 
-            if (rospy.get_time() - start_time) > self.time_out:
+            if (rospy.get_time() - start_time) > self.timeout:
                 self.action_client.cancel_goal()
                 rospy.loginfo('LinearMoveStateSmach: timed out!')
                 succeeded = False
                 break
 
             #print tu.goal_status_to_string(state)
+            state = self.action_client.get_state()
             if (state not in [am.GoalStatus.ACTIVE, am.GoalStatus.PENDING]):
                 if state == am.GoalStatus.SUCCEEDED:
                     rospy.loginfo('LinearMoveStateSmach: Succeeded!')
                     succeeded = True
                 break
 
-            state = client.get_state()
             r.sleep()
 
         if preempted:

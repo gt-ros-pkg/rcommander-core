@@ -264,6 +264,9 @@ class JointSequenceTool(tu.ToolBase):
             nname = self.name + str(self.counter)
         else:
             nname = name
+
+        if (self.joint_angs_list == None or len(self.joint_angs_list) == 0) and (name != None):
+            return None
     
         #sstate = JointSequenceState(nname, str(self.arm_box.currentText()), self._read_joints_from_fields())
         sstate = JointSequenceState(nname, str(self.arm_box.currentText()), self.joint_angs_list)
