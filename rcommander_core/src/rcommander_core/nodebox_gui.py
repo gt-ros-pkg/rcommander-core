@@ -59,6 +59,9 @@ class NodeBoxGUI:
         #self.animation_runner = AnimationRunner(self._draw)
         #self.animation_runner.start()
 
+    def stop_drawing(self):
+        self.animationTimer.stop()
+
     def properties(self):
         properties = self.namespace
 

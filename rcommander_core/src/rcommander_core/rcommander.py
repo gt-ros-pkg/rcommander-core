@@ -37,17 +37,13 @@ class FSMStackElement:
 
 class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
 
-    def __init__(self): #, robot, tf_listener=None):
-        #print '? IS SHUTDOWN???', rospy.is_shutdown()
+    def __init__(self, app): #, robot, tf_listener=None):
         qtg.QMainWindow.__init__(self)
-        #print '?1 IS SHUTDOWN???', rospy.is_shutdown()
+        self.app = app
         self.ui = Ui_RCommanderWindow()
-        #print '?2 IS SHUTDOWN???', rospy.is_shutdown()
         self.ui.setupUi(self)
-        #print '?3 IS SHUTDOWN???', rospy.is_shutdown()
         nbg.NodeBoxGUI.__init__(self, self.ui.graphicsSuperView)
 
-        #print '?5 IS SHUTDOWN???', rospy.is_shutdown()
         self.connect(self.ui.run_button,         qtc.SIGNAL('clicked()'), self.run_cb)
         self.connect(self.ui.add_button,         qtc.SIGNAL('clicked()'), self.add_cb)
         self.connect(self.ui.reset_button,       qtc.SIGNAL('clicked()'), self.reset_cb)
@@ -62,8 +58,8 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         self.connect(self.ui.action_save, qtc.SIGNAL('triggered(bool)'), self.save_sm_cb)
         self.connect(self.ui.action_save_as, qtc.SIGNAL('triggered(bool)'), self.save_as_sm_cb)
         self.connect(self.ui.action_open, qtc.SIGNAL('triggered(bool)'), self.open_sm_cb)
+        self.connect(self.ui.action_quit, qtc.SIGNAL('triggered(bool)'), self.quit_cb)
         self.ui.splitter.setSizes(split(self.width(), .83))
-        #print '?? IS SHUTDOWN???', rospy.is_shutdown()
 
         self.empty_container(self.ui.properties_tab)
         self.empty_container(self.ui.connections_tab)
@@ -94,7 +90,6 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         #self.tf_listener = tf_listener
         #self.robot = robot
         #self.pr2 = pu.PR2(self.tf_listener)
-        #print '??? IS SHUTDOWN???', rospy.is_shutdown()
 
     def set_robot(self, robot, tf_listener):
         self.robot = robot
@@ -458,9 +453,9 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
 
     def save_as_sm_cb(self):
         #popup file dialog
-        print 'save_as_sm_cb:before', rospy.is_shutdown()
+        #print 'save_as_sm_cb:before', rospy.is_shutdown()
         filename = str(qtg.QFileDialog.getSaveFileName(self, 'Save As', self.graph_model.document.get_filename()))
-        print 'save_as_sm_cb: after', rospy.is_shutdown()
+        #print 'save_as_sm_cb: after', rospy.is_shutdown()
         self._fix_shutdown_flag()
 
         #user canceled
@@ -485,9 +480,10 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         return True
 
     def _fix_shutdown_flag(self):
+        pass
         #TODO Figure out what this crap was about.
         #Some messed up bug with QFileDialog!!!
-        import rospy.core as rpc
+        #import rospy.core as rpc
         #rpc._shutdown_flag = False
 
     def open_sm_cb(self):
@@ -495,7 +491,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         if not self.check_current_document():
             return
 
-        print 'open IS SHUTDOWN before', rospy.is_shutdown()
+        #print 'open IS SHUTDOWN before', rospy.is_shutdown()
 
         dialog = qtg.QFileDialog(self, 'Open State Machine', '~')
         dialog.setFileMode(qtg.QFileDialog.Directory)
@@ -513,7 +509,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
             self.nothing_cb(None)
             #self.document = FSMDocument(filename, modified=False, real_filename=True)
 
-        print 'open IS SHUTDOWN after', rospy.is_shutdown()
+        #print 'open IS SHUTDOWN after', rospy.is_shutdown()
 
     ####################################################################################################################
     # Graph Callbacks
@@ -636,6 +632,11 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         if str(self.statusBar().currentMessage()) != self.status_bar_msg:
             self.statusBar().showMessage(self.status_bar_msg)
 
+    def quit_cb(self):
+        self.stop_drawing()
+        rospy.signal_shutdown('User closed window.')
+        self.app.quit()
+
 def run(robot, tf_listener, plugin_namespace):
     import plugins 
     import state_machine_tool as smt
@@ -645,7 +646,7 @@ def run(robot, tf_listener, plugin_namespace):
 
     #print 'RCOMMANDER 1EXP IS SHUTDOWN', rospy.is_shutdown()
     app = qtg.QApplication(sys.argv)
-    rc = RCommander()#robot, tf_listener)
+    rc = RCommander(app)#robot, tf_listener)
     app.connect(app, qtc.SIGNAL('lastWindowClosed()'), app.quit)
     app.connect(rc.ui.action_quit, qtc.SIGNAL('clicked()'), app.quit)
     rc.set_robot(robot, tf_listener)
