@@ -20,6 +20,7 @@ class SpeakTool(tu.ToolBase):
         self.text = QPlainTextEdit(pbox)
         self.voices_box = QComboBox(pbox)
         ret = self.available_voices()
+        ret.voices.sort()
         for v in ret.voices:
             self.voices_box.addItem(v)
 
