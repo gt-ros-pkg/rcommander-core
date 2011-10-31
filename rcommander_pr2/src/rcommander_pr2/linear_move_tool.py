@@ -297,6 +297,7 @@ class LinearMovementSmach(smach.State):
     #TODO abstract this out!
     def execute(self, userdata):
         goal = self.ros_goal(userdata)
+        print 'goal sent is', goal
         self.action_client.send_goal(goal)
        
         succeeded = False

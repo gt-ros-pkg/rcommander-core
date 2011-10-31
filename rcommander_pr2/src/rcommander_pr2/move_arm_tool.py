@@ -147,7 +147,7 @@ class SafeMoveArmStateSmach(smach.State):
                 break
             
             #we timed out
-            if (rospy.get_time() - start_time) > SafeMoveArmState.TIME_OUT:
+            if (rospy.get_time() - start_time) > SafeMoveArmStateSmach.TIME_OUT:
                 self.move_arm_client.cancel_goal()
                 rospy.loginfo('SafeMoveArmState: timed out!')
                 break

@@ -102,6 +102,7 @@ class GripperEventStateSmach(smach.State):
             raise RuntimeError('Error')
         evd_name = a + '_gripper_sensor_controller/event_detector'
         self.action_client = actionlib.SimpleActionClient(evd_name, gr.PR2GripperEventDetectorAction)
+        #self.init = False
 
     def set_robot(self, robot):
         self.robot = robot
@@ -114,6 +115,7 @@ class GripperEventStateSmach(smach.State):
             output_keys = list(sm.get_registered_output_keys())
             outcomes = list(sm.get_registered_outcomes()) + [GripperEventStateSmach.EVENT_OUTCOME]
         smach.State.__init__(self, outcomes = outcomes, input_keys = input_keys, output_keys = output_keys)
+        #self.init=True
 
     def _detected_event(self):
         state = self.action_client.get_state()

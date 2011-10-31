@@ -311,9 +311,9 @@ class GraphModel:
                 node = self.states_dict[node_name]
 
                 node_smach = node.get_smach_state()
-                print 'got smach state', node_smach.__class__
+                #print 'got smach state', node_smach.__class__
                 if hasattr(node_smach, 'set_robot'): 
-                    print 'setting its robot variable'
+                    #print 'setting its robot variable'
                     node_smach.set_robot(robot)
 
                 transitions = {}
@@ -397,6 +397,9 @@ class GraphModel:
 
         #for each existing connection
         new_smach_node = new_node.get_smach_state()
+        if hasattr(new_smach_node, 'set_robot'): 
+            new_smach_node.set_robot(None)
+
         new_outcomes = new_smach_node.get_registered_outcomes()
         for e in self.gve.node(old_node_name).edges:
         #   if it is an outcome in the new node
@@ -503,7 +506,6 @@ class GraphModel:
 
         else:
             #If this node has a child node we replace its child node with it instead of performing an add
-            print 'FIXME: NESTING STATE MACHINES DOESN\'T WORK YET'
             self.replace_node(node, node.get_child_name())
 
 
@@ -643,10 +645,13 @@ class GraphModel:
             cdict[outcome_name] = nn
             #print outcome_name, nn
 
-        print 'current children of', node_name, clist
-        print 'registed outcomes are', self.states_dict[node_name].get_smach_state().get_registered_outcomes()
+        #print 'current children of', node_name, clist
+        #print 'registed outcomes are', self.states_dict[node_name].get_smach_state().get_registered_outcomes()
 
-        registered_outcomes = self.states_dict[node_name].get_smach_state().get_registered_outcomes()
+        smach_state = self.states_dict[node_name].get_smach_state()
+        if hasattr(smach_state, 'set_robot'): 
+            smach_state.set_robot(None)
+        registered_outcomes = smach_state.get_registered_outcomes()
 
         #Remove things that are no longer outcomes
         for outcome in cdict.keys():
