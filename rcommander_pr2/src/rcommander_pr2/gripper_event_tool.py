@@ -108,7 +108,6 @@ class GripperEventStateSmach(smach.State):
         #self.init = False
 
     def set_robot(self, robot):
-        print 'ROBOT set to', robot
         self.robot = robot
         input_keys = []
         output_keys = []

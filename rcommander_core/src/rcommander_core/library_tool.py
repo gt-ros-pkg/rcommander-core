@@ -56,6 +56,9 @@ class LibraryTool(tu.ToolBase):
 
         return tree_model, root_node, slist_dict
 
+    def edit_cb(self, index):
+        print 'edit called', index.row()
+
     def fill_property_box(self, pbox):
         #Remove everything from parent container
         container = self.rcommander.ui.properties_container
@@ -86,6 +89,8 @@ class LibraryTool(tu.ToolBase):
         self.tree_model, root_node, self.slist_dict = self._create_tree_model()
         self.tree_view.setModel(self.tree_model)
         self.tree_view.expandAll()
+        #self.tree_view.setEditTriggers(QAbstractItemView.AllEditTriggers)
+        #self.rcommander.connect(self.tree_view, SIGNAL('edit(QModelIndex)'), self.edit_cb)
 
         self.button_panel = QWidget(container)
         bpanel_layout = QHBoxLayout(self.button_panel)

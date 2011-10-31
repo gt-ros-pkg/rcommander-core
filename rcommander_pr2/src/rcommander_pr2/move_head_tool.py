@@ -83,7 +83,8 @@ class MoveHeadStateSmach(smach.State):
         self.robot = None
 
     def set_robot(self, robot):
-        self.head_obj = robot.head
+        if robot != None:
+            self.head_obj = robot.head
 
     def execute(self, userdata):
         self.head_obj.set_pose(self.poses, self.mot_time)

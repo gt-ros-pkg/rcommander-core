@@ -310,6 +310,9 @@ class JointSequenceStateSmach(smach.State):
         self.arm_obj = None
 
     def set_robot(self, pr2):
+        if pr2 == None:
+            return
+
         if self.arm == 'left':
             self.arm_obj = pr2.left
 
