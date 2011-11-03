@@ -129,7 +129,6 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
             if str(self.statusBar().currentMessage()) != rstring:
                 self.statusBar().showMessage(rstring, 1000)
 
-
     ####################################################################################################################
     # GUI logic
     ####################################################################################################################
@@ -294,6 +293,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
 
     def connection_changed(self, node_name, outcome_name, new_outcome):
         self.graph_model.connection_changed(node_name, outcome_name, new_outcome)
+        print 'connection_changed: State machine modified!'
         self.graph_model.document.modified = True
 
     def current_children_of(self, node_name):
@@ -361,6 +361,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
 
         self.tool_dict[self.selected_tool]['tool_obj'].refresh_connections_box()
         self.graph_view.refresh()
+        print 'add_cb: State machine modified!'
         self.graph_model.document.modified = True
 
     def reset_cb(self):
@@ -382,6 +383,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
 
         # connection changes are made instantly (so don't worry about them)
         # only saving of internal node parameters must be implemented by client tools
+        print 'save_cb: State machine modified!'
         self.graph_model.document.modified = True
 
     def start_state_cb(self):
@@ -410,6 +412,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         #    self.set_selected_edge(None, None)
         #    self.graph_model.delete_edge(se)
         #    self.graph_view.refresh()
+        print 'delete_cb: State machine modified!'
         self.graph_model.document.modified = True
         self.nothing_cb(None)
 
@@ -491,7 +494,6 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
             return
 
         #print 'open IS SHUTDOWN before', rospy.is_shutdown()
-
         dialog = qtg.QFileDialog(self, 'Open State Machine', '~')
         dialog.setFileMode(qtg.QFileDialog.Directory)
         dialog.setViewMode(qtg.QFileDialog.List)
@@ -501,11 +503,19 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
             filenames = dialog.selectedFiles()
             filename = str(filenames[0])
 
+            #Stop things that are currently running
+            self.stop_sm_cb()
+
             #Set this a the new model
             self._set_model(gm.GraphModel.load(filename))
 
+            #TODO check that the top level state machine has been saved
+            self.fsm_stack = []
+
             #Reset state of GUI
             self.nothing_cb(None)
+            self._state_machine_status_cb(' ')
+
             #self.document = FSMDocument(filename, modified=False, real_filename=True)
 
         #print 'open IS SHUTDOWN after', rospy.is_shutdown()
