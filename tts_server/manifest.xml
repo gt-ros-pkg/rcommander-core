@@ -9,18 +9,7 @@
 
   <review status="unreviewed" notes=""/>
   <depend package="rospy" />
-
   <rosdep name="festival-extra" />
-  <!--<rosdep name="festlex_cmu"/>-->
-  <!--<rosdep name="festlex-cmu"/>      --> 
-  <!--<rosdep name="festlex-poslex"/>   -->    
-  <!--<rosdep name="festlex-oald"/>     -->   
-  <!--<rosdep name="libestools1.2"/>    -->   
-  <!--<rosdep name="festvox-don"/>      -->  
-  <!--<rosdep name="festvox-rablpc16k"/>-->        
-  <!--<rosdep name="festvox-kallpc16k"/>-->        
-  <!--<rosdep name="festvox-kdlpc16k"/> -->      
-
   <url>http://ros.org/wiki/tts_server</url>
 
 </package>
