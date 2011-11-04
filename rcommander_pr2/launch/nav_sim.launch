@@ -1,6 +1,0 @@
-<launch>
-  <!-- Tuck Arms For Navigation -->
-
-  <!-- nav-stack -->
-  <include file="$(find pr2_2dnav_gazebo)/2dnav-stack-amcl.launch"/>
-</launch>

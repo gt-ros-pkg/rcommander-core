@@ -2,6 +2,3 @@ python-qt4-gl:
   ubuntu: 
         10.04: python-qt4-gl
 
-festival-extra:
-    ubuntu:
-        10.04: festlex-cmu festlex-poslex festlex-oald  libestools1.2 festvox-don festvox-rablpc16k festvox-kallpc16k festvox-kdlpc16k
