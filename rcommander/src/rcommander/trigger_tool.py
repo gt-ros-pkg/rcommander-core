@@ -5,7 +5,8 @@ from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 import smach
 import rospy
-from rcommander_core.msg import Trigger
+from msg import Trigger
+
 
 TRIGGER_TOPIC = 'trigger'
 

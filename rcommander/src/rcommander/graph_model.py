@@ -1,4 +1,4 @@
-import roslib; roslib.load_manifest('rcommander_core')
+#import roslib; roslib.load_manifest('rcommander_core')
 import rospy
 import tool_utils as tu
 import glob
@@ -489,14 +489,14 @@ class GraphModel:
         if not hasattr(node, 'get_child_name') or \
                 not self.states_dict.has_key(node.get_child_name()):
 
-            #Link this node to all its outcomes
-            self.gve.add_node(node.get_name(), radius=self.NODE_RADIUS)
-            self.states_dict[node.get_name()] = node
-
             #Check all outcomes and make new nodes if needed
             smach_node = node.get_smach_state()
             if hasattr(smach_node, 'set_robot'): 
                 smach_node.set_robot(None)
+
+            #Link this node to all its outcomes
+            self.gve.add_node(node.get_name(), radius=self.NODE_RADIUS)
+            self.states_dict[node.get_name()] = node
 
             #For each outcome
             for outcome in smach_node.get_registered_outcomes():

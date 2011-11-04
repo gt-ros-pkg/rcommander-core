@@ -1,4 +1,4 @@
-import roslib; roslib.load_manifest('rcommander_core')
+#import roslib; roslib.load_manifest('rcommander_core')
 import rospy
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *

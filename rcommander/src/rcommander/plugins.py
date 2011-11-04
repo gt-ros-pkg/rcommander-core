@@ -1,6 +1,6 @@
-import roslib; roslib.load_manifest('rcommander_core')
+#import roslib; roslib.load_manifest('rcommander_core')
 import sys
-import pdb
+#import pdb
 #pdb.set_trace()
 import tool_utils as tu
 import roslib.rospack
@@ -13,7 +13,7 @@ def load_plugins(robot_namespaces):
     roswtf plugins
     @rtype: [fn], [fn]
     """
-    dependencies = roslib.rospack.rospack_depends_on_1('rcommander_core')
+    dependencies = roslib.rospack.rospack_depends_on_1('rcommander')
     plugin_classes = []
     for pkg in dependencies:
         m_filename = roslib.manifest.manifest_file(pkg, True)

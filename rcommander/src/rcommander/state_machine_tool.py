@@ -1,4 +1,4 @@
-import roslib; roslib.load_manifest('rcommander_core')
+#import roslib; roslib.load_manifest('rcommander_core')
 import rospy
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
@@ -53,7 +53,10 @@ class StateMachineTool(tu.ToolBase):
         #if self.child_gm != None:
         #    nname = self.child_gm.document.get_name()
 
-        return StateMachineNode(nname, self.child_gm)
+            return StateMachineNode(nname, self.child_gm)
+        else:
+            raise RuntimeError('Need to specify filename.')
+            return None
 
     def set_node_properties(self, my_node):
         self.child_gm = my_node.child_gm

@@ -1,4 +1,4 @@
-import roslib; roslib.load_manifest('rcommander_core')
+#import roslib; roslib.load_manifest('rcommander_core')
 import PyQt4.QtGui as qtg
 import PyQt4.QtCore as qtc
 import PyQt4.QtOpenGL as qtl

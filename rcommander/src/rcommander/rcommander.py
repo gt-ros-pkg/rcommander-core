@@ -1,4 +1,4 @@
-import roslib; roslib.load_manifest('rcommander_core')
+import roslib; roslib.load_manifest('rcommander')
 
 import PyQt4.QtGui as qtg
 import PyQt4.QtCore as qtc
@@ -343,12 +343,17 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
                 state = self.graph_model.get_state(self.selected_node)
                 tool_instance.set_child_node(state)
 
-        node = tool_instance.create_node()
-        if node == None:
-            rospy.loginfo('For some reason node wasn\'t created')
-            return
+        try:
+            node = tool_instance.create_node()
+            if node == None:
+                rospy.loginfo('For some reason node wasn\'t created')
+                return
+            self.graph_model.add_node(node)
+        except RuntimeError, e:
+            qtg.QMessageBox.information(self, str(self.objectName()), 
+                    'RuntimeError: ' + e.message)
+            return 
 
-        self.graph_model.add_node(node)
         if self.selected_node == None:
             self.node_cb(self.graph_model.node(node.name))
         else:
@@ -361,7 +366,6 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
 
         self.tool_dict[self.selected_tool]['tool_obj'].refresh_connections_box()
         self.graph_view.refresh()
-        print 'add_cb: State machine modified!'
         self.graph_model.document.modified = True
 
     def reset_cb(self):

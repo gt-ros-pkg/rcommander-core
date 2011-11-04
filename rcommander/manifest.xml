@@ -1,21 +1,22 @@
 <package>
-  <description brief="rcommander_core">
 
-     rcommander_core
-
+  <description brief="rcommander">
+     rcommander
   </description>
+
   <author>Hai Nguyen</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/rcommander_core</url>
-  <rosdep name="python-qt4-gl"/>
 
+  <rosdep name="python-qt4-gl"/>
   <depend package="rospy"/>
   <depend package="nodebox_qt"/>
   <depend package="smach"/>
   <depend package="smach_ros"/>
   <depend package="actionlib"/>
   <depend package="geometry_msgs"/>
+
 </package>
 
 

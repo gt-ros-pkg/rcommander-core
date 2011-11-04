@@ -145,11 +145,11 @@ class ToolBase:
 
         if self.button.isChecked():
             #send fresh boxes out
+            self.rcommander.set_selected_tool(self.get_smach_class()) #This needs to appear *before* the various fills as they can fail
             self.fill_property_box(self.rcommander.ui.properties_tab)
             self.fill_connections_box(self.rcommander.ui.connections_tab)
             #self.rcommander.set_selected_tool(self.get_name())
             #print 'setting selected tool to', self.get_smach_class()
-            self.rcommander.set_selected_tool(self.get_smach_class())
         else:
             self.rcommander.set_selected_tool(None)
 
@@ -185,12 +185,16 @@ class ToolBase:
 
     def fill_connections_box(self, pbox):
         formlayout = pbox.layout()
+
         if hasattr(self, 'set_child_node'):
             if self.rcommander.selected_node == None:
                 return
             else:
                 state = self.rcommander.graph_model.get_state(self.rcommander.selected_node)
                 self.set_child_node(state)
+
+        self.name_input = qtg.QLineEdit() #Needs to occur before new_node as it can fail
+        formlayout.addRow('Name', self.name_input)
 
         if self.get_current_node_name() == None:
             current_node = self.new_node()
@@ -201,9 +205,7 @@ class ToolBase:
         self.rcommander.connect_node(current_node_smach)
 
         current_node_name = current_node.get_name()
-        self.name_input = qtg.QLineEdit()
         self.name_input.setText(current_node_name)
-        formlayout.addRow('Name', self.name_input)
 
         #if not issubclass(current_node.__class__, InfoStateBase):
 
