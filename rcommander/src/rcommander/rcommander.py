@@ -293,7 +293,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
 
     def connection_changed(self, node_name, outcome_name, new_outcome):
         self.graph_model.connection_changed(node_name, outcome_name, new_outcome)
-        print 'connection_changed: State machine modified!'
+        #print 'connection_changed: State machine modified!'
         self.graph_model.document.modified = True
 
     def current_children_of(self, node_name):
@@ -377,9 +377,15 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
     def save_cb(self):
         tool_instance = self.tool_dict[self.selected_tool]['tool_obj']
         #old_smach_node = self.graph_model.get_smach_state()
+        #print 'save cb called!!!'
         old_node_name = tool_instance.get_current_node_name()
         # create a node with new settings
-        node = tool_instance.create_node(unique=False)
+        try:
+            node = tool_instance.create_node(unique=False)
+        except RuntimeError, e:
+            qtg.QMessageBox.information(self, str(self.objectName()), 
+                    'RuntimeError: ' + e.message)
+            return 
         # 'delete' old smach node
         self.graph_model.replace_node(node, old_node_name)
         #print 'TRANS!', smach_node.vels
@@ -387,7 +393,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
 
         # connection changes are made instantly (so don't worry about them)
         # only saving of internal node parameters must be implemented by client tools
-        print 'save_cb: State machine modified!'
+        #print 'save_cb: State machine modified!'
         self.graph_model.document.modified = True
 
     def start_state_cb(self):

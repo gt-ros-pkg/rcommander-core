@@ -40,27 +40,31 @@ class StateMachineTool(tu.ToolBase):
             self.filename_edit.setText(filename)
 
     def new_node(self, name=None):
-        if name == None:
-            nname = self.name + str(self.counter)
-        else:
-            nname = name
-
-        if str(self.filename_edit.text()) != '...':
+        child_gm = self.child_gm
+        if (child_gm == None) and (str(self.filename_edit.text()) != '...'):
             #nname = pt.split(str(self.filename_edit.text()))[1]
             print 'state machine tool loading', self.filename_edit.text()
-            self.child_gm = gm.GraphModel.load(str(self.filename_edit.text()))
-            curr_document = gm.FSMDocument(self.child_gm.get_document().get_name(), modified=True, real_filename=False)
-            self.child_gm.set_document(curr_document)
-            nname = self.child_gm.get_document().get_name()
-            print 'nname is', nname
+            child_gm = gm.GraphModel.load(str(self.filename_edit.text()))
+            curr_document = gm.FSMDocument(child_gm.get_document().get_name(), modified=True, real_filename=False)
+            child_gm.set_document(curr_document)
+        else:
+            if name == None:
+                nname = self.name + str(self.counter)
+                return StateMachineNode(nname, None)
+            else:
+                raise RuntimeError('Need to specify filename.')
+                return None
 
+        #if name == None:
+        #    nname = child_gm.get_document().get_name() + str(self.counter)
+        #else:
+        #    nname = name
         #if self.child_gm != None:
         #    nname = self.child_gm.document.get_name()
+        #print 'STATE MACHINE NAME IS', nname
 
-            return StateMachineNode(nname, self.child_gm)
-        else:
-            raise RuntimeError('Need to specify filename.')
-            return None
+        self.child_gm = None
+        return StateMachineNode(name, child_gm)
 
     def set_node_properties(self, my_node):
         self.child_gm = my_node.child_gm

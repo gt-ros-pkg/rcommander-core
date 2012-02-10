@@ -151,9 +151,6 @@ class LibraryTool(tu.ToolBase):
     def add_to_library(self, state_node):
         library_home = self._get_library_home()
 
-        if gm.is_container(state_node):
-            state_node.save_child(library_home)
-
         #if there's a node in the library of the same name.
         state_fname = pt.join(library_home, "%s.state" % (state_node.get_name()))
         i = 0
@@ -162,12 +159,30 @@ class LibraryTool(tu.ToolBase):
             i = i + 1
 
         #Save!
+        if gm.is_container(state_node):
+            state_node.save_child(library_home)
         state_file = open(state_fname, 'w')
         pk.dump(state_node, state_file)
         state_file.close()
 
         #Recreate everything in the GUI!
         self.activate_cb()
+
+        #for state_name in self.states_dict.keys():
+        #    containerp = is_container(self.states_dict[state_name])
+        #    if containerp:
+        #        self.states_dict[state_name].save_child(name)
+        #        child = self.states_dict[state_name].abort_child()
+        #    state_fname = pt.join(name, state_name) + '.state'
+        #    pickle_file = open(state_fname, 'w')
+        #    #print 'SAVING STATE', state_name, self.states_dict[state_name]
+        #    pk.dump(self.states_dict[state_name], pickle_file)
+        #    pickle_file.close()
+        #    if containerp:
+        #        #print 'document\'s path was', self.states_dict[state_name].document.get_filename()
+        #        self.states_dict[state_name].set_child(child)
+
+
 
     def delete_cb(self):
         index = self.tree_view.selectionModel().currentIndex()

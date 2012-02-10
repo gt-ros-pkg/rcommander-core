@@ -157,7 +157,6 @@ class GraphModel:
             if containerp:
                 self.states_dict[state_name].save_child(name)
                 child = self.states_dict[state_name].abort_child()
-
             state_fname = pt.join(name, state_name) + '.state'
             pickle_file = open(state_fname, 'w')
             #print 'SAVING STATE', state_name, self.states_dict[state_name]
