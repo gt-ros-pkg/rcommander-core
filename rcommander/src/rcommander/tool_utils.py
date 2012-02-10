@@ -425,33 +425,53 @@ class EmbeddableState(StateBase):
     def __init__(self, name, child_gm):
         StateBase.__init__(self, name)
         self.child_gm = child_gm
-        self.document = None 
+        self.child_document = None 
 
         #Look inside state machine and look for things with remaps
+        self.set_child(child_gm)
+
+
+    def abort_child(self):
+        fetus = self.child_gm 
+        self.child_gm = None
+        return fetus
+
+    def get_child(self):
+        return self.child_gm
+
+    ##
+    # @param child_gm GraphModel object
+    def set_child(self, child_gm):
         if child_gm != None:
-            self.document = child_gm.document
+            self.child_document = child_gm.get_document()
+            #child_gm.set_document(None)
             for node_name in child_gm.states_dict.keys():
                 mapping = child_gm.get_state(node_name).remapping
                 for input_key in mapping.keys():
                     source = mapping[input_key]
                     self.set_remapping_for(source, source)
 
-    def get_child(self):
-        return self.child_gm
-
     def save_child(self, base_path=""):
         child_gm = self.get_child()
         if child_gm.document.has_real_filename():
-            child_gm.save(child_gm.document.get_filename())
+            print 'saving child to', child_gm.get_document().get_filename() 
+            child_gm.save(child_gm.get_document().get_filename())
         else:
-            fname = pt.join(base_path, self.get_child_name())
-            child_gm.save(fname)
-        self.document = child_gm.document
+            fname = pt.join(base_path, child_gm.get_document().get_name())
+            #If child does not exists
+            if not pt.exists(fname):
+                child_gm.save(fname)
+                print 'saving child to', fname
+            else:
+                raise RuntimeError('FILE EXISTS. CAN\'T OVERWRITE')
+
+        self.child_document = child_gm.document
 
     def load_and_recreate(self, base_path):
         import graph_model as gm
 
-        fname = pt.join(base_path, pt.split(self.document.get_filename())[1])
+        fname = pt.join(base_path, pt.split(self.child_document.get_filename())[1])
+        print 'load_and_recreate:', fname
         child_gm = gm.GraphModel.load(fname)
         return self.recreate(child_gm)
 

@@ -7,6 +7,7 @@ import glob
 import os.path as pt
 import cPickle as pk
 import shutil as su
+import graph_model as gm
 
 #
 # Library nodes saved in ~/.rcommander/library/
@@ -149,6 +150,9 @@ class LibraryTool(tu.ToolBase):
     #Special method to this tool, called by rcommander.
     def add_to_library(self, state_node):
         library_home = self._get_library_home()
+
+        if gm.is_container(state_node):
+            state_node.save_child(library_home)
 
         #if there's a node in the library of the same name.
         state_fname = pt.join(library_home, "%s.state" % (state_node.get_name()))

@@ -47,8 +47,12 @@ class StateMachineTool(tu.ToolBase):
 
         if str(self.filename_edit.text()) != '...':
             #nname = pt.split(str(self.filename_edit.text()))[1]
+            print 'state machine tool loading', self.filename_edit.text()
             self.child_gm = gm.GraphModel.load(str(self.filename_edit.text()))
-            nname = self.child_gm.document.get_name()
+            curr_document = gm.FSMDocument(self.child_gm.get_document().get_name(), modified=True, real_filename=False)
+            self.child_gm.set_document(curr_document)
+            nname = self.child_gm.get_document().get_name()
+            print 'nname is', nname
 
         #if self.child_gm != None:
         #    nname = self.child_gm.document.get_name()
@@ -60,7 +64,8 @@ class StateMachineTool(tu.ToolBase):
 
     def set_node_properties(self, my_node):
         self.child_gm = my_node.child_gm
-        self.filename_edit.setText(self.child_gm.document.get_filename())
+        if self.child_gm.get_document() != None:
+            self.filename_edit.setText(self.child_gm.get_document().get_filename())
 
     def reset(self):
         self.filename_edit.setText("...")
@@ -77,7 +82,6 @@ class StateMachineNode(tu.EmbeddableState):
 
     def recreate(self, graph_model):
         return StateMachineNode(graph_model.document.get_name(), graph_model)
-
 
 class StateMachineNodeSmach(smach.State):
 
