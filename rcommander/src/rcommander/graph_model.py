@@ -126,9 +126,8 @@ class GraphModel:
             rospy.loginfo('Got an instance of %s' % str(gm.states_dict[sname].__class__))
 
             if is_container(gm.states_dict[sname]):
-                print 'FIXME: load_and_recreate might not make sense anymore'
+                #print 'FIXME: load_and_recreate might not make sense anymore'
                 gm.states_dict[sname] = gm.states_dict[sname].load_and_recreate(name)
-
 
         #Reconstruct graph
         edges_filename = pt.join(name, GraphModel.EDGES_FILE)

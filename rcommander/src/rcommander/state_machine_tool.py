@@ -67,7 +67,9 @@ class StateMachineTool(tu.ToolBase):
     def set_node_properties(self, my_node):
         self.child_gm = my_node.child_gm
         if self.child_gm.get_document() != None:
-            self.filename_edit.setText(self.child_gm.get_document().get_filename())
+            fname = self.child_gm.get_document().get_filename()
+            if fname != None:
+                self.filename_edit.setText(fname)
 
     def reset(self):
         self.filename_edit.setText("...")

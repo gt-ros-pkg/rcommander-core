@@ -430,6 +430,8 @@ class EmbeddableState(StateBase):
         #Look inside state machine and look for things with remaps
         self._init_child(child_gm)
 
+    def get_child_document(self):
+        return self.child_document
 
     def abort_child(self):
         fetus = self.child_gm 
@@ -457,14 +459,14 @@ class EmbeddableState(StateBase):
     def save_child(self, base_path=""):
         child_gm = self.get_child()
         if child_gm.document.has_real_filename():
-            print 'saving child to', child_gm.get_document().get_filename() 
+            #print 'saving child to', child_gm.get_document().get_filename() 
             child_gm.save(child_gm.get_document().get_filename())
         else:
             fname = pt.join(base_path, child_gm.get_document().get_name())
             #If child does not exists
             if not pt.exists(fname):
                 child_gm.save(fname)
-                print 'saving child to', fname
+                #print 'saving child to', fname
             else:
                 raise RuntimeError('FILE EXISTS. CAN\'T OVERWRITE')
 
@@ -474,7 +476,7 @@ class EmbeddableState(StateBase):
         import graph_model as gm
 
         fname = pt.join(base_path, pt.split(self.child_document.get_filename())[1])
-        print 'load_and_recreate:', fname
+        #print 'load_and_recreate:', fname
         child_gm = gm.GraphModel.load(fname)
         return self.recreate(child_gm)
 
