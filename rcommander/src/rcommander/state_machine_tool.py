@@ -41,13 +41,20 @@ class StateMachineTool(tu.ToolBase):
 
     def new_node(self, name=None):
         child_gm = self.child_gm
+        self.child_gm = None
+
         if (child_gm == None) and (str(self.filename_edit.text()) != '...'):
             #nname = pt.split(str(self.filename_edit.text()))[1]
             print 'state machine tool loading', self.filename_edit.text()
             child_gm = gm.GraphModel.load(str(self.filename_edit.text()))
-            curr_document = gm.FSMDocument(child_gm.get_document().get_name(), modified=True, real_filename=False)
+            #curr_document = gm.FSMDocument(child_gm.get_document().get_name(), modified=True, real_filename=False)
+            curr_document = gm.FSMDocument(name, modified=True, real_filename=False)
             child_gm.set_document(curr_document)
         else:
+            if child_gm != None:
+                curr_document = gm.FSMDocument(name, modified=True, real_filename=False)
+                child_gm.set_document(curr_document)
+                return StateMachineNode(name, child_gm)
             if name == None:
                 nname = self.name + str(self.counter)
                 return StateMachineNode(nname, None)
@@ -55,15 +62,6 @@ class StateMachineTool(tu.ToolBase):
                 raise RuntimeError('Need to specify filename.')
                 return None
 
-        #if name == None:
-        #    nname = child_gm.get_document().get_name() + str(self.counter)
-        #else:
-        #    nname = name
-        #if self.child_gm != None:
-        #    nname = self.child_gm.document.get_name()
-        #print 'STATE MACHINE NAME IS', nname
-
-        self.child_gm = None
         return StateMachineNode(name, child_gm)
 
     def set_node_properties(self, my_node):
@@ -85,7 +83,8 @@ class StateMachineNode(tu.EmbeddableState):
         return StateMachineNodeSmach(self.child_gm)
 
     def recreate(self, graph_model):
-        return StateMachineNode(graph_model.document.get_name(), graph_model)
+        #return StateMachineNode(graph_model.document.get_name(), graph_model)
+        return StateMachineNode(self.get_name(), graph_model)
 
 class StateMachineNodeSmach(smach.State):
 

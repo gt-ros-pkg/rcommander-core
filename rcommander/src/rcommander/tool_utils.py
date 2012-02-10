@@ -428,7 +428,7 @@ class EmbeddableState(StateBase):
         self.child_document = None 
 
         #Look inside state machine and look for things with remaps
-        self.set_child(child_gm)
+        self._init_child(child_gm)
 
 
     def abort_child(self):
@@ -439,9 +439,12 @@ class EmbeddableState(StateBase):
     def get_child(self):
         return self.child_gm
 
+    def set_child(self, child):
+        self.child_gm = child
+
     ##
     # @param child_gm GraphModel object
-    def set_child(self, child_gm):
+    def _init_child(self, child_gm):
         if child_gm != None:
             self.child_document = child_gm.get_document()
             #child_gm.set_document(None)

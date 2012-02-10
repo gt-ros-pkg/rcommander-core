@@ -10,6 +10,7 @@ import outcome_tool as ot
 import graph
 import sm_thread_runner as smtr
 import time
+import shutil
 
 def is_container(node):
     return hasattr(node, 'get_child_name') 
@@ -150,6 +151,9 @@ class GraphModel:
         rospy.loginfo('GraphModel: saving to %s' % name)
         if not pt.exists(name):
             os.mkdir(name)
+        else:
+            shutil.rmtree(name)
+            os.mkdir(name)
 
         #Save each state
         for state_name in self.states_dict.keys():
@@ -157,6 +161,7 @@ class GraphModel:
             if containerp:
                 self.states_dict[state_name].save_child(name)
                 child = self.states_dict[state_name].abort_child()
+
             state_fname = pt.join(name, state_name) + '.state'
             pickle_file = open(state_fname, 'w')
             #print 'SAVING STATE', state_name, self.states_dict[state_name]
