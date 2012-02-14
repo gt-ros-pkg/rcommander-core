@@ -1,5 +1,5 @@
 import roslib; roslib.load_manifest('rcommander')
-from pr2_interactive_manipulation.srv import *
+from pr2_object_manipulation_msgs.srv import *
 import rospy
 from PyQt4 import QtCore, QtGui
 import graph_model as gm
@@ -41,10 +41,11 @@ class RCommanderAutoServer:
         self.action_dict = {}
         self.main_dir_watcher = WatchDirectory(self.path_to_rcommander_files, self.main_directory_changed)
         self.main_directory_changed(self.path_to_rcommander_files)
-        #rospy.Service('list_rcommander_actions', ActionInfo, self.list_action_cb)
+
+        rospy.Service('list_rcommander_actions', ActionInfo, self.list_action_cb)
+        self.actserv = actionlib.SimpleActionServer('run_rcommander_action', pim.RunScriptAction, execute_cb=self.execute_cb, auto_start=False)
+        self.actserv.start()
         #self.main_directory_changed(self.path_to_rcommander_files)
-        #self.actserv = actionlib.SimpleActionServer('run_rcommander_action', pim.RunScriptAction, execute_cb=self.execute_cb, auto_start=False)
-        #self.actserv.start()
 
     def _find_all_actions(self):
         dirs = [] #[d for d in os.listdir(path_name) if os.path.isdir(d)]

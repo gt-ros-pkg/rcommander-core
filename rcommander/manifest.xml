@@ -16,7 +16,6 @@
   <depend package="smach_ros"/>
   <depend package="actionlib"/>
   <depend package="geometry_msgs"/>
-
 </package>
 
 
