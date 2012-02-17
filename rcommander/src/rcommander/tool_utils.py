@@ -137,6 +137,8 @@ class ToolBase:
         return self.button
 
     def activate_cb(self, loaded_node_name=None):
+        #import pdb
+        #pdb.set_trace()
         self.rcommander.enable_buttons()
         #self.loaded_node_name = None
         self.set_loaded_node_name(loaded_node_name)

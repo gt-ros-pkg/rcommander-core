@@ -270,7 +270,6 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         #add in a new layout
         clayout = qtg.QVBoxLayout(container)
         clayout.setMargin(0)
-
         #add in a container widget
         self.ui.properties_tab = qtg.QWidget(container)
         pbox_layout = qtg.QFormLayout(self.ui.properties_tab)
@@ -656,7 +655,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         rospy.signal_shutdown('User closed window.')
         self.app.quit()
 
-def run(robot, tf_listener, plugin_namespace):
+def run_rcommander(robot, tf_listener, plugin_namespace):
     import plugins 
     import state_machine_tool as smt
     import sleep_tool as st
@@ -670,7 +669,7 @@ def run(robot, tf_listener, plugin_namespace):
     app.connect(rc.ui.action_quit, qtc.SIGNAL('clicked()'), app.quit)
     rc.set_robot(robot, tf_listener)
 
-    #print 'RCOMMANDER 2EXP IS SHUTDOWN', rospy.is_shutdown()
+    print 'RCOMMANDER 2EXP IS SHUTDOWN', rospy.is_shutdown()
     #rospy.init_node('rcommander', anonymous=True)
 
     #Load plugins
@@ -682,14 +681,14 @@ def run(robot, tf_listener, plugin_namespace):
                   ['Graph', smt.StateMachineTool(rc)], 
                   ['Graph', st.SleepTool(rc)],
                   ['Graph', tt.TriggerTool(rc)]]
-    #print 'RCOMMANDER 3EXP IS SHUTDOWN', rospy.is_shutdown()
+    print 'RCOMMANDER 3EXP IS SHUTDOWN', rospy.is_shutdown()
 
     plugin_clses = plugins.load_plugins(plugin_namespace)
     for tab_name, pcls in plugin_clses:
         tools_list.append([tab_name, pcls(rc)])
     rc.add_tools(tools_list)
 
-    #print 'RCOMMANDER 4EXP IS SHUTDOWN', rospy.is_shutdown()
+    print 'RCOMMANDER 4EXP IS SHUTDOWN', rospy.is_shutdown()
     rc.show()
     sys.exit(app.exec_())
 
