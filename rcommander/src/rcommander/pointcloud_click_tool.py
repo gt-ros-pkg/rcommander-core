@@ -21,27 +21,21 @@ class PointCloudClickTool(tu.ToolBase):
         self.xline = QLineEdit(pbox)
         self.yline = QLineEdit(pbox)
         self.zline = QLineEdit(pbox)
-        self.phi_line = QLineEdit(pbox)
-        self.theta_line = QLineEdit(pbox)
-        self.psi_line = QLineEdit(pbox)
 
         self.time_out_box = QDoubleSpinBox(pbox)
         self.time_out_box.setMinimum(1.)
         self.time_out_box.setMaximum(1000.)
         self.time_out_box.setSingleStep(1.)
 
-        #self.frameline = QLineEdit(pbox)
         self.frame_box = QComboBox(pbox)
         for f in self.tf_listener.getFrameStrings():
             self.frame_box.addItem(f)
 
         self.pose_button = QPushButton(pbox)
         self.pose_button.setText('Get Point')
-        #self.pose_button.setEnabled(True)
 
         self.wait_check = QCheckBox(pbox)
         self.wait_check.setTristate(False)
-        #self.wait_check.setCheckState(False)
 
         pos_group = QGroupBox('Position', pbox)
         pos_layout = QFormLayout(pos_group)
@@ -51,13 +45,6 @@ class PointCloudClickTool(tu.ToolBase):
         pos_layout.addRow("&Z", self.zline)
         formlayout.addRow(pos_group)
 
-        orientation_group = QGroupBox('Orientation', pbox)
-        orientation_layout = QFormLayout(orientation_group)
-        orientation_group.setLayout(orientation_layout)
-        orientation_layout.addRow("&Phi", self.phi_line)
-        orientation_layout.addRow("&Theta", self.theta_line)
-        orientation_layout.addRow("&Psi", self.psi_line)
-        formlayout.addRow(orientation_group)
 
         formlayout.addRow('&Frame', self.frame_box)
         formlayout.addRow('Wait For Point', self.wait_check)
@@ -71,9 +58,6 @@ class PointCloudClickTool(tu.ToolBase):
 
     def new_node(self, name=None):
         point = [float(str(self.xline.text())), float(str(self.yline.text())), float(str(self.zline.text()))]
-        angle = [float(str(self.phi_line.text())), float(str(self.theta_line.text())), float(str(self.psi_line.text()))]
-
-        #frame = str(self.frameline.text())
         frame = str(self.frame_box.currentText())
         if name == None:
             nname = self.name + str(self.counter)
@@ -82,8 +66,8 @@ class PointCloudClickTool(tu.ToolBase):
 
         wait_for_msg = self.wait_check.isChecked()
         time_out = self.time_out_box.value()
-        return Point3DState(nname, point, angle, frame, 
-                            wait_for_msg=wait_for_msg,
+        return Point3DState(nname, point, #angle, 
+                            frame, wait_for_msg=wait_for_msg, 
                             time_out=time_out)
 
     def box_checked(self, state):
@@ -91,9 +75,6 @@ class PointCloudClickTool(tu.ToolBase):
             self.xline.setEnabled(True)
             self.yline.setEnabled(True)
             self.zline.setEnabled(True)
-            self.phi_line.setEnabled(True)
-            self.theta_line.setEnabled(True)
-            self.psi_line.setEnabled(True)
 
             self.frame_box.setEnabled(True)
             self.pose_button.setEnabled(True)
@@ -102,9 +83,6 @@ class PointCloudClickTool(tu.ToolBase):
             self.xline.setEnabled(False)
             self.yline.setEnabled(False)
             self.zline.setEnabled(False)
-            self.phi_line.setEnabled(False)
-            self.theta_line.setEnabled(False)
-            self.psi_line.setEnabled(False)
 
             self.frame_box.setEnabled(False)
             self.pose_button.setEnabled(False)
@@ -126,13 +104,8 @@ class PointCloudClickTool(tu.ToolBase):
         self.yline.setText(str(0.))
         self.zline.setText(str(0.))
 
-        self.phi_line.setText(str(0.))
-        self.theta_line.setText(str(0.))
-        self.psi_line.setText(str(0.))
-
         self.time_out_box.setValue(60.)
         self.wait_check.setCheckState(False)
-        #self.frameline.setText(self.default_frame)
         self.frame_box.setCurrentIndex(self.frame_box.findText(self.default_frame))
 
     def get_current_pose(self):
@@ -146,8 +119,22 @@ class PointCloudClickTool(tu.ToolBase):
         self.psi_line.setText('%.3f' % phi)
         self.theta_line.setText('%.3f' % theta)
         self.psi_line.setText('%.3f' % psi)
-        #self.frameline.setText(pose_stamped.header.frame_id)
         self.frame_box.setCurrentIndex(self.frame_box.findText(pose_stamped.header.frame_id))
+
+class WaitForMessage:
+
+    def __init__(self, topic, message_type):
+        self.subscriber = rospy.Subscriber(topic, message_type, self.message_cb)
+        self.msg = None
+
+    def message_cb(self, message):
+        self.msg = message
+
+    def get_message(self):
+        return self.msg
+
+    def __del__(self):
+        self.subscriber.unregister()
 
 
 class Point3DStateSmach(smach.State):
@@ -164,15 +151,20 @@ class Point3DStateSmach(smach.State):
         self.output_variable_name = output_variable_name
 
     def execute(self, userdata):
-        pose_stamped = self.message
+        point_stamped = self.message
 
         t_start = rospy.get_time()
-        while pose_stamped == None:
+        r = rospy.Rate(10)
+        waitobj = WaitForMessage('/cloud_click_point', geo.PoseStamped)
+        while point_stamped == None:
             try:
-                pose_stamped = rospy.wait_for_message('/cloud_click_point', geo.PoseStamped, .1)
-                #point_stamped = geo.PointStamped()
-                #point_stamped.header = pose_stamped.header
-                #point_stamped.point = pose_stamped.pose.position
+                pose_stamped = waitobj.get_message()
+                if pose_stamped != None:
+                    point_stamped = geo.PointStamped()
+                    point_stamped.header = pose_stamped.header
+                    point_stamped.point = pose_stamped.pose.position
+                
+                r.sleep()
             except rospy.ROSException, e:
                 pass
 
@@ -182,19 +174,18 @@ class Point3DStateSmach(smach.State):
 
             if (self.time_out != None) and ((rospy.get_time() - t_start) > self.time_out):
                 return 'timed_out'
+        del waitobj
 
-        #print 'got point', pose_stamped
-        exec("userdata.%s = pose_stamped" % self.output_variable_name)
+        exec("userdata.%s = point_stamped" % self.output_variable_name)
         return 'succeeded'
 
 
 class Point3DState(tu.StateBase):
 
-    def __init__(self, name, point, angle, frame, 
-                 wait_for_msg, time_out):
-        tu.StateBase.__init__(self, name, outputs={name: geo.PoseStamped})
+    def __init__(self, name, point, #angle, 
+                frame, wait_for_msg, time_out):
+        tu.StateBase.__init__(self, name, outputs={name: geo.PointStamped})
         self.point = point
-        self.angle = angle
         self.frame = frame
         self.time_out = time_out
         self.wait_for_msg = wait_for_msg
@@ -203,21 +194,13 @@ class Point3DState(tu.StateBase):
         if self.wait_for_msg:
             return Point3DStateSmach(self.get_name(), message = None, time_out = self.time_out)
         else:
-            #ps = geo.PointStamped()
-            ps = geo.PoseStamped()
+            ps = geo.PointStamped()
             ps.header.frame_id = self.frame
             ps.header.stamp = rospy.Time.now()
-            ps.pose.position.x = self.point[0]
-            ps.pose.position.y = self.point[1]
-            ps.pose.position.z = self.point[2]
+            ps.point.x = self.point[0]
+            ps.point.y = self.point[1]
+            ps.point.z = self.point[2]
 
-            q = tr.quaternion_from_euler(*self.angle)
-            ps.pose.orientation.x = q[0]
-            ps.pose.orientation.y = q[1]
-            ps.pose.orientation.z = q[2]
-            ps.pose.orientation.z = q[3]
-
-            #ps.point = self.point 
             return Point3DStateSmach(self.get_name(), message = ps, time_out = None)
 
 
