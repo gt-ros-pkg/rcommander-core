@@ -16,6 +16,8 @@
   <depend package="smach_ros"/>
   <depend package="actionlib"/>
   <depend package="geometry_msgs"/>
+  <depend package="tf"/>
+
 </package>
 
 

@@ -53,6 +53,28 @@ def make_radio_box(parent, options, name_preffix):
 
     return container, radio_buttons
 
+def combobox_idx(combobox, name):
+    if name == None:
+        name = ' '
+    idx = combobox.findText(name)
+    if idx == -1:
+        combobox.addItem(name)
+        idx = combobox.findText(name)
+    return idx
+
+def double_spin_box(parent, minv, maxv, step):
+    box = qtg.QDoubleSpinBox(parent)
+    box.setMinimum(minv)
+    box.setMaximum(maxv)
+    box.setSingleStep(step)
+    return box
+
+def selected_radio_button(buttons_list):
+    selected = None
+    for r in buttons_list:
+        if r.isChecked():
+            selected = str(r.text())
+    return selected
 
 class SliderBox:
 
