@@ -68,8 +68,8 @@ class TFBroadcastServer:
         return GetTransformsResponse(self.get_transforms())
 
     def broadcast_transform(self, pose_stamped, parent, frame_name):
-        print pose_stamped, parent, frame_name
-        #self.tfdict[frame_name] = {'parent': parent, 'pose': pose_stamped}
+        #print pose_stamped, parent, frame_name
+        self.tfdict[frame_name] = {'parent': parent, 'pose': pose_stamped}
 
     def remove_transform(self, frame_name):
         self.tfdict.pop(frame_name)
@@ -82,7 +82,11 @@ class TFBroadcastServer:
     def get_transforms(self):
         all_frames = self.tf_listener.getFrameStrings()
         valid_transforms = []
-        frames = set(self.user_frames + self.tfdict.keys())
+        tfkeys = ['/' + n for n in self.tfdict.keys()]
+        frames = set(self.user_frames + tfkeys)
+        #print all_frames
+        #print '\n'
+        #print tfkeys
         for T in frames:
             if T in all_frames:
                 valid_transforms.append(T)
