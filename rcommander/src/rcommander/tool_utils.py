@@ -6,6 +6,9 @@ import smach_ros
 import functools as ft
 import actionlib_msgs.msg as am
 import os.path as pt
+from tf_broadcast_server.srv import GetTransforms
+
+
 
 status_dict = {am.GoalStatus.PENDING   : 'PENDING',
                am.GoalStatus.ACTIVE    : 'ACTIVE',   
@@ -17,6 +20,39 @@ status_dict = {am.GoalStatus.PENDING   : 'PENDING',
                am.GoalStatus.RECALLING : 'RECALLING',
                am.GoalStatus.RECALLED  : 'RECALLED', 
                am.GoalStatus.LOST      : 'LOST'}    
+
+class ComboBox:
+
+    def __init__(self):
+        pass
+
+    def create_box(self, pbox):
+        box = qtg.QComboBox(pbox)
+        return box
+
+    def set_text(self, frame):
+        idx = combobox_idx(self.frame_box, frame)
+        self.frame_box.setCurrentIndex(idx)
+
+    def text(self):
+        return str(self.frame_box.currentText())
+
+class FrameBox(ComboBox):
+
+    def __init__(self, frames_service=None):
+        ComboBox.__init__(self)
+        if frames_service == None:
+            frames_service = rospy.ServiceProxy('get_transforms', GetTransforms)
+        self.frames_service = frames_service
+
+    def create_box(self, pbox):
+        self.frame_box = ComboBox.create_box(self, pbox)
+        for f in self.frames_service().frames:
+            self.frame_box.addItem(f)
+        self.setEnabled = self.frame_box.setEnabled
+        return self.frame_box
+
+
 
 def goal_status_to_string(status):
     return status_dict[status]

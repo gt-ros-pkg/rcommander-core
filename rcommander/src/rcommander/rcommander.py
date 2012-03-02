@@ -660,6 +660,7 @@ def run_rcommander(robot, tf_listener, plugin_namespace):
     import state_machine_tool as smt
     import sleep_tool as st
     import pointcloud_click_tool as ptl
+    import freeze_frame_tool as frz
     #import point_tool as ptl
 
     #print 'RCOMMANDER 1EXP IS SHUTDOWN', rospy.is_shutdown()
@@ -677,10 +678,11 @@ def run_rcommander(robot, tf_listener, plugin_namespace):
     # ['Graph', ptl.Point3DTool(rc)], 
     # ['Graph', smt.StateMachineTool(rc)]]
 
-    tools_list = [['Graph', ptl.PointCloudClickTool(rc)], 
-                  ['Graph', smt.StateMachineTool(rc)], 
-                  ['Graph', st.SleepTool(rc)],
-                  ['Graph', tt.TriggerTool(rc)]]
+    tools_list = [['Origins', ptl.PointCloudClickTool(rc)], 
+                  ['Origins', frz.FreezeFrameTool(rc)],
+                  ['Misc', smt.StateMachineTool(rc)], 
+                  ['Misc', st.SleepTool(rc)],
+                  ['Misc', tt.TriggerTool(rc)]]
     #print 'RCOMMANDER 3EXP IS SHUTDOWN', rospy.is_shutdown()
 
     plugin_clses = plugins.load_plugins(plugin_namespace)
