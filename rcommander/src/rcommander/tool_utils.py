@@ -7,6 +7,7 @@ import functools as ft
 import actionlib_msgs.msg as am
 import os.path as pt
 from tf_broadcast_server.srv import GetTransforms
+import rospy
 
 
 
@@ -51,8 +52,6 @@ class FrameBox(ComboBox):
             self.frame_box.addItem(f)
         self.setEnabled = self.frame_box.setEnabled
         return self.frame_box
-
-
 
 def goal_status_to_string(status):
     return status_dict[status]
@@ -153,6 +152,8 @@ class SliderBox:
 
         self.container = container
         self.slider = slider
+        self.disp = disp
+        self.units = units
 
     def _slider_to_units(self, value):
         return ((value / 100.) * (self.max_value - self.min_value)) + self.min_value
@@ -165,6 +166,7 @@ class SliderBox:
 
     def set_value(self, value):
         self.slider.setValue(self._units_to_slider(value))
+        self.disp.setText('%3.2f %s' % (value, self.units))
 
 
 class ToolBase:
@@ -212,10 +214,12 @@ class ToolBase:
             #This needs to appear *before* the various fills as they can fail
             self.fill_property_box(self.rcommander.ui.properties_tab)
             self.fill_connections_box(self.rcommander.ui.connections_tab)
+            self.rcommander.ui.node_settings_tabs.setCurrentIndex(0)
         else:
             self.rcommander.set_selected_tool(None)
 
         if self.saved_state != None and loaded_node_name == None:
+            #print 'SAVED STATE', self.saved_state
             self.set_node_properties(self.saved_state)
 
     #Called by RCommander when user deselects this tool
@@ -224,7 +228,11 @@ class ToolBase:
         if self.node_exists:
             return
         else:
-            self.saved_state = self.create_node(unique=False)
+            #self.saved_state = self.create_node(unique=False)
+            try:
+                self.saved_state = self.new_node()
+            except Exception, e:
+                rospy.loginfo(str(e))
 
         #create_node called when rcommander runs nodes
         #                   when - adds nodes

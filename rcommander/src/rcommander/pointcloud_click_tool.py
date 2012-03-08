@@ -7,7 +7,7 @@ import smach
 import rospy
 import tf.transformations as tr
 from tf_broadcast_server.srv import BroadcastTransform, GetTransforms, ClearTransforms
-from object_manipulator.convert_functions import mat_to_pose, stamp_pose
+from object_manipulator.convert_functions import mat_to_pose, stamp_pose, change_pose_stamped_frame
 import tf_utils as tfu
 
 class PointCloudClickTool(tu.ToolBase):
@@ -218,6 +218,7 @@ class Point3DStateSmach(smach.State):
         t_start = rospy.get_time()
         r = rospy.Rate(10)
         waitobj = WaitForMessage('/cloud_click_point', geo.PoseStamped)
+        pose_stamped = None
         while point_stamped == None:
             try:
                 pose_stamped = waitobj.get_message()
@@ -243,7 +244,11 @@ class Point3DStateSmach(smach.State):
         frame_id_T_frame_name = tfu.origin_to_frame(point_stamped, self.orientation_frame, 
                 self.robot.tf_listener, point_stamped.header.frame_id)
         pose = stamp_pose(mat_to_pose(frame_id_T_frame_name), point_stamped.header.frame_id)
+        #self.broadcast_transform_srv(self.frame_name, pose)
+        #print 'using new version'
+        #pose_stamped = change_pose_stamped_frame(self.robot.tf_listener, pose_stamped, '/base_link')
         self.broadcast_transform_srv(self.frame_name, pose)
+
 
         return 'succeeded'
 
