@@ -10,6 +10,7 @@ import outcome_tool as ot
 import graph
 import sm_thread_runner as smtr
 import time
+import shutil
 
 def is_container(node):
     return hasattr(node, 'get_child_name') 
@@ -93,6 +94,9 @@ class GraphModel:
     def set_document(self, document):
         self.document = document
 
+    def get_document(self):
+        return self.document
+
     @staticmethod
     def load(name):
         state_pkl_names = glob.glob(pt.join(name, '*.state'))
@@ -122,9 +126,8 @@ class GraphModel:
             rospy.loginfo('Got an instance of %s' % str(gm.states_dict[sname].__class__))
 
             if is_container(gm.states_dict[sname]):
-                print 'FIXME: load_and_recreate might not make sense anymore'
+                #print 'FIXME: load_and_recreate might not make sense anymore'
                 gm.states_dict[sname] = gm.states_dict[sname].load_and_recreate(name)
-
 
         #Reconstruct graph
         edges_filename = pt.join(name, GraphModel.EDGES_FILE)
@@ -147,19 +150,25 @@ class GraphModel:
         rospy.loginfo('GraphModel: saving to %s' % name)
         if not pt.exists(name):
             os.mkdir(name)
+        else:
+            shutil.rmtree(name)
+            os.mkdir(name)
 
         #Save each state
         for state_name in self.states_dict.keys():
-            if is_container(self.states_dict[state_name]):
+            containerp = is_container(self.states_dict[state_name])
+            if containerp:
                 self.states_dict[state_name].save_child(name)
+                child = self.states_dict[state_name].abort_child()
 
             state_fname = pt.join(name, state_name) + '.state'
             pickle_file = open(state_fname, 'w')
+            #print 'SAVING STATE', state_name, self.states_dict[state_name]
             pk.dump(self.states_dict[state_name], pickle_file)
             pickle_file.close()
-
-            if is_container(self.states_dict[state_name]):
-                print 'document\'s path was', self.states_dict[state_name].document.get_filename()
+            if containerp:
+                #print 'document\'s path was', self.states_dict[state_name].document.get_filename()
+                self.states_dict[state_name].set_child(child)
 
         #Save connections
         edge_list = []

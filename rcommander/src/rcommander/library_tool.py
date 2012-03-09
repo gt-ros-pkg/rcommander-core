@@ -7,6 +7,8 @@ import glob
 import os.path as pt
 import cPickle as pk
 import shutil as su
+import graph_model as gm
+import state_machine_tool as smt
 
 #
 # Library nodes saved in ~/.rcommander/library/
@@ -124,6 +126,11 @@ class LibraryTool(tu.ToolBase):
         state_file = open(self.slist_dict[name_of_class][name_of_state]['file'], 'r')
         state = pk.load(state_file)
         state_file.close()
+        if gm.is_container(state):
+            state = state.load_and_recreate(self._get_library_home())
+            if isinstance(state, smt.StateMachineNode):
+                curr_document = gm.FSMDocument(state.get_name(), modified=True, real_filename=False)
+                state.get_child().set_document(curr_document)
 
         return state
 
@@ -157,13 +164,34 @@ class LibraryTool(tu.ToolBase):
             state_fname = pt.join(library_home, "%s_%d.state" % (state_node.get_name(), i))
             i = i + 1
 
-        #Save!
+        #######################################
+        # Save!
+        # Special saving for aborted
+        if gm.is_container(state_node):
+            state_node.save_child(library_home)
+            child = state_node.abort_child()
         state_file = open(state_fname, 'w')
         pk.dump(state_node, state_file)
         state_file.close()
+        if gm.is_container(state_node):
+            state_node.set_child(child)
 
         #Recreate everything in the GUI!
         self.activate_cb()
+
+        #for state_name in self.states_dict.keys():
+        #    containerp = is_container(self.states_dict[state_name])
+        #    if containerp:
+        #        self.states_dict[state_name].save_child(name)
+        #        child = self.states_dict[state_name].abort_child()
+        #    state_fname = pt.join(name, state_name) + '.state'
+        #    pickle_file = open(state_fname, 'w')
+        #    #print 'SAVING STATE', state_name, self.states_dict[state_name]
+        #    pk.dump(self.states_dict[state_name], pickle_file)
+        #    pickle_file.close()
+        #    if containerp:
+        #        #print 'document\'s path was', self.states_dict[state_name].document.get_filename()
+        #        self.states_dict[state_name].set_child(child)
 
     def delete_cb(self):
         index = self.tree_view.selectionModel().currentIndex()
@@ -175,8 +203,15 @@ class LibraryTool(tu.ToolBase):
         if not pt.exists(trash_home):
             os.mkdir(trash_home)
 
+        state_file = open(file_name, 'r')
+        state_node = pk.load(state_file)
+        state_file.close()
         su.move(file_name, pt.join(trash_home, pt.split(file_name)[1]))
         #Recreate everything in the GUI!
+        if isinstance(state_node, tu.EmbeddableState):
+            child_folder_name = pt.join(self._get_library_home(), pt.split(state_node.get_child_document().get_filename())[1])
+            #child_folder_name = state_node.get_child().get_document().get_filename()
+            su.move(child_folder_name, pt.join(trash_home, pt.split(child_folder_name)[1]))
         self.activate_cb()
 
 

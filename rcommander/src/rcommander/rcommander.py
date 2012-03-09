@@ -147,6 +147,8 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
     def add_tools(self, tools_list):
         #add tools to the right tab, creating tabs if needed
         self.button_group_tab = qtg.QButtonGroup()
+        #self.connect(self.button_group_tab, qtc.SIGNAL('clicked(int)'), self.button_group_clicked_cb)
+
         for tab_name, tool in tools_list:
             if not self.tabs.has_key(tab_name):
                 self._create_tab(tab_name)
@@ -188,6 +190,9 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
 
     def set_selected_tool(self, tool_name):
         self.selected_tool = tool_name
+
+    def get_selected_tool(self):
+        return self.selected_tool
 
     def run_state_machine(self, sm, graph_model):
         #if self.graph_model.sm_thread.has_key('run_sm'):
@@ -235,15 +240,21 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         self.ui.add_button.setDisabled(False)
         self.ui.save_button.setDisabled(False)
 
+
+    def notify_deselected_button(self):
+        selected_tool_class = self.get_selected_tool()
+        if selected_tool_class != None:
+            tool = self.tool_dict[selected_tool_class]['tool_obj']
+            tool.deselect_tool()
+
     def deselect_tool_buttons(self):
+        self.notify_deselected_button()
         self.button_group_tab.setExclusive(False)
         button = self.button_group_tab.checkedButton()
         #print button
         if button != None:
-            #print 'checked', button.isChecked(), button.isDown(), button.isCheckable(), button.text()
             button.setDown(False)
             button.setChecked(False)
-            #print 'checked2', button.isChecked(), button.isDown()
         self.button_group_tab.setExclusive(True)
 
     def edit_mode(self):
@@ -270,7 +281,6 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         #add in a new layout
         clayout = qtg.QVBoxLayout(container)
         clayout.setMargin(0)
-
         #add in a container widget
         self.ui.properties_tab = qtg.QWidget(container)
         pbox_layout = qtg.QFormLayout(self.ui.properties_tab)
@@ -293,7 +303,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
 
     def connection_changed(self, node_name, outcome_name, new_outcome):
         self.graph_model.connection_changed(node_name, outcome_name, new_outcome)
-        print 'connection_changed: State machine modified!'
+        #print 'connection_changed: State machine modified!'
         self.graph_model.document.modified = True
 
     def current_children_of(self, node_name):
@@ -317,6 +327,8 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
     ####################################################################################################################
     # All callbacks
     ####################################################################################################################
+    def notify_activated(self):
+        self.notify_deselected_button()
 
     def run_cb(self):
         if self.selected_tool == None:
@@ -377,9 +389,15 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
     def save_cb(self):
         tool_instance = self.tool_dict[self.selected_tool]['tool_obj']
         #old_smach_node = self.graph_model.get_smach_state()
+        #print 'save cb called!!!'
         old_node_name = tool_instance.get_current_node_name()
         # create a node with new settings
-        node = tool_instance.create_node(unique=False)
+        try:
+            node = tool_instance.create_node(unique=False)
+        except RuntimeError, e:
+            qtg.QMessageBox.information(self, str(self.objectName()), 
+                    'RuntimeError: ' + e.message)
+            return 
         # 'delete' old smach node
         self.graph_model.replace_node(node, old_node_name)
         #print 'TRANS!', smach_node.vels
@@ -387,7 +405,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
 
         # connection changes are made instantly (so don't worry about them)
         # only saving of internal node parameters must be implemented by client tools
-        print 'save_cb: State machine modified!'
+        #print 'save_cb: State machine modified!'
         self.graph_model.document.modified = True
 
     def start_state_cb(self):
@@ -462,7 +480,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         #print 'save_as_sm_cb:before', rospy.is_shutdown()
         filename = str(qtg.QFileDialog.getSaveFileName(self, 'Save As', self.graph_model.document.get_filename()))
         #print 'save_as_sm_cb: after', rospy.is_shutdown()
-        self._fix_shutdown_flag()
+        #self._fix_shutdown_flag()
 
         #user canceled
         if len(filename) == 0:
@@ -485,12 +503,12 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         self.graph_model.document.modified = False
         return True
 
-    def _fix_shutdown_flag(self):
-        pass
-        #TODO Figure out what this crap was about.
-        #Some messed up bug with QFileDialog!!!
-        #import rospy.core as rpc
-        #rpc._shutdown_flag = False
+    #def _fix_shutdown_flag(self):
+    #    pass
+    #    #TODO Figure out what this crap was about.
+    #    #Some messed up bug with QFileDialog!!!
+    #    #import rospy.core as rpc
+    #    #rpc._shutdown_flag = False
 
     def open_sm_cb(self):
         #prompt user if current document has not been saved
@@ -502,7 +520,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         dialog.setFileMode(qtg.QFileDialog.Directory)
         dialog.setViewMode(qtg.QFileDialog.List)
 
-        self._fix_shutdown_flag()
+        #self._fix_shutdown_flag()
         if dialog.exec_():
             filenames = dialog.selectedFiles()
             filename = str(filenames[0])
@@ -525,35 +543,37 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         #print 'open IS SHUTDOWN after', rospy.is_shutdown()
 
     ####################################################################################################################
-    # Graph Callbacks
+    # Graph Callbacks (called back from GraphModel)
     ####################################################################################################################
 
     def nothing_cb(self, pt):
+        self.deselect_tool_buttons()
+        self.set_selected_tool(None)
         self.set_selected_node(None)
         self.set_selected_edge(None, None, None)
         self.empty_properties_box()
         self.add_mode()
         self.disable_buttons()
-        self.deselect_tool_buttons()
 
     def node_cb(self, node):
-        #print '================================= NODECB'
+        # When called back here, let the currently selected tool know that
+        # it'll be *unselected*.
+
+        # That tool would then save its state as a node (?) then
+        # reload it when selected again.
+        #   Would this interfere with node creation?
+        #       only save nodes that have not been added to graph
+        #       new names only if no saved nodes exist
+        #       resetting *must* not create new names.
+        self.deselect_tool_buttons()
+
         self.set_selected_node(node.id)
         self.set_selected_edge(None, None, None)
         state = self.graph_model.get_state(node.id)
 
-        #if smach_state.__class__ == get.GripperEventState:
-        #    print 'remapping for', node.id, 'is', smach_state.remapping
-
-        #tool = self.tool_dict[smach_state.tool_name]['tool_obj']
         tool = self.tool_dict[state.__class__]['tool_obj']
         tool.button.setChecked(True)
-
-        #print '??????????'
         tool.activate_cb(state.get_name())
-        #print '??????????'
-
-        #self.set_selected_tool(smach_state.tool_name)
         self.set_selected_tool(state.__class__)
 
         self.edit_mode()
@@ -564,7 +584,6 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
             self.ui.run_button.setDisabled(False)
         else:
             self.ui.run_button.setDisabled(True)
-        #print '--------------------------------- NODECB'
 
     def edge_cb(self, edge):
         self.set_selected_edge(edge.node1.id, edge.node2.id, edge.label)
@@ -650,11 +669,12 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         rospy.signal_shutdown('User closed window.')
         self.app.quit()
 
-def run(robot, tf_listener, plugin_namespace):
+def run_rcommander(robot, tf_listener, plugin_namespace):
     import plugins 
     import state_machine_tool as smt
     import sleep_tool as st
     import pointcloud_click_tool as ptl
+    import freeze_frame_tool as frz
     #import point_tool as ptl
 
     #print 'RCOMMANDER 1EXP IS SHUTDOWN', rospy.is_shutdown()
@@ -672,10 +692,11 @@ def run(robot, tf_listener, plugin_namespace):
     # ['Graph', ptl.Point3DTool(rc)], 
     # ['Graph', smt.StateMachineTool(rc)]]
 
-    tools_list = [['Graph', ptl.PointCloudClickTool(rc)], 
-                  ['Graph', smt.StateMachineTool(rc)], 
-                  ['Graph', st.SleepTool(rc)],
-                  ['Graph', tt.TriggerTool(rc)]]
+    tools_list = [['Origins', ptl.PointCloudClickTool(rc)], 
+                  ['Origins', frz.FreezeFrameTool(rc)],
+                  ['Misc', smt.StateMachineTool(rc)], 
+                  ['Misc', st.SleepTool(rc)],
+                  ['Misc', tt.TriggerTool(rc)]]
     #print 'RCOMMANDER 3EXP IS SHUTDOWN', rospy.is_shutdown()
 
     plugin_clses = plugins.load_plugins(plugin_namespace)

@@ -40,27 +40,38 @@ class StateMachineTool(tu.ToolBase):
             self.filename_edit.setText(filename)
 
     def new_node(self, name=None):
-        if name == None:
-            nname = self.name + str(self.counter)
-        else:
-            nname = name
+        child_gm = self.child_gm
+        self.child_gm = None
 
-        if str(self.filename_edit.text()) != '...':
+        if (child_gm == None) and (str(self.filename_edit.text()) != '...'):
             #nname = pt.split(str(self.filename_edit.text()))[1]
-            self.child_gm = gm.GraphModel.load(str(self.filename_edit.text()))
-            nname = self.child_gm.document.get_name()
-
-        #if self.child_gm != None:
-        #    nname = self.child_gm.document.get_name()
-
-            return StateMachineNode(nname, self.child_gm)
+            print 'state machine tool loading', self.filename_edit.text()
+            child_gm = gm.GraphModel.load(str(self.filename_edit.text()))
+            #curr_document = gm.FSMDocument(child_gm.get_document().get_name(), modified=True, real_filename=False)
+            curr_document = gm.FSMDocument(name, modified=True, real_filename=False)
+            child_gm.set_document(curr_document)
         else:
-            raise RuntimeError('Need to specify filename.')
-            return None
+            if child_gm != None:
+                curr_document = gm.FSMDocument(name, modified=True, real_filename=False)
+                child_gm.set_document(curr_document)
+                return StateMachineNode(name, child_gm)
+            if name == None:
+                nname = self.name + str(self.counter)
+                return StateMachineNode(nname, None)
+            else:
+                #raise RuntimeError('Need to specify filename.')
+                return None
+
+        return StateMachineNode(name, child_gm)
 
     def set_node_properties(self, my_node):
         self.child_gm = my_node.child_gm
-        self.filename_edit.setText(self.child_gm.document.get_filename())
+        if self.child_gm == None:
+            return
+        if self.child_gm.get_document() != None:
+            fname = self.child_gm.get_document().get_filename()
+            if fname != None:
+                self.filename_edit.setText(fname)
 
     def reset(self):
         self.filename_edit.setText("...")
@@ -76,8 +87,8 @@ class StateMachineNode(tu.EmbeddableState):
         return StateMachineNodeSmach(self.child_gm)
 
     def recreate(self, graph_model):
-        return StateMachineNode(graph_model.document.get_name(), graph_model)
-
+        #return StateMachineNode(graph_model.document.get_name(), graph_model)
+        return StateMachineNode(self.get_name(), graph_model)
 
 class StateMachineNodeSmach(smach.State):
 
