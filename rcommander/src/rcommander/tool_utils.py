@@ -8,7 +8,8 @@ import actionlib_msgs.msg as am
 import os.path as pt
 from tf_broadcast_server.srv import GetTransforms
 import rospy
-
+import actionlib
+import smach
 
 
 status_dict = {am.GoalStatus.PENDING   : 'PENDING',
@@ -622,44 +623,64 @@ class SimpleStateBaseSmach(smach_ros.SimpleActionState):
         f = eval('self.goal_obj.%s' % self.goal_cb_str)
         return f(userdata, default_goal)
 
-#class SimpleStateBase(smach_ros.SimpleActionState, StateBase):
-#
-#    def __init__(self, name, action_name, action_type, goal_cb_str, input_keys=[]):
-#        #func = eval('self.%s' % goal_cb_str)
-#        #print dir(func)
-#        #func.get_registered_input_keys  = self.get_registered_input_keys
-#        #func.get_registered_output_keys = self.get_registered_output_keys
-#        #func.get_registered_outcomes    = self.get_registered_outcomes
-#        smach_ros.SimpleActionState.__init__(self, action_name, action_type, 
-#                goal_cb = SimpleStateCB(eval('self.%s' % goal_cb_str), input_keys, []))
-#
-#        StateBase.__init__(self, name)
-#        self.action_name = action_name
-#        self.action_type = action_type
-#        self.goal_cb_str = goal_cb_str
-#        self.input_keys = input_keys
-#
-#    def __call__(self, userdata, default_goal): 
-#        f = eval('self.%s' % self.goal_cb_str)
-#        return f(userdata, default_goal)
-#
-#    def __getstate__(self):
-#        sb_state = StateBase.__getstate__(self)
-#        return {'sb_state': sb_state, 
-#                'action_name': self.action_name, 
-#                'action_type': self.action_type, 
-#                'goal_cb_str': self.goal_cb_str, 
-#                'input_keys': self.input_keys}
-#
-#    def __setstate__(self, state):
-#        StateBase.__setstate__(self, state['sb_state'])
-#        self.action_name = state['action_name']
-#        self.action_type = state['action_type']
-#        self.goal_cb_str = state['goal_cb_str']
-#        self.input_keys  = state['input_keys']
-#        smach_ros.SimpleActionState.__init__(self, self.action_name, self.action_type, goal_cb = SimpleStateCB(eval('self.%s' % self.goal_cb_str), self.input_keys, []))
-               
 
+class ActionWithTimeoutSmach(smach.State):
+
+    def __init__(self, time_out, action_name, action_class):
+        smach.State.__init__(self, 
+                outcomes = ['succeeded', 'preempted', 'timed_out'], 
+                input_keys = [], output_keys = [])
+        self.action_client = actionlib.SimpleActionClient(action_name, action_class)
+        self.action_name = action_name
+        self.time_out = time_out
+
+    def get_goal(self):
+        pass
+
+    def process_result(self):
+        pass
+
+    def execute(self, userdata):
+        self.action_client.send_goal(self.get_goal())
+        state = self.action_client.get_state()
+
+        succeeded = False
+        preempted = False
+        r = rospy.Rate(30)
+        start_time = rospy.get_time()
+        while True:
+            #we have been preempted
+            if self.preempt_requested():
+                rospy.loginfo('%s: preempt requested' % self.action_name)
+                self.action_client.cancel_goal()
+                self.service_preempt()
+                preempted = True
+                break
+
+            if (rospy.get_time() - start_time) > self.time_out:
+                self.action_client.cancel_goal()
+                rospy.loginfo('%s: timed out!' % self.action_name)
+                succeeded = False
+                break
+
+            #print tu.goal_status_to_string(state)
+            if (state not in [am.GoalStatus.ACTIVE, am.GoalStatus.PENDING]):
+                if state == am.GoalStatus.SUCCEEDED:
+                    rospy.loginfo('%s: Succeeded!' % self.action_name)
+                    succeeded = True
+                break
+
+            state = self.action_client.get_state()
+            r.sleep()
+
+        if preempted:
+            return 'preempted'
+
+        if succeeded:
+            self.process_result(self.action_client.get_result())
+            return 'succeeded'
+
+        return 'timed_out'
 
 
 

@@ -128,7 +128,7 @@ class PointCloudClickTool(tu.ToolBase):
         self.yline.setText(str(0.))
         self.zline.setText(str(0.))
 
-        self.time_out_box.setValue(60.)
+        self.time_out_box.setValue(120.)
         self.wait_check.setCheckState(False)
         self.frame_box.set_text(self.default_frame)
         self.orientation_frame_box.set_text(self.default_frame)
@@ -149,8 +149,6 @@ class PointCloudClickTool(tu.ToolBase):
         self.orientation_frame_box.set_text(pose_stamped.header.frame_id)
         #idx = tu.combobox_idx(self.frame_box, pose_stamped.header.frame_id)
         #self.frame_box.setCurrentIndex(idx)
-        
-
 
 class WaitForMessage:
 
