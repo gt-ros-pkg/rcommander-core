@@ -47,7 +47,7 @@ class TFBroadcastServer:
                 o = posestamped.pose.orientation
                 self.broadcaster.sendTransform((p.x, p.y, p.z), 
                     (o.x, o.y, o.z, o.w), 
-                    rospy.Time.now(), parent, name)
+                    rospy.Time.now(), name, parent)
             #for posestamped, name, parent in self.tfdict:
             r.sleep()
 
