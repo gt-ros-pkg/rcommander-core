@@ -220,12 +220,10 @@ class ToolBase:
             self.rcommander.set_selected_tool(None)
 
         if self.saved_state != None and loaded_node_name == None:
-            #print 'SAVED STATE', self.saved_state
             self.set_node_properties(self.saved_state)
 
     def clear_saved_state(self):
         self.saved_state = None
-        print 'SAVED STATE CLEARED'
 
     #Called by RCommander when user deselects this tool
     def deselect_tool(self):
