@@ -6,6 +6,10 @@ import smach_ros
 import functools as ft
 import actionlib_msgs.msg as am
 import os.path as pt
+from tf_broadcast_server.srv import GetTransforms
+import rospy
+
+
 
 status_dict = {am.GoalStatus.PENDING   : 'PENDING',
                am.GoalStatus.ACTIVE    : 'ACTIVE',   
@@ -17,6 +21,37 @@ status_dict = {am.GoalStatus.PENDING   : 'PENDING',
                am.GoalStatus.RECALLING : 'RECALLING',
                am.GoalStatus.RECALLED  : 'RECALLED', 
                am.GoalStatus.LOST      : 'LOST'}    
+
+class ComboBox:
+
+    def __init__(self):
+        pass
+
+    def create_box(self, pbox):
+        box = qtg.QComboBox(pbox)
+        return box
+
+    def set_text(self, frame):
+        idx = combobox_idx(self.frame_box, frame)
+        self.frame_box.setCurrentIndex(idx)
+
+    def text(self):
+        return str(self.frame_box.currentText())
+
+class FrameBox(ComboBox):
+
+    def __init__(self, frames_service=None):
+        ComboBox.__init__(self)
+        if frames_service == None:
+            frames_service = rospy.ServiceProxy('get_transforms', GetTransforms)
+        self.frames_service = frames_service
+
+    def create_box(self, pbox):
+        self.frame_box = ComboBox.create_box(self, pbox)
+        for f in self.frames_service().frames:
+            self.frame_box.addItem(f)
+        self.setEnabled = self.frame_box.setEnabled
+        return self.frame_box
 
 def goal_status_to_string(status):
     return status_dict[status]
@@ -117,6 +152,8 @@ class SliderBox:
 
         self.container = container
         self.slider = slider
+        self.disp = disp
+        self.units = units
 
     def _slider_to_units(self, value):
         return ((value / 100.) * (self.max_value - self.min_value)) + self.min_value
@@ -129,6 +166,7 @@ class SliderBox:
 
     def set_value(self, value):
         self.slider.setValue(self._units_to_slider(value))
+        self.disp.setText('%3.2f %s' % (value, self.units))
 
 
 class ToolBase:
@@ -150,6 +188,9 @@ class ToolBase:
         #self.combo_box_cbs = {}
         self.counter = 0
 
+        self.node_exists = False
+        self.saved_state = None
+
     #def get_name(self):
     #    return self.name
 
@@ -159,23 +200,45 @@ class ToolBase:
         return self.button
 
     def activate_cb(self, loaded_node_name=None):
-        #import pdb
-        #pdb.set_trace()
+        self.rcommander.notify_activated()
+
+        self.node_exists = False
         self.rcommander.enable_buttons()
-        #self.loaded_node_name = None
         self.set_loaded_node_name(loaded_node_name)
         self.rcommander.add_mode()
         self.rcommander.empty_properties_box()
 
         if self.button.isChecked():
             #send fresh boxes out
-            self.rcommander.set_selected_tool(self.get_smach_class()) #This needs to appear *before* the various fills as they can fail
+            self.rcommander.set_selected_tool(self.get_smach_class())
+            #This needs to appear *before* the various fills as they can fail
             self.fill_property_box(self.rcommander.ui.properties_tab)
             self.fill_connections_box(self.rcommander.ui.connections_tab)
-            #self.rcommander.set_selected_tool(self.get_name())
-            #print 'setting selected tool to', self.get_smach_class()
+            self.rcommander.ui.node_settings_tabs.setCurrentIndex(0)
         else:
             self.rcommander.set_selected_tool(None)
+
+        if self.saved_state != None and loaded_node_name == None:
+            #print 'SAVED STATE', self.saved_state
+            self.set_node_properties(self.saved_state)
+
+    #Called by RCommander when user deselects this tool
+    def deselect_tool(self):
+        # Is the node we're displaying saved? has it been added??
+        if self.node_exists:
+            return
+        else:
+            #self.saved_state = self.create_node(unique=False)
+            try:
+                self.saved_state = self.new_node()
+            except Exception, e:
+                rospy.loginfo(str(e))
+
+        #create_node called when rcommander runs nodes
+        #                   when - adds nodes
+
+        #node_cb is called when add node is called
+        #save_cb
 
     #def get_outcomes(self):
     #    return self.new_node().get_registered_outcomes()
@@ -278,6 +341,7 @@ class ToolBase:
         return n
 
     def node_selected(self, node):
+        self.node_exists = True
         #print 'node name', node.get_name()
         outcome_list = self.rcommander.current_children_of(node.get_name())
         #print 'outcome_list', outcome_list
@@ -285,16 +349,7 @@ class ToolBase:
             if not self.outcome_inputs.has_key(outcome_name):
                 continue
             widget = self.outcome_inputs[outcome_name]
-            #print 'connect_node', connect_node
-            #print 'widget returned', widget.findText(connect_node)
             widget.setCurrentIndex(widget.findText(connect_node))
-        #print 'returned'
-
-        #Set default choices to new node info
-        #for outcome_name in node.outcome_choices:
-        #    selected = node.outcome_choices[outcome_name]
-        #    widget = self.outcome_inputs[outcome_name]
-        #    widget.setCurrentIndex(widget.findText(selected))
 
         self.name_input.setText(node.get_name())
         self.set_loaded_node_name(node.get_name())

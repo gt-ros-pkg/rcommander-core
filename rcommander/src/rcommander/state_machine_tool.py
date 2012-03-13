@@ -59,13 +59,15 @@ class StateMachineTool(tu.ToolBase):
                 nname = self.name + str(self.counter)
                 return StateMachineNode(nname, None)
             else:
-                raise RuntimeError('Need to specify filename.')
+                #raise RuntimeError('Need to specify filename.')
                 return None
 
         return StateMachineNode(name, child_gm)
 
     def set_node_properties(self, my_node):
         self.child_gm = my_node.child_gm
+        if self.child_gm == None:
+            return
         if self.child_gm.get_document() != None:
             fname = self.child_gm.get_document().get_filename()
             if fname != None:
