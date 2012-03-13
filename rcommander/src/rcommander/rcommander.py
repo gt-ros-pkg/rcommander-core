@@ -379,6 +379,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         self.tool_dict[self.selected_tool]['tool_obj'].refresh_connections_box()
         self.graph_view.refresh()
         self.graph_model.document.modified = True
+        tool_instance.clear_saved_state()
 
     def reset_cb(self):
         if self.selected_tool == None:
