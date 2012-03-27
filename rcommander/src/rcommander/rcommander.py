@@ -10,6 +10,7 @@ import rospy
 import sys
 import os.path as pt
 import time
+import signal
 
 #NodeBox 
 import graph
@@ -679,6 +680,7 @@ def run_rcommander(robot, tf_listener, plugin_namespace):
 
     #print 'RCOMMANDER 1EXP IS SHUTDOWN', rospy.is_shutdown()
     app = qtg.QApplication(sys.argv)
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
     rc = RCommander(app)#robot, tf_listener)
     app.connect(app, qtc.SIGNAL('lastWindowClosed()'), app.quit)
     app.connect(rc.ui.action_quit, qtc.SIGNAL('clicked()'), app.quit)
