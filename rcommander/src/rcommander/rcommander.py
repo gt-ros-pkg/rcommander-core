@@ -347,7 +347,9 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
             return
 
         #print 'selected tool ', self.selected_tool
-        tool_instance = self.tool_dict[self.selected_tool]['tool_obj']
+        selected_tool = self.selected_tool
+
+        tool_instance = self.tool_dict[selected_tool]['tool_obj']
         if hasattr(tool_instance, 'set_child_node'):
             if self.selected_node == None:
                 qtg.QMessageBox.information(self, str(self.objectName()), 'Need to have another node selected to create an instance of this node.')
@@ -377,9 +379,10 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
                 self.nothing_cb(None)
                 #self.selected_node = None
 
-        self.tool_dict[self.selected_tool]['tool_obj'].refresh_connections_box()
+        self.tool_dict[selected_tool]['tool_obj'].refresh_connections_box()
         self.graph_view.refresh()
         self.graph_model.document.modified = True
+        tool_instance.clear_saved_state()
 
     def reset_cb(self):
         if self.selected_tool == None:
