@@ -17,6 +17,7 @@
   <depend package="actionlib"/>
   <depend package="geometry_msgs"/>
   <depend package="tf"/>
+  <depend package="tf_broadcast_server"/>
 
 </package>
 

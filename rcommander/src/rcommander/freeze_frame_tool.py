@@ -4,7 +4,7 @@ from PyQt4.QtCore import *
 import smach
 import rospy
 from tf_broadcast_server.srv import BroadcastTransform, GetTransforms, ClearTransforms
-from object_manipulator.convert_functions import mat_to_pose, stamp_pose
+#from object_manipulator.convert_functions import mat_to_pose, stamp_pose
 import tf_utils as tfu
 import tool_utils as tu
 
@@ -99,7 +99,7 @@ class FreezeFrameStateSmach(smach.State):
     def execute(self, userdata):
         base_T_clone = tfu.tf_as_matrix(self.robot.tf_listener.lookupTransform(self.base_frame, 
                                         self.frame_to_clone, rospy.Time(0)))
-        pose = stamp_pose(mat_to_pose(base_T_clone), self.base_frame)
+        pose = tfu.stamp_pose(tfu.mat_to_pose(base_T_clone), self.base_frame)
         self.broadcast_transform_srv(self.new_frame_name, pose)
         return 'succeeded'
 

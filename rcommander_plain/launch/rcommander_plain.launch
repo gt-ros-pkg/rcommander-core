@@ -1,0 +1,4 @@
+<launch> 
+   <node pkg="rcommander_plain" type="rcommander_plain.py" output="screen" name="rcommander_plain"/>
+   <node pkg="tf_broadcast_server" type="tf_broadcast_server.py" output="screen" name="rcommander_tf_broadcast"/>
+</launch>
