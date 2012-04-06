@@ -339,6 +339,9 @@ class ToolBase:
         if unique:
             self.counter = self.counter + 1
         n = self.new_node(str(self.name_input.text()))
+        if unique:
+            self.node_exists = True
+            self.saved_state = None
         return n
 
     def node_selected(self, node):

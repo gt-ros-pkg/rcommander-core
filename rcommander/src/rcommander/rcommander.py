@@ -346,7 +346,6 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         if self.selected_tool == None:
             return
 
-        #print 'selected tool ', self.selected_tool
         tool_instance = self.tool_dict[self.selected_tool]['tool_obj']
         if hasattr(tool_instance, 'set_child_node'):
             if self.selected_node == None:
@@ -567,7 +566,6 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         #       new names only if no saved nodes exist
         #       resetting *must* not create new names.
         self.deselect_tool_buttons()
-
         self.set_selected_node(node.id)
         self.set_selected_edge(None, None, None)
         state = self.graph_model.get_state(node.id)
