@@ -131,8 +131,8 @@ class PointCloudClickTool(tu.ToolBase):
 
         self.time_out_box.setValue(120.)
         self.wait_check.setCheckState(False)
-        self.frame_box.set_text(self.default_frame)
-        self.orientation_frame_box.set_text(self.default_frame)
+        self.frame_box.set_text(self.default_frame, create=False)
+        self.orientation_frame_box.set_text(self.default_frame, create=False)
         #self.frame_box.setCurrentIndex(self.frame_box.findText(self.default_frame))
 
     def get_current_pose(self):

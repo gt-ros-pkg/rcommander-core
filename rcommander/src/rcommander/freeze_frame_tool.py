@@ -15,13 +15,13 @@ class BaseFrameBox(tu.FrameBox):
         self.baseframes = ['/map', '/base_link']
 
     def create_box(self, pbox):
-        self.frame_box = tu.ComboBox.create_box(self, pbox)
+        tu.ComboBox.create_box(self, pbox)
         possible_frames = self.frames_service().frames
         for f in self.baseframes:
             if f in possible_frames:
-                self.frame_box.addItem(f)
-        self.setEnabled = self.frame_box.setEnabled
-        return self.frame_box
+                self.combobox.addItem(f)
+        self.setEnabled = self.combobox.setEnabled
+        return self.combobox
 
 
 #class PointCloudClickTool(tu.ToolBase):
@@ -69,8 +69,8 @@ class FreezeFrameTool(tu.ToolBase):
         self.frame_box.set_text(node.frame_to_clone)
 
     def reset(self):
-        self.base_frame_box.set_text(self.default_baseframe)
-        self.frame_box.set_text(self.default_frame)
+        self.base_frame_box.set_text(self.default_baseframe, create=False)
+        self.frame_box.set_text(self.default_frame, create=False)
 
 
 class FreezeFrameState(tu.StateBase):
