@@ -29,15 +29,20 @@ class ComboBox:
         pass
 
     def create_box(self, pbox):
-        box = qtg.QComboBox(pbox)
-        return box
+        self.combobox = qtg.QComboBox(pbox)
 
-    def set_text(self, frame):
-        idx = combobox_idx(self.frame_box, frame)
-        self.frame_box.setCurrentIndex(idx)
+    ##
+    # Set selected item
+    #
+    # @param item item to set (string)
+    # @param create whether to create the item in this ComboBox if it isn't already there
+    def set_text(self, item, create=True):
+        idx = combobox_idx(self.combobox, item, create=create)
+        if idx != -1:
+            self.combobox.setCurrentIndex(idx)
 
     def text(self):
-        return str(self.frame_box.currentText())
+        return str(self.combobox.currentText())
 
 class FrameBox(ComboBox):
 
@@ -48,11 +53,11 @@ class FrameBox(ComboBox):
         self.frames_service = frames_service
 
     def create_box(self, pbox):
-        self.frame_box = ComboBox.create_box(self, pbox)
+        ComboBox.create_box(self, pbox)
         for f in self.frames_service().frames:
-            self.frame_box.addItem(f)
-        self.setEnabled = self.frame_box.setEnabled
-        return self.frame_box
+            self.combobox.addItem(f)
+        self.setEnabled = self.combobox.setEnabled
+        return self.combobox
 
 def goal_status_to_string(status):
     return status_dict[status]
@@ -89,14 +94,25 @@ def make_radio_box(parent, options, name_preffix):
 
     return container, radio_buttons
 
-def combobox_idx(combobox, name):
+##
+# Finds index of item in QComboBox
+#
+# @param combobox QComboBox object
+# @param name name of selection
+# @param create whether to create the item if it's not in the list
+def combobox_idx(combobox, name, create=True):
     if name == None:
         name = ' '
     idx = combobox.findText(name)
     if idx == -1:
-        combobox.addItem(name)
-        idx = combobox.findText(name)
+        if create == True:
+            combobox.addItem(name)
+            idx = combobox.findText(name)
+            return idx
+        else:
+            return -1
     return idx
+
 
 def double_spin_box(parent, minv, maxv, step):
     box = qtg.QDoubleSpinBox(parent)
@@ -220,8 +236,10 @@ class ToolBase:
             self.rcommander.set_selected_tool(None)
 
         if self.saved_state != None and loaded_node_name == None:
-            #print 'SAVED STATE', self.saved_state
             self.set_node_properties(self.saved_state)
+
+    def clear_saved_state(self):
+        self.saved_state = None
 
     #Called by RCommander when user deselects this tool
     def deselect_tool(self):

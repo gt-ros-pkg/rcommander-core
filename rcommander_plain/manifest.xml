@@ -1,0 +1,15 @@
+<package>
+  <description brief="rcommander_plain">
+
+      Package that launches a minimal version of RCommander and illustrates how to adapt it to different robots.
+
+  </description>
+  <author>haidai</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/rcommander_plain</url>
+  <depend package="rospy"/>
+  <depend package="rcommander"/>
+</package>
+
+

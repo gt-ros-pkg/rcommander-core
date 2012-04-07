@@ -4,7 +4,7 @@ from PyQt4.QtCore import *
 import smach
 import rospy
 from tf_broadcast_server.srv import BroadcastTransform, GetTransforms, ClearTransforms
-from object_manipulator.convert_functions import mat_to_pose, stamp_pose
+#from object_manipulator.convert_functions import mat_to_pose, stamp_pose
 import tf_utils as tfu
 import tool_utils as tu
 
@@ -15,13 +15,13 @@ class BaseFrameBox(tu.FrameBox):
         self.baseframes = ['/map', '/base_link']
 
     def create_box(self, pbox):
-        self.frame_box = tu.ComboBox.create_box(self, pbox)
+        tu.ComboBox.create_box(self, pbox)
         possible_frames = self.frames_service().frames
         for f in self.baseframes:
             if f in possible_frames:
-                self.frame_box.addItem(f)
-        self.setEnabled = self.frame_box.setEnabled
-        return self.frame_box
+                self.combobox.addItem(f)
+        self.setEnabled = self.combobox.setEnabled
+        return self.combobox
 
 
 #class PointCloudClickTool(tu.ToolBase):
@@ -69,8 +69,8 @@ class FreezeFrameTool(tu.ToolBase):
         self.frame_box.set_text(node.frame_to_clone)
 
     def reset(self):
-        self.base_frame_box.set_text(self.default_baseframe)
-        self.frame_box.set_text(self.default_frame)
+        self.base_frame_box.set_text(self.default_baseframe, create=False)
+        self.frame_box.set_text(self.default_frame, create=False)
 
 
 class FreezeFrameState(tu.StateBase):
@@ -99,7 +99,7 @@ class FreezeFrameStateSmach(smach.State):
     def execute(self, userdata):
         base_T_clone = tfu.tf_as_matrix(self.robot.tf_listener.lookupTransform(self.base_frame, 
                                         self.frame_to_clone, rospy.Time(0)))
-        pose = stamp_pose(mat_to_pose(base_T_clone), self.base_frame)
+        pose = tfu.stamp_pose(tfu.mat_to_pose(base_T_clone), self.base_frame)
         self.broadcast_transform_srv(self.new_frame_name, pose)
         return 'succeeded'
 

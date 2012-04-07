@@ -2,6 +2,50 @@ import numpy as np
 import tf.transformations as tr
 import geometry_msgs.msg as geo
 import rospy
+import tf
+
+#Copied (gasp!) from object_manipulator.convert_functions
+#(first premultiply by transform if given)
+def mat_to_pose(mat, transform = None):
+    if transform != None:
+        mat = transform * mat
+    pose = geo.Pose()
+    pose.position.x = mat[0,3]
+    pose.position.y = mat[1,3]
+    pose.position.z = mat[2,3]
+    quat = tf.transformations.quaternion_from_matrix(mat)
+    pose.orientation.x = quat[0]
+    pose.orientation.y = quat[1]
+    pose.orientation.z = quat[2]
+    pose.orientation.w = quat[3]
+    return pose
+
+##make a PoseStamped out of a Pose
+def stamp_pose(pose, frame_id):
+    pose_stamped = geo.PoseStamped()
+    stamp_msg(pose_stamped, frame_id)
+    pose_stamped.pose = pose
+    return pose_stamped
+
+##change the frame of a PoseStamped
+def change_pose_stamped_frame(tf_listener, pose, frame):
+
+    #convert the PoseStamped to the desired frame, if necessary
+    if pose.header.frame_id != frame:
+        pose.header.stamp = rospy.Time(0)
+        tf_listener.waitForTransform(frame, pose.header.frame_id, pose.header.stamp, rospy.Duration(5))
+        try:
+            trans_pose = tf_listener.transformPose(frame, pose)
+        except rospy.ServiceException, e:
+            print "pose:\n", pose
+            print "frame:", frame
+            rospy.logerr("change_pose_stamped_frame: error in transforming pose from " + pose.header.frame_id + " to " + frame + "error msg: %s"%e)
+            return None
+    else:
+        trans_pose = pose
+
+    return trans_pose
+
 
 def tf_as_matrix(tup):
     return np.matrix(tr.translation_matrix(tup[0])) * np.matrix(tr.quaternion_matrix(tup[1])) 
