@@ -673,61 +673,34 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         rospy.signal_shutdown('User closed window.')
         self.app.quit()
 
-def run_rcommander(robot, tf_listener, plugin_namespace):
+def run_rcommander(plugin_namespace, robot=None, tf_listener=None):
     import plugins 
     import state_machine_tool as smt
     import sleep_tool as st
     import pointcloud_click_tool as ptl
     import freeze_frame_tool as frz
-    #import point_tool as ptl
 
-    #print 'RCOMMANDER 1EXP IS SHUTDOWN', rospy.is_shutdown()
     app = qtg.QApplication(sys.argv)
     signal.signal(signal.SIGINT, signal.SIG_DFL)
-    rc = RCommander(app)#robot, tf_listener)
+    rc = RCommander(app)
     app.connect(app, qtc.SIGNAL('lastWindowClosed()'), app.quit)
     app.connect(rc.ui.action_quit, qtc.SIGNAL('clicked()'), app.quit)
     rc.set_robot(robot, tf_listener)
 
-    #print 'RCOMMANDER 2EXP IS SHUTDOWN', rospy.is_shutdown()
-    #rospy.init_node('rcommander', anonymous=True)
-
-    #Load plugins
-    # tools_list = [['Graph', st.SleepTool(rc)], 
-    # ['Graph', ptl.Point3DTool(rc)], 
-    # ['Graph', smt.StateMachineTool(rc)]]
-
-    tools_list = [['Origins', ptl.PointCloudClickTool(rc)], 
-                  ['Origins', frz.FreezeFrameTool(rc)],
-                  ['Misc', smt.StateMachineTool(rc)], 
-                  ['Misc', st.SleepTool(rc)],
-                  ['Misc', tt.TriggerTool(rc)]]
-    #print 'RCOMMANDER 3EXP IS SHUTDOWN', rospy.is_shutdown()
+    default_tools = [['Origins', ptl.PointCloudClickTool(rc), 'default_frame'], 
+                     ['Origins', frz.FreezeFrameTool(rc),     'default_frame'],
+                     ['Misc',    smt.StateMachineTool(rc),    'default'], 
+                     ['Misc',    st.SleepTool(rc),            'default'],
+                     ['Misc',    tt.TriggerTool(rc),          'default']]
+    tools_list = []
+    for n,t,ns in default_tools:
+        if ns in plugin_namespace:
+            tools_list.append([n,t])
 
     plugin_clses = plugins.load_plugins(plugin_namespace)
     for tab_name, pcls in plugin_clses:
         tools_list.append([tab_name, pcls(rc)])
     rc.add_tools(tools_list)
 
-    #print 'RCOMMANDER 4EXP IS SHUTDOWN', rospy.is_shutdown()
     rc.show()
     sys.exit(app.exec_())
-
-#if __name__ == '__main__':
-#    tf_listener = tf.TransformListener()
-#    run_rcommander()
-
-    #rc.add_tools([
-    #              ['Manipulation', tt.TuckTool(rc)],
-    #              ['Manipulation', lmt.LinearMoveTool(rc)],
-    #              ['Manipulation', mat.SafeMoveArmTool(rc)],
-    #              ['Manipulation', mt.JointSequenceTool(rc)],
-    #              ['Manipulation', gt.GripperTool(rc)],
-    #              ['Perception', ptl.Point3DTool(rc)],
-    #              ['Perception', get.GripperEventTool(rc)],
-    #              ['Navigation and Misc', nt.NavigateTool(rc)], 
-    #              ['Navigation and Misc', spt.SpineTool(rc)],
-    #              ['Navigation and Misc', smt.StateMachineTool(rc)],
-    #              ['Navigation and Misc', st.SleepTool(rc)],
-    #              ['Navigation and Misc', skt.SpeakTool(rc)]
-    #              ])

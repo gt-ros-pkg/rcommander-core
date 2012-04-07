@@ -5,5 +5,6 @@ import rospy
 import tf
 
 rospy.init_node('rcommander_plain', anonymous=True)
-rc.run_rcommander(['default', 'plain'])
-
+robot = None
+tf    = tf.TransformListener()
+rc.run_rcommander(['default', 'default_frame', 'plain'], robot, tf)
