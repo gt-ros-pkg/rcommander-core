@@ -12,6 +12,8 @@
   <depend package="rcommander"/>
   <export>
       <rcommander plugin="rcommander_plain.sleep_tool" robot="myrobot" tab="My Robot Actions"/>
+      <rcommander plugin="rcommander_plain.input_tool" robot="myrobot" tab="My Robot Actions"/>
+      <rcommander plugin="rcommander_plain.output_tool" robot="myrobot" tab="My Robot Actions"/>
   </export>
 </package>
 
