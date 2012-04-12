@@ -10,6 +10,9 @@
   <url>http://ros.org/wiki/rcommander_plain</url>
   <depend package="rospy"/>
   <depend package="rcommander"/>
+  <export>
+      <rcommander plugin="rcommander_plain.sleep_tool" robot="myrobot" tab="My Robot Actions"/>
+  </export>
 </package>
 
 
