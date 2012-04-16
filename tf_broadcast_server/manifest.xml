@@ -1,16 +1,14 @@
 <package>
   <description brief="tf_broadcast_server">
-
-     tf_broadcast_server
-
+    A server that lets clients post static transforms that will be 
+    broadcasted as tf messages.
   </description>
-  <author>haidai</author>
+  <author>Hai Nguyen (haidai@gmail.com)</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/tf_broadcast_server</url>
   <depend package="tf"/>
   <depend package="geometry_msgs"/>
-
 </package>
 
 

@@ -1,10 +1,10 @@
 <package>
   <description brief="nodebox_qt">
-
-     nodebox_qt
-
+     NodeBox is a Mac OS X application that lets you create 2D visuals (static, animated or interactive) using Python programming code and export them as a PDF, an image or a Quicktime movie. NodeBox is free and well-documented.
+     Frederik De Bleser, Tom De Smedt, Lucas Nijs (2002). NodeBox version 1.9.5 for Mac OS X. 
+     From NodeBoxQT, adapted as a rendering engine for RCommander by Hai Nguyen.
   </description>
-  <author>Hai Nguyen</author>
+  <author>Various (maintained by haidai@gmail.com)</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/nodebox_qt</url>
