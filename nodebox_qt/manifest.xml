@@ -4,7 +4,7 @@
      Frederik De Bleser, Tom De Smedt, Lucas Nijs (2002). NodeBox version 1.9.5 for Mac OS X. 
      From NodeBoxQT, adapted as a rendering engine for RCommander by Hai Nguyen.
   </description>
-  <author>Various (maintained by haidai@gmail.com)</author>
+  <author>Various (maintained by Hai Nguyen, haidai@gmail.com)</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/nodebox_qt</url>

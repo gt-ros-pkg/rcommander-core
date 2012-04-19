@@ -3,7 +3,7 @@
     A server that lets clients post static transforms that will be 
     broadcasted as tf messages.
   </description>
-  <author>Hai Nguyen (haidai@gmail.com)</author>
+  <author>Hai Nguyen (haidai@gmail.com) and Charles C. Kemp (Georgia Tech)</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/tf_broadcast_server</url>
