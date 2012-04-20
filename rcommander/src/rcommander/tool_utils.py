@@ -29,15 +29,20 @@ class ComboBox:
         pass
 
     def create_box(self, pbox):
-        box = qtg.QComboBox(pbox)
-        return box
+        self.combobox = qtg.QComboBox(pbox)
 
-    def set_text(self, frame):
-        idx = combobox_idx(self.frame_box, frame)
-        self.frame_box.setCurrentIndex(idx)
+    ##
+    # Set selected item
+    #
+    # @param item item to set (string)
+    # @param create whether to create the item in this ComboBox if it isn't already there
+    def set_text(self, item, create=True):
+        idx = combobox_idx(self.combobox, item, create=create)
+        if idx != -1:
+            self.combobox.setCurrentIndex(idx)
 
     def text(self):
-        return str(self.frame_box.currentText())
+        return str(self.combobox.currentText())
 
 class FrameBox(ComboBox):
 
@@ -48,11 +53,11 @@ class FrameBox(ComboBox):
         self.frames_service = frames_service
 
     def create_box(self, pbox):
-        self.frame_box = ComboBox.create_box(self, pbox)
+        ComboBox.create_box(self, pbox)
         for f in self.frames_service().frames:
-            self.frame_box.addItem(f)
-        self.setEnabled = self.frame_box.setEnabled
-        return self.frame_box
+            self.combobox.addItem(f)
+        self.setEnabled = self.combobox.setEnabled
+        return self.combobox
 
 def goal_status_to_string(status):
     return status_dict[status]
@@ -89,14 +94,25 @@ def make_radio_box(parent, options, name_preffix):
 
     return container, radio_buttons
 
-def combobox_idx(combobox, name):
+##
+# Finds index of item in QComboBox
+#
+# @param combobox QComboBox object
+# @param name name of selection
+# @param create whether to create the item if it's not in the list
+def combobox_idx(combobox, name, create=True):
     if name == None:
         name = ' '
     idx = combobox.findText(name)
     if idx == -1:
-        combobox.addItem(name)
-        idx = combobox.findText(name)
+        if create == True:
+            combobox.addItem(name)
+            idx = combobox.findText(name)
+            return idx
+        else:
+            return -1
     return idx
+
 
 def double_spin_box(parent, minv, maxv, step):
     box = qtg.QDoubleSpinBox(parent)
@@ -174,8 +190,6 @@ class ToolBase:
 
     def __init__(self, rcommander, name, button_name, smach_class):
         self.rcommander = rcommander
-        #self.properties_box = self.rcommander.ui.properties_tab
-        #self.connections_box = self.rcommander.ui.connections_tab
 
         self.name = name
         self.name_input = None
@@ -186,14 +200,10 @@ class ToolBase:
 
         self.smach_class = smach_class
         self.outcome_inputs = {}
-        #self.combo_box_cbs = {}
         self.counter = 0
 
         self.node_exists = False
         self.saved_state = None
-
-    #def get_name(self):
-    #    return self.name
 
     def create_button(self, container):
         self.button = create_tool_button(self.button_name, container)
@@ -220,8 +230,10 @@ class ToolBase:
             self.rcommander.set_selected_tool(None)
 
         if self.saved_state != None and loaded_node_name == None:
-            #print 'SAVED STATE', self.saved_state
             self.set_node_properties(self.saved_state)
+
+    def clear_saved_state(self):
+        self.saved_state = None
 
     #Called by RCommander when user deselects this tool
     def deselect_tool(self):
@@ -229,20 +241,10 @@ class ToolBase:
         if self.node_exists:
             return
         else:
-            #self.saved_state = self.create_node(unique=False)
             try:
                 self.saved_state = self.new_node()
             except Exception, e:
                 rospy.loginfo(str(e))
-
-        #create_node called when rcommander runs nodes
-        #                   when - adds nodes
-
-        #node_cb is called when add node is called
-        #save_cb
-
-    #def get_outcomes(self):
-    #    return self.new_node().get_registered_outcomes()
 
     def _get_outcome_choices(self):
         outcome_choices = {}
@@ -295,15 +297,12 @@ class ToolBase:
         current_node_name = current_node.get_name()
         self.name_input.setText(current_node_name)
 
-        #if not issubclass(current_node.__class__, InfoStateBase):
-
-        #for outcome in self.get_outcomes():
         if issubclass(current_node.__class__, EmptyState):
             return 
 
         registered_outcomes = list(current_node_smach.get_registered_outcomes())
         registered_outcomes.sort()
-        for outcome in registered_outcomes: #self.get_outcomes():
+        for outcome in registered_outcomes:
             #Make a new combobox and add available choices to it
             input_box = qtg.QComboBox(pbox)
             nodes = self.rcommander.connectable_nodes(self.get_current_node_name(), outcome)
@@ -346,9 +345,7 @@ class ToolBase:
 
     def node_selected(self, node):
         self.node_exists = True
-        #print 'node name', node.get_name()
         outcome_list = self.rcommander.current_children_of(node.get_name())
-        #print 'outcome_list', outcome_list
         for outcome_name, connect_node in outcome_list:
             if not self.outcome_inputs.has_key(outcome_name):
                 continue
@@ -364,111 +361,122 @@ class ToolBase:
         return self.smach_class
 
     ##
-    # @param pbox a QT widget using a FormLayout that can be filled with
+    # Responsible for setting up graphical widgets allowing users to edit the
+    # parameters of an action. Called when users click on a node of the class
+    # smach_class (given in constructor) and whenever this tool is selected via
+    # its menu bar button.
+    #
+    # @param pbox a QT widget with a FormLayout that can be filled with
     #             appropriate controls for this tool
+    #
     def fill_property_box(self, pbox):
         pass
 
     ##
-    # Called when user clicks Add
+    # When called must return an instance of smach_class (an object which
+    # inherits from tool_utils.StateBase given in constructor). 
+    #
+    # Called with a name parameter when users click the big Add button, called
+    # with a name=None by the connections tab to find out how many outgoing
+    # connections this node has.
     #
     # @return a valid smach state derived from StateBase
     def new_node(self, name=None):
         pass
 
     ##
-    # Called by parent when user selects a node created by this tool
+    # Called by parent when user selects a node created by this tool (of class
+    # smach_class).
     #
-    # @param node a State object created by this tool
+    # @param node a State object created by this tool of class smach_class
     def set_node_properties(self, node):
         pass
 
     ##
-    # Resets the state of this GUI tool, sets all options to sensible defaults
+    # Resets the state of this GUI tool, sets all options to sensible defaults.
+    # Called when users click the big Reset button.
+    #
     def reset(self):
         pass
 
 
-#class StateBase:
-#
-#    def __init__(self, name):
-#        self.name = name
-#        #self.tool_name = None
-#        #self.outcome_choices = []
-#        self.remapping = {}
-#        self.runnable = True
-#
-#    def is_runnable(self):
-#        return self.runnable
-#
-#    def set_runnable(self, v):
-#        self.runnable = v
-#
-#    def set_name(self, name):
-#        self.name = name
-#
-#    def get_name(self):
-#        return self.name
-#
-#    def get_registered_outcomes(self):
-#        return []
-#
-#    def __getstate__(self):
-#        #r = [self.name, self.tool_name, self.outcome_choices, self.remapping]
-#        r = [self.name, self.remapping, self.runnable]
-#        return r
-#
-#    def __setstate__(self, state):
-#        #print 'state base', state
-#        #print state
-#        #name, tool, remapping, runnable = state
-#        name, remapping, runnable = state
-#        self.name = name
-#        #self.tool_name = tool
-#        #self.outcome_choices = choices
-#        self.remapping = remapping
-#        self.runnable = runnable
-#        #print '>>>>', name, 'toolname set to', self.tool_name
-#
-#    def source_for(self, var_name):
-#        return self.remapping[var_name]
-#
-#    def set_source_for(self, var, source):
-#        self.remapping[var] = source
-
-
 class StateBase:
 
+    ##
+    # Base construction for a state.
+    #
+    # @param name name of this state
+    # @param outputs a dictionary mapping names (strings) to Python classes.
     def __init__(self, name, outputs={}):
         self.name = name
         self.remapping = {}
         self.runnable = True
         self.outputs = outputs
 
+    ##
+    # Returns a list of names of all declared outputs variables (same as the
+    # output variables in SMACH).
+    #
     def output_names(self):
         return self.outputs.keys()
 
+    ##
+    # Gives the type (class) of output with the given name.  Used by RCommander
+    # to match node's input with other node's outputs.
+    #
+    # @param name string, name of output whose class we are interested in.
     def output_type(self, name):
         return self.outputs[name]
-        
+    
+    ##
+    # Sets the name of this action, used when user sets name in the GUI's Connections
+    # tab.
+    #
+    # @param name string
     def set_name(self, name):
         self.name = name
 
+    ##
+    # Gets the name of this object.
+    #
     def get_name(self):
         return self.name
 
+    ##
+    # Gets the name of an output variable of another node in the state machine
+    # that maps to the input var_name in this node.
+    #
+    # @param var_name an input variable for this state
     def remapping_for(self, var_name):
         return self.remapping[var_name]
 
+    ##
+    # Sets the name of an output variable of another node in the state machine
+    # that maps to the input var_name in this node.
+    #
+    # @param var input variable for this node.
+    # @param remapped output variable of another node.
     def set_remapping_for(self, var, remapped):
         self.remapping[var] = remapped
 
+    ##
+    # Checks to see whether this node is executable.
+    #
     def is_runnable(self):
         return self.runnable
 
+    ##
+    # Identifies whether this node is executable or not (almost always this
+    # should be True.
+    #
+    # @param v boolean value
     def set_runnable(self, v):
         self.runnable = v
 
+    ##
+    # Returns an object that implements smach.State, needed by RCommander to
+    # create the final state machine.
+    #
     def get_smach_state(self):
         raise RuntimeError('Unimplemented method: get_smach_state')
 
@@ -486,23 +494,9 @@ class EmptyState(StateBase):
     def get_smach_state(self):
         return self
 
-#class InfoStateBase(StateBase):
+##
+# State that can be embedded as a child in other states.
 #
-#    GLOBAL_NAME = 'Global'
-#
-#    def __init__(self, name):
-#        StateBase.__init__(self, name)
-#        self.set_runnable(False)
-#
-#    def set_info(self, info):
-#        raise RuntimeError('Unimplemented method. set_info')
-#
-#    def get_info(self):
-#        raise RuntimeError('Unimplemented method. get_info')
-#
-#    def get_registered_outcomes(self):
-#        return [InfoStateBase.GLOBAL_NAME]
-
 class EmbeddableState(StateBase):
 
     def __init__(self, name, child_gm):
@@ -528,6 +522,8 @@ class EmbeddableState(StateBase):
         self.child_gm = child
 
     ##
+    # Look for remappings in child state machine.
+    #
     # @param child_gm GraphModel object
     def _init_child(self, child_gm):
         if child_gm != None:
@@ -539,6 +535,9 @@ class EmbeddableState(StateBase):
                     source = mapping[input_key]
                     self.set_remapping_for(source, source)
 
+    ##
+    # Saves child state machine to path given by base_path
+    #
     def save_child(self, base_path=""):
         child_gm = self.get_child()
         if child_gm.document.has_real_filename():
@@ -555,6 +554,9 @@ class EmbeddableState(StateBase):
 
         self.child_document = child_gm.document
 
+    ##
+    # Loads the child state machine and calls recreate on it.
+    #
     def load_and_recreate(self, base_path):
         import graph_model as gm
 
@@ -563,21 +565,17 @@ class EmbeddableState(StateBase):
         child_gm = gm.GraphModel.load(fname)
         return self.recreate(child_gm)
 
+    ##
+    # Returns the name of the child state machine.
+    #
     def get_child_name(self):
         return self.child_gm.get_start_state()
 
+    ##
+    # After being loaded from disk, recreates/clones the object
+    #
     def recreate(self, graph_model):
         raise RuntimeError('Unimplemented!!')
-
-#    def __getstate__(self):
-#        state = StateBase.__getstate__(self)
-#        my_state = [self.document]
-#        return {'state_base': state, 'self': my_state}
-#
-#    def __setstate__(self, state):
-#        StateBase.__setstate__(self, state['state_base'])
-#        self.document = state['self'][0]
-#        self.child_gm = None
 
 
 class SimpleStateCB:
@@ -599,9 +597,19 @@ class SimpleStateCB:
     def get_registered_outcomes(self):
         return []
 
-
+##
+# Implements a simple StateBase that calls an actionlib action
+#
 class SimpleStateBase(StateBase):
 
+    ##
+    #
+    # @param name
+    # @param action_name
+    # @param action_type
+    # @param goal_cb_str
+    # @param input_keys
+    # @param output_keys
     def __init__(self, name, action_name, action_type, goal_cb_str, input_keys=[], output_keys=[]):
         StateBase.__init__(self, name)
         self.action_name = action_name

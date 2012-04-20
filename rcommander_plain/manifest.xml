@@ -1,0 +1,20 @@
+<package>
+  <description brief="rcommander_plain">
+
+      Package that launches a minimal version of RCommander and illustrates how to adapt it to different robots.
+
+  </description>
+  <author>Hai Nguyen (haidai@gmail.com) and Charles C. Kemp (Georgia Tech)</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/rcommander_plain</url>
+  <depend package="rospy"/>
+  <depend package="rcommander"/>
+  <export>
+      <rcommander plugin="rcommander_plain.sleep_tool" robot="myrobot" tab="My Robot Actions"/>
+      <rcommander plugin="rcommander_plain.input_tool" robot="myrobot" tab="My Robot Actions"/>
+      <rcommander plugin="rcommander_plain.output_tool" robot="myrobot" tab="My Robot Actions"/>
+  </export>
+</package>
+
+
