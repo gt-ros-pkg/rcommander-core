@@ -20,6 +20,11 @@ def mat_to_pose(mat, transform = None):
     pose.orientation.w = quat[3]
     return pose
 
+##stamp a message by giving it a header with a timestamp of now
+def stamp_msg(msg, frame_id):
+    msg.header.frame_id = frame_id
+    msg.header.stamp = rospy.Time.now()
+
 ##make a PoseStamped out of a Pose
 def stamp_pose(pose, frame_id):
     pose_stamped = geo.PoseStamped()
