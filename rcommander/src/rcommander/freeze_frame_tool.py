@@ -62,7 +62,7 @@ class FreezeFrameTool(tu.ToolBase):
             nname = self.name + str(self.counter)
         else:
             nname = name
-        return FreezeFrameState(nname, self.base_frame_box.text(), self.frame_box.text())
+        return FreezeFrameState(nname, self.frame_box.text(), self.base_frame_box.text())
 
     def set_node_properties(self, node):
         self.base_frame_box.set_text(node.base_frame)
@@ -97,8 +97,9 @@ class FreezeFrameStateSmach(smach.State):
         self.robot = robot
 
     def execute(self, userdata):
-        base_T_clone = tfu.tf_as_matrix(self.robot.tf_listener.lookupTransform(self.base_frame, 
-                                        self.frame_to_clone, rospy.Time(0)))
+        base_T_clone = tfu.tf_as_matrix(self.robot.tf_listener.lookupTransform(self.base_frame, self.frame_to_clone, rospy.Time(0)))
+        #print 'BASE FRAME', self.base_frame, 'FRAME TO CLONE', self.frame_to_clone
+        #print base_T_clone
         pose = tfu.stamp_pose(tfu.mat_to_pose(base_T_clone), self.base_frame)
         self.broadcast_transform_srv(self.new_frame_name, pose)
         return 'succeeded'
