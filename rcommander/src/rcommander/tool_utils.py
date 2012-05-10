@@ -49,7 +49,7 @@ class FrameBox(ComboBox):
     def __init__(self, frames_service=None):
         ComboBox.__init__(self)
         if frames_service == None:
-            frames_service = rospy.ServiceProxy('get_transforms', GetTransforms)
+            frames_service = rospy.ServiceProxy('get_transforms', GetTransforms, persistent=True)
         self.frames_service = frames_service
 
     def create_box(self, pbox):

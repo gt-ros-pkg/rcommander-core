@@ -32,8 +32,8 @@ class FreezeFrameTool(tu.ToolBase):
         self.default_frame = '/l_gripper_tool_frame'
         self.default_baseframe = '/base_link'
         self.tf_listener = rcommander.tf_listener
-        self.frames_service = rospy.ServiceProxy('get_transforms', GetTransforms)
-        self.clear_frames_service = rospy.ServiceProxy('clear_all_transforms', ClearTransforms)
+        self.frames_service = rospy.ServiceProxy('get_transforms', GetTransforms, persistent=True)
+        self.clear_frames_service = rospy.ServiceProxy('clear_all_transforms', ClearTransforms, persistent=True)
 
     def fill_property_box(self, pbox):
         formlayout = pbox.layout()
