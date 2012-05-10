@@ -1,6 +1,6 @@
 <stack>
   <description brief="Graphical editor for SMACH.">Base packages for building graphical user interfaces that edit SMACH state machines.</description>
-  <author>Hai Nguyen (haidai@gmail.com), Charles C. Kemp (Georgia Tech)</author>
+  <author>Hai Nguyen (haidai@gmail.com), Advisor: Charles C. Kemp (Georgia Tech)</author>
   <license>BSD</license>  
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/rcommander_core</url>
