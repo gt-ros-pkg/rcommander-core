@@ -119,15 +119,20 @@ class GraphModel:
 
             pickle_file = open(fname, 'r')
             rospy.loginfo('Loading state %s' % sname)
-            gm.states_dict[sname] = pk.load(pickle_file)
-            gm.gve.add_node(sname, GraphModel.NODE_RADIUS)
-            pickle_file.close()
+            try:
+                gm.states_dict[sname] = pk.load(pickle_file)
+                pickle_file.close()
+                rospy.loginfo('Got an instance of %s' % str(gm.states_dict[sname].__class__))
+                if is_container(gm.states_dict[sname]):
+                    #print 'FIXME: load_and_recreate might not make sense anymore'
+                    gm.states_dict[sname] = gm.states_dict[sname].load_and_recreate(name)
 
-            rospy.loginfo('Got an instance of %s' % str(gm.states_dict[sname].__class__))
+                gm.gve.add_node(sname, GraphModel.NODE_RADIUS)
 
-            if is_container(gm.states_dict[sname]):
-                #print 'FIXME: load_and_recreate might not make sense anymore'
-                gm.states_dict[sname] = gm.states_dict[sname].load_and_recreate(name)
+            except Exception, e:
+                rospy.loginfo('Exception encountered while loading %s: %s. Omitting.' % (fname, str(e)))
+                if gm.states_dict.has_key(sname):
+                    gm.states_dict.pop(sname)
 
         #Reconstruct graph
         edges_filename = pt.join(name, GraphModel.EDGES_FILE)
@@ -135,7 +140,8 @@ class GraphModel:
         edges = pk.load(edges_pickle_file)
         edges_pickle_file.close()
         for node1, node2, n1_outcome in edges:
-            gm.gve.add_edge(node1, node2, label=n1_outcome, length=GraphModel.EDGE_LENGTH)
+            if gm.states_dict.has_key(node1) and gm.states_dict.has_key(node2):
+                gm.gve.add_edge(node1, node2, label=n1_outcome, length=GraphModel.EDGE_LENGTH)
 
         gm.set_document(FSMDocument(name, modified=False, real_filename=True))
 
@@ -157,6 +163,10 @@ class GraphModel:
         #Save each state
         for state_name in self.states_dict.keys():
             containerp = is_container(self.states_dict[state_name])
+
+            if state_name == 'position_priority0':
+                print state_name, containerp
+
             if containerp:
                 self.states_dict[state_name].save_child(name)
                 child = self.states_dict[state_name].abort_child()
