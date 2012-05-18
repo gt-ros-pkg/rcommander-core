@@ -164,9 +164,6 @@ class GraphModel:
         for state_name in self.states_dict.keys():
             containerp = is_container(self.states_dict[state_name])
 
-            if state_name == 'position_priority0':
-                print state_name, containerp
-
             if containerp:
                 self.states_dict[state_name].save_child(name)
                 child = self.states_dict[state_name].abort_child()
@@ -176,6 +173,7 @@ class GraphModel:
             #print 'SAVING STATE', state_name, self.states_dict[state_name]
             pk.dump(self.states_dict[state_name], pickle_file)
             pickle_file.close()
+
             if containerp:
                 #print 'document\'s path was', self.states_dict[state_name].document.get_filename()
                 self.states_dict[state_name].set_child(child)
