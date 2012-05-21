@@ -11,6 +11,7 @@ import sys
 import os.path as pt
 import time
 import signal
+import smach
 
 #NodeBox 
 import graph
@@ -84,6 +85,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         #self.connect(self.status_bar_timer, SIGNAL('timeout()'), self.status_bar_check)
         #self.status_bar_timer.start(100)
         self.status_bar_msg = ''
+        self.status_bar_exception = None
         
         #Connect to ROS & PR2 
         #if tf_listener == None:
@@ -196,21 +198,16 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         return self.selected_tool
 
     def run_state_machine(self, sm, graph_model):
-        #if self.graph_model.sm_thread.has_key('run_sm'):
         if self.graph_model.is_running():
             raise RuntimeError('Only state machine execution thread maybe be active at a time.')
 
-        #print 'run_state_machine called', self.graph_model.document.get_name()
-        #print 'executing here'
-        #print sm.execute()
-        #print 'done executing'
         graph_model.register_status_cb(self._state_machine_status_cb)
         cur_sm_thread = graph_model.run(graph_model.document.get_name(), state_machine=sm)
         #self.statusBar().showMessage('Running state machine %s.' % graph_model.document.get_name())
 
-    def _state_machine_status_cb(self, message):
+    def _state_machine_status_cb(self, message, exception=None):
         self.status_bar_msg = message
-        #self.statusBar().showMessage(message)
+        self.status_bar_exception = exception
 
     def check_current_document(self):
         if self.graph_model.document.modified:
@@ -667,6 +664,14 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
 
         if str(self.statusBar().currentMessage()) != self.status_bar_msg:
             self.statusBar().showMessage(self.status_bar_msg)
+
+        if self.status_bar_exception != None:
+            e = self.status_bar_exception
+            if e.__class__ == smach.InvalidStateError or e.__class__ == smach.InvalidTransitionError:
+                qtg.QMessageBox.information(self, str(self.objectName()), '%s: %s' % (str(e.__class__), str(e.message)))
+            else:
+                qtg.QMessageBox.information(self, str(self.objectName()), '%s: %s' % (str(e.__class__), str(e)))
+            self.status_bar_exception = None
 
     def quit_cb(self):
         self.stop_drawing()

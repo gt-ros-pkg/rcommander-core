@@ -118,11 +118,11 @@ class GraphModel:
                 continue
 
             pickle_file = open(fname, 'r')
-            rospy.loginfo('Loading state %s' % sname)
+            rospy.logdebug('Loading state %s' % sname)
             try:
                 gm.states_dict[sname] = pk.load(pickle_file)
                 pickle_file.close()
-                rospy.loginfo('Got an instance of %s' % str(gm.states_dict[sname].__class__))
+                rospy.logdebug('Got an instance of %s' % str(gm.states_dict[sname].__class__))
                 if is_container(gm.states_dict[sname]):
                     #print 'FIXME: load_and_recreate might not make sense anymore'
                     gm.states_dict[sname] = gm.states_dict[sname].load_and_recreate(name)
@@ -243,11 +243,16 @@ class GraphModel:
         self.status_cb_func = func
 
     def _sm_thread_termination_cb(self, exception):
-        #print 'THREAD TERMINATED CALLED'
         #print 'thread terminated'
         if exception != None:
             if self.status_cb_func != None:
-                self.status_cb_func('Error: %s' % str(exception))
+                #if exception.__class__ == smach.InvalidStateError:
+                #    self.status_cb_func('Error %s: %s' % (str(exception.__class__), exception.message))
+                #if exception.__class__ == smach.InvalidTransitionError:
+                #    self.status_cb_func('Error %s: %s' % (str(exception.__class__), exception.message))
+                #else:
+                self.status_cb_func('Error: %s' % str(exception.__class__), exception)
+                #self.status_cb_func('Error: %s' % str(exception.__class__))
 
         elif self.sm_thread['preempted'] != None:
             if self.status_cb_func != None:
@@ -278,7 +283,7 @@ class GraphModel:
         return self.last_outcome
 
     def _state_machine_termination_cb(self, userdata, terminal_states, container_outcome):
-        #print 'state machine termination CALLED'
+        print 'STATE MACHINE TERMINATION CALLED'
         self.sm_thread['current_states'] = terminal_states
         self.sm_thread['outcome'] = container_outcome
         self.last_outcome = [container_outcome, time.time()]
@@ -514,6 +519,9 @@ class GraphModel:
             #Link this node to all its outcomes
             self.gve.add_node(node.get_name(), radius=self.NODE_RADIUS)
             self.states_dict[node.get_name()] = node
+
+            if smach_node.__class__ == tu.EmptyState:
+                return
 
             #For each outcome
             for outcome in smach_node.get_registered_outcomes():
@@ -754,20 +762,21 @@ class GraphModel:
                 old_edge = edge
 
         #print node_name, outcome_name, new_node
-        if old_edge.node2.id == new_node:
-            return
+        if old_edge != None:
+            if old_edge.node2.id == new_node:
+                return
 
-        #print 'connection_changed', node_name, outcome_name, new_node
-        #remove the old connection
-        self.gve.remove_edge(node_name, old_edge.node2.id, label=old_edge.label)
-        #remove the old node if it's temporary 
-        #print 'The old edge is named', old_edge.node2.id, not self.is_modifiable(old_edge.node2.id)
-        if not self.is_modifiable(old_edge.node2.id):
-            #and not connected
-            #print 'it has this many edges', len(self.gve.node(old_edge.node2.id).edges)
-            if len(self.gve.node(old_edge.node2.id).edges) <= 0:
-                self.gve.remove_node(old_edge.node2.id)
-                self.states_dict.pop(old_edge.node2.id)
+            #print 'connection_changed', node_name, outcome_name, new_node
+            #remove the old connection
+            self.gve.remove_edge(node_name, old_edge.node2.id, label=old_edge.label)
+            #remove the old node if it's temporary 
+            #print 'The old edge is named', old_edge.node2.id, not self.is_modifiable(old_edge.node2.id)
+            if not self.is_modifiable(old_edge.node2.id):
+                #and not connected
+                #print 'it has this many edges', len(self.gve.node(old_edge.node2.id).edges)
+                if len(self.gve.node(old_edge.node2.id).edges) <= 0:
+                    self.gve.remove_node(old_edge.node2.id)
+                    self.states_dict.pop(old_edge.node2.id)
 
         #add new connection
         if self.gve.node(new_node) == None:
