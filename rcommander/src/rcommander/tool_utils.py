@@ -315,7 +315,7 @@ class ToolBase:
             formlayout.addRow(outcome, input_box)
             #set outcome as default
             #TODO abstract this line out
-            input_box.setCurrentIndex(input_box.findText(outcome))
+            #input_box.setCurrentIndex(input_box.findText(outcome))
             #store object
             self.outcome_inputs[outcome] = input_box
 
@@ -326,6 +326,8 @@ class ToolBase:
 
             outcome_cb = ft.partial(cb, outcome)
             self.rcommander.connect(input_box, qtc.SIGNAL('currentIndexChanged(int)'), outcome_cb)
+            if len(nodes) == 1:
+                self.rcommander.connection_changed(self.get_current_node_name(), outcome, nodes[0])
 
 
     def set_loaded_node_name(self, name):

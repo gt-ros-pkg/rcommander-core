@@ -289,7 +289,7 @@ class GraphModel:
         self.last_outcome = [container_outcome, time.time()]
 
         if self.status_cb_func != None:
-            self.status_cb_func('Stopped with outcome %s' % container_outcome)
+            self.status_cb_func('Finished with outcome %s' % container_outcome)
 
         #print '_state_machine_termination_cb userdata         ', userdata
         #print '_state_machine_termination_cb terminal_states  ', terminal_states
@@ -476,7 +476,7 @@ class GraphModel:
             #allowed_nodes = list(set(allowed_nodes))
             #print 'node name was NONE!', outcome, allowed_nodes
         else:
-	    for edge in self.gve.node(node_name).edges:
+    	    for edge in self.gve.node(node_name).edges:
                 #if this node currently has outcome remapped to a node that is not a dummy outcome
                 if edge.label == outcome and edge.node1.id == node_name and (not self._is_type(edge.node2.id, outcome)):
                     #make the outcome an option
@@ -582,7 +582,7 @@ class GraphModel:
         children_edges = []
         parent_edges = []
 
-        print 'deleting', node_name
+        #print 'deleting', node_name
         #Separate edges from parents and edges to children
         for cn in node_obj.links:
             for edge in self.gve.all_edges_between(node_name, cn.id):
@@ -613,17 +613,17 @@ class GraphModel:
             #Pick the first parent
             parent_node_id = parent_edges[0].node1.id
             parent_node = self.gve.node(parent_node_id)
-            print 'picked parent', parent_node_id
+            #print 'picked parent', parent_node_id
 
             #Create an index of siblings
             parents_children = {}
             for parent_outcome_name, sibling_node_name in self.current_children_of(parent_node_id):
                 parents_children[parent_outcome_name] = sibling_node_name
-            print 'siblings', parents_children
+            #print 'siblings', parents_children
 
             #For each child edge of ours
             for edge in filtered_children_edges:
-                print 'processing child edge', edge.node1.id, edge.label, edge.node2.id
+                #print 'processing child edge', edge.node1.id, edge.label, edge.node2.id
                 #node_outcome_name = edge.outcome
                 node_outcome_name = edge.label
 
@@ -740,6 +740,7 @@ class GraphModel:
 
     def connection_changed(self, node_name, outcome_name, new_node):
         #node is not valid or hasn't been created yet
+        #print 'connection_changed', node_name, outcome_name, new_node
         if node_name == None:
             return
 
