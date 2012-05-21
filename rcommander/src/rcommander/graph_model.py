@@ -407,6 +407,8 @@ class GraphModel:
         self.states_dict[node_name] = state
 
     def replace_node(self, new_node, old_node_name):
+        if self.states_dict.has_key(new_node.get_name()):
+            raise RuntimeError('There is already a node named %s.' % new_node.get_name())
         self.states_dict.pop(old_node_name)
         self.states_dict[new_node.get_name()] = new_node
         new_node_name = new_node.get_name()

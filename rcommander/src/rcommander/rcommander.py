@@ -349,7 +349,8 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         tool_instance = self.tool_dict[selected_tool]['tool_obj']
         if hasattr(tool_instance, 'set_child_node'):
             if self.selected_node == None:
-                qtg.QMessageBox.information(self, str(self.objectName()), 'Need to have another node selected to create an instance of this node.')
+                qtg.QMessageBox.information(self, str(self.objectName()), 
+                        'Need to have another node selected to create an instance of this node.')
                 return
             else:
                 state = self.graph_model.get_state(self.selected_node)
@@ -395,12 +396,12 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         # create a node with new settings
         try:
             node = tool_instance.create_node(unique=False)
+            self.graph_model.replace_node(node, old_node_name)
         except RuntimeError, e:
             qtg.QMessageBox.information(self, str(self.objectName()), 
                     'RuntimeError: ' + e.message)
             return 
         # 'delete' old smach node
-        self.graph_model.replace_node(node, old_node_name)
         #print 'TRANS!', smach_node.vels
         #self.graph_model.set_smach_state(old_smach_node.get_name(), smach_node)
 
