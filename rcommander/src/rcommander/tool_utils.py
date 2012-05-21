@@ -540,17 +540,17 @@ class EmbeddableState(StateBase):
     #
     def save_child(self, base_path=""):
         child_gm = self.get_child()
-        if child_gm.document.has_real_filename():
-            #print 'saving child to', child_gm.get_document().get_filename() 
-            child_gm.save(child_gm.get_document().get_filename())
+        #if child_gm.document.has_real_filename():
+        #    #print 'saving child to', child_gm.get_document().get_filename() 
+        #    child_gm.save(child_gm.get_document().get_filename())
+        #else:
+        fname = pt.join(base_path, child_gm.get_document().get_name())
+        #If child does not exists
+        if not pt.exists(fname):
+            child_gm.save(fname)
+            #print 'saving child to', fname
         else:
-            fname = pt.join(base_path, child_gm.get_document().get_name())
-            #If child does not exists
-            if not pt.exists(fname):
-                child_gm.save(fname)
-                #print 'saving child to', fname
-            else:
-                raise RuntimeError('FILE EXISTS. CAN\'T OVERWRITE')
+            raise RuntimeError('FILE EXISTS. CAN\'T OVERWRITE')
 
         self.child_document = child_gm.document
 
