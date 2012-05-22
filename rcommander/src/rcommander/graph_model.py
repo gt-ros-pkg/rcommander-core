@@ -283,7 +283,7 @@ class GraphModel:
         return self.last_outcome
 
     def _state_machine_termination_cb(self, userdata, terminal_states, container_outcome):
-        print 'STATE MACHINE TERMINATION CALLED'
+        #print 'STATE MACHINE TERMINATION CALLED'
         self.sm_thread['current_states'] = terminal_states
         self.sm_thread['outcome'] = container_outcome
         self.last_outcome = [container_outcome, time.time()]
@@ -407,8 +407,9 @@ class GraphModel:
         self.states_dict[node_name] = state
 
     def replace_node(self, new_node, old_node_name):
-        if self.states_dict.has_key(new_node.get_name()):
+        if new_node.get_name() != old_node_name and self.states_dict.has_key(new_node.get_name()):
             raise RuntimeError('There is already a node named %s.' % new_node.get_name())
+
         self.states_dict.pop(old_node_name)
         self.states_dict[new_node.get_name()] = new_node
         new_node_name = new_node.get_name()
