@@ -49,7 +49,7 @@ class FrameBox(ComboBox):
     def __init__(self, frames_service=None):
         ComboBox.__init__(self)
         if frames_service == None:
-            frames_service = rospy.ServiceProxy('get_transforms', GetTransforms)
+            frames_service = rospy.ServiceProxy('get_transforms', GetTransforms, persistent=True)
         self.frames_service = frames_service
 
     def create_box(self, pbox):
@@ -315,7 +315,7 @@ class ToolBase:
             formlayout.addRow(outcome, input_box)
             #set outcome as default
             #TODO abstract this line out
-            input_box.setCurrentIndex(input_box.findText(outcome))
+            #input_box.setCurrentIndex(input_box.findText(outcome))
             #store object
             self.outcome_inputs[outcome] = input_box
 
@@ -326,6 +326,8 @@ class ToolBase:
 
             outcome_cb = ft.partial(cb, outcome)
             self.rcommander.connect(input_box, qtc.SIGNAL('currentIndexChanged(int)'), outcome_cb)
+            if len(nodes) == 1:
+                self.rcommander.connection_changed(self.get_current_node_name(), outcome, nodes[0])
 
 
     def set_loaded_node_name(self, name):
@@ -540,17 +542,17 @@ class EmbeddableState(StateBase):
     #
     def save_child(self, base_path=""):
         child_gm = self.get_child()
-        if child_gm.document.has_real_filename():
-            #print 'saving child to', child_gm.get_document().get_filename() 
-            child_gm.save(child_gm.get_document().get_filename())
+        #if child_gm.document.has_real_filename():
+        #    #print 'saving child to', child_gm.get_document().get_filename() 
+        #    child_gm.save(child_gm.get_document().get_filename())
+        #else:
+        fname = pt.join(base_path, child_gm.get_document().get_name())
+        #If child does not exists
+        if not pt.exists(fname):
+            child_gm.save(fname)
+            #print 'saving child to', fname
         else:
-            fname = pt.join(base_path, child_gm.get_document().get_name())
-            #If child does not exists
-            if not pt.exists(fname):
-                child_gm.save(fname)
-                #print 'saving child to', fname
-            else:
-                raise RuntimeError('FILE EXISTS. CAN\'T OVERWRITE')
+            raise RuntimeError('FILE EXISTS. CAN\'T OVERWRITE')
 
         self.child_document = child_gm.document
 

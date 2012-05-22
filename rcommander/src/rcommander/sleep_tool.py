@@ -53,7 +53,7 @@ class SleepSmachState(smach.State):
         while (rospy.get_time() - start_time) < self.sleep_time:
             r.sleep()
             if self.preempt_requested():
-                self.services_preempt()
+                self.service_preempt()
                 return 'preempted'
         return 'done'
 #class SleepState(smach.State, tu.StateBase): 

@@ -17,8 +17,8 @@ class PointCloudClickTool(tu.ToolBase):
         tu.ToolBase.__init__(self, rcommander, 'create_origin', 'Create Origin', Point3DState)
         self.default_frame = '/base_link'
         self.tf_listener = rcommander.tf_listener
-        self.frames_service = rospy.ServiceProxy('get_transforms', GetTransforms)
-        self.clear_frames_service = rospy.ServiceProxy('clear_all_transforms', ClearTransforms)
+        self.frames_service = rospy.ServiceProxy('get_transforms', GetTransforms, persistent=True)
+        self.clear_frames_service = rospy.ServiceProxy('clear_all_transforms', ClearTransforms, persistent=True)
 
     def fill_property_box(self, pbox):
         formlayout = pbox.layout()

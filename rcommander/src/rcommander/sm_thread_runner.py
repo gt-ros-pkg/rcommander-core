@@ -45,6 +45,13 @@ class ThreadRunSM(threading.Thread):
             rospy.loginfo('ThreadRunSM: execution stopped by user.')
 
         if self.termination_func != None:
+            if self.outcome == None:
+                try:
+                    self.sm.check_consistency()
+                except smach.InvalidStateError, e:
+                    self.exception = e
+                except smach.InvalidTransitionError, e:
+                    self.exception = e
             self.termination_func(self.exception)
 
         #self.intro_server.stop()

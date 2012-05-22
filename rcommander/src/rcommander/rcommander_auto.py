@@ -277,7 +277,7 @@ class Ui_RCommanderWindow(object):
         self.menuActions.addAction(self.action_Run)
         self.menuActions.addAction(self.action_stop)
         self.menubar.addAction(self.menuFile.menuAction())
-        self.menubar.addAction(self.menuEdit.menuAction())
+        #self.menubar.addAction(self.menuEdit.menuAction())
         self.menubar.addAction(self.menuActions.menuAction())
 
         self.retranslateUi(RCommanderWindow)
