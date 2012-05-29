@@ -4,6 +4,7 @@ roslib.load_manifest('tf_broadcast_server')
 import rospy
 import tf
 from tf_broadcast_server.srv import *
+import re
 
 ##
 # contains a list of default 'good' frames, loaded in from parameter file
@@ -84,12 +85,20 @@ class TFBroadcastServer:
         valid_transforms = []
         tfkeys = ['/' + n for n in self.tfdict.keys()]
         frames = set(self.user_frames + tfkeys)
-        #print all_frames
-        #print '\n'
-        #print tfkeys
+
+
         for T in frames:
             if T in all_frames:
                 valid_transforms.append(T)
+
+        #match AR tool kit frames
+        fourfour = re.compile('^/4x4_\d+')
+
+        for T in all_frames: 
+            mobj = fourfour.match(T)
+            if mobj != None and not (T in valid_transforms):
+                valid_transforms.append(T)
+
         return valid_transforms
 
 
