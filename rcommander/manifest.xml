@@ -10,6 +10,7 @@
   <url>http://ros.org/wiki/rcommander_core</url>
 
   <rosdep name="python-qt4-gl"/>
+  <rosdep name="python-scipy"/>
   <depend package="rospy"/>
   <depend package="nodebox_qt"/>
   <depend package="smach"/>
