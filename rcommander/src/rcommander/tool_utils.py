@@ -655,45 +655,93 @@ class ActionWithTimeoutSmach(smach.State):
 
     def execute(self, userdata):
         self.action_client.send_goal(self.get_goal())
-        state = self.action_client.get_state()
-
-        succeeded = False
-        preempted = False
-        r = rospy.Rate(30)
-        start_time = rospy.get_time()
-        while True:
-            #we have been preempted
-            if self.preempt_requested():
-                rospy.loginfo('%s: preempt requested' % self.action_name)
-                self.action_client.cancel_goal()
-                self.service_preempt()
-                preempted = True
-                break
-
-            if (rospy.get_time() - start_time) > self.time_out:
-                self.action_client.cancel_goal()
-                rospy.loginfo('%s: timed out!' % self.action_name)
-                succeeded = False
-                break
-
-            #print tu.goal_status_to_string(state)
-            if (state not in [am.GoalStatus.ACTIVE, am.GoalStatus.PENDING]):
-                if state == am.GoalStatus.SUCCEEDED:
-                    rospy.loginfo('%s: Succeeded!' % self.action_name)
-                    succeeded = True
-                break
-
-            state = self.action_client.get_state()
-            r.sleep()
-
-        if preempted:
-            return 'preempted'
-
-        if succeeded:
+        result = monitor_goals(self, [self.action_client], self.action_name, self.time_out)
+        if result == 'succeeded':
             self.process_result(self.action_client.get_result())
-            return 'succeeded'
+        return result
 
-        return 'timed_out'
+        #state = self.action_client.get_state()
+        #succeeded = False
+        #preempted = False
+        #r = rospy.Rate(30)
+        #start_time = rospy.get_time()
+        #while True:
+        #    #we have been preempted
+        #    if self.preempt_requested():
+        #        rospy.loginfo('%s: preempt requested' % self.action_name)
+        #        self.action_client.cancel_goal()
+        #        self.service_preempt()
+        #        preempted = True
+        #        break
+
+        #    if (rospy.get_time() - start_time) > self.time_out:
+        #        self.action_client.cancel_goal()
+        #        rospy.loginfo('%s: timed out!' % self.action_name)
+        #        succeeded = False
+        #        break
+
+        #    #print tu.goal_status_to_string(state)
+        #    if (state not in [am.GoalStatus.ACTIVE, am.GoalStatus.PENDING]):
+        #        if state == am.GoalStatus.SUCCEEDED:
+        #            rospy.loginfo('%s: Succeeded!' % self.action_name)
+        #            succeeded = True
+        #        break
+
+        #    state = self.action_client.get_state()
+        #    r.sleep()
+
+        #if preempted:
+        #    return 'preempted'
+
+        #if succeeded:
+        #    self.process_result(self.action_client.get_result())
+        #    return 'succeeded'
+
+        #return 'timed_out'
+
+
+# returns one of failed, preempted, timed_out, or succeeded
+def monitor_goals(self, clients, name, timeout):
+    r = rospy.Rate(30)
+    status = 'failed'
+
+    start_time = rospy.get_time()
+    while not rospy.is_shutdown():
+        #we have been preempted
+        if self.preempt_requested():
+            rospy.loginfo(name + ': preempt requested')
+            [c.cancel_goal() for c in clients]
+            self.service_preempt()
+            status = 'preempted'
+            break
+    
+        if (rospy.get_time() - start_time) > timeout:
+            [c.cancel_goal() for c in clients]
+            rospy.loginfo(name + ': timed out!')
+            status = 'timed_out'
+            break
+    
+        #print tu.goal_status_to_string(state)
+        stopped_states = [s not in [am.GoalStatus.ACTIVE, am.GoalStatus.PENDING] for s in states]
+        if np.all(stopped_states):
+            #succeed if all states succeeded
+            if np.all([s == am.GoalStatus.SUCCEEDED for s in states]):
+                rospy.loginfo(name + ': Succeeded!')
+                status = 'succeeded'
+
+            #failed if any state failed
+            break
+    
+        states = [c.get_state() for c in clients]
+        r.sleep()
+
+    return status
+
+    
+
+
+
+
 
 
 
