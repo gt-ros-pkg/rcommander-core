@@ -24,6 +24,7 @@ class OutcomeTool(tu.ToolBase):
     def activate_cb(self, loaded_node_name=None):
         tu.ToolBase.activate_cb(self, loaded_node_name)
         self.outcome_mode()
+        self.rcommander.ui.add_button.setDisabled(False)
 
     def outcome_mode(self):
         cidx = self.rcommander.ui.node_settings_tabs.indexOf(self.rcommander.ui.connections_tab)
