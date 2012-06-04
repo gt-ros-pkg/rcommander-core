@@ -10,6 +10,7 @@ from tf_broadcast_server.srv import GetTransforms
 import rospy
 import actionlib
 import smach
+import numpy as np
 
 
 status_dict = {am.GoalStatus.PENDING   : 'PENDING',
@@ -705,6 +706,7 @@ def monitor_goals(self, clients, name, timeout):
     r = rospy.Rate(30)
     status = 'failed'
 
+    states = [c.get_state() for c in clients]
     start_time = rospy.get_time()
     while not rospy.is_shutdown():
         #we have been preempted
