@@ -79,6 +79,7 @@ class GraphModel:
 
         self.sm_thread = None
         self.status_cb_func = None
+        self.transition_cb = None
         self.last_outcome = None
         #self.add_outcome(tu.InfoStateBase.GLOBAL_NAME)
 
@@ -242,6 +243,12 @@ class GraphModel:
     def register_status_cb(self, func):
         self.status_cb_func = func
 
+    def register_transition_cb(self, func):
+        self.transition_cb = func
+
+    def register_start_cb(self, func):
+        self.start_cb = func
+
     def _sm_thread_termination_cb(self, exception):
         #print 'thread terminated'
         if exception != None:
@@ -264,6 +271,8 @@ class GraphModel:
         self.sm_thread['current_states'] = active_states
         if self.status_cb_func != None:
             self.status_cb_func('At state %s' % (active_states[0]))
+        if self.transition_cb != None:
+            self.transition_cb(active_states)
 
         #print '_state_machine_transition_cb: called back with', args, kwargs
         #print '_state_machine_transition_cb: _data', args[0]._data
@@ -276,6 +285,8 @@ class GraphModel:
         self.sm_thread['current_states'] = initial_states
         if self.status_cb_func != None:
             self.status_cb_func('At state %s.' % (initial_states[0]))
+        if self.start_cb != None:
+            self.start_cb(initial_states)
         #print '_state_machine_start_cb userdata      ', userdata
         #print '_state_machine_start_cb initial_states', initial_states
 
