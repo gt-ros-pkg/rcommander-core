@@ -86,7 +86,6 @@ class TFBroadcastServer:
         tfkeys = ['/' + n for n in self.tfdict.keys()]
         frames = set(self.user_frames + tfkeys)
 
-
         for T in frames:
             if T in all_frames:
                 valid_transforms.append(T)
@@ -105,7 +104,7 @@ class TFBroadcastServer:
 if __name__ == '__main__':
     rospy.init_node('tf_broadcast_server')
     user_frames = ['/base_link', '/torso_lift_link', '/r_gripper_tool_frame', 
-                   '/l_gripper_tool_frame', '/base_laser_link', '/laser_tilt_link', '/map']
+                   '/l_gripper_tool_frame', '/base_laser_link', '/laser_tilt_link', '/map', '/task_frame']
     server = TFBroadcastServer(user_frames)
     server.run()
 
