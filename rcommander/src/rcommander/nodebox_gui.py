@@ -53,11 +53,14 @@ class NodeBoxGUI:
         self.setup()
         self.animationTimer = qtc.QTimer(self)
         self.connect(self.animationTimer, qtc.SIGNAL("timeout()"), self._draw)
-        self.animationTimer.start(1000.0 / self.canvas.speed)
+        self.start_drawing()
         #print 'GUI IS SHUTDOWN??3', rospy.is_shutdown()
 
         #self.animation_runner = AnimationRunner(self._draw)
         #self.animation_runner.start()
+
+    def start_drawing(self):
+        self.animationTimer.start(1000.0 / self.canvas.speed)
 
     def stop_drawing(self):
         self.animationTimer.stop()

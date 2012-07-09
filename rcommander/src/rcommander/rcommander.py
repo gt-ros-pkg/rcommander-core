@@ -480,7 +480,9 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
     def save_as_sm_cb(self):
         #popup file dialog
         #print 'save_as_sm_cb:before', rospy.is_shutdown()
+        self.stop_drawing()
         filename = str(qtg.QFileDialog.getSaveFileName(self, 'Save As', self.graph_model.document.get_filename()))
+        self.start_drawing()
         #print 'save_as_sm_cb: after', rospy.is_shutdown()
         #self._fix_shutdown_flag()
 
