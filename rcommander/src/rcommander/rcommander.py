@@ -525,6 +525,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         dialog.setViewMode(qtg.QFileDialog.List)
 
         #self._fix_shutdown_flag()
+        self.stop_drawing()
         if dialog.exec_():
             filenames = dialog.selectedFiles()
             filename = str(filenames[0])
@@ -541,6 +542,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
             #Reset state of GUI
             self.nothing_cb(None)
             self._state_machine_status_cb(' ')
+        self.start_drawing()
 
             #self.document = FSMDocument(filename, modified=False, real_filename=True)
 
