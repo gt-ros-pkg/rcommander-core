@@ -81,6 +81,7 @@ class GraphModel:
         self.status_cb_func = None
         self.transition_cb = None
         self.last_outcome = None
+        self.start_cb = None
         #self.add_outcome(tu.InfoStateBase.GLOBAL_NAME)
 
     def get_start_state(self):
