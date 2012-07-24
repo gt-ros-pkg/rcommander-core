@@ -45,6 +45,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         self.app = app
         self.ui = Ui_RCommanderWindow()
         self.ui.setupUi(self)
+        self.resize(width, height)
         nbg.NodeBoxGUI.__init__(self, self.ui.graphicsSuperView)
 
         self.connect(self.ui.run_button,         qtc.SIGNAL('clicked()'), self.run_cb)
