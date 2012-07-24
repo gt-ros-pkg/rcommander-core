@@ -39,8 +39,9 @@ class FSMStackElement:
 
 class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
 
-    def __init__(self, app): #, robot, tf_listener=None):
+    def __init__(self, app, width, height): #, robot, tf_listener=None):
         qtg.QMainWindow.__init__(self)
+        self.size = [width, height]
         self.app = app
         self.ui = Ui_RCommanderWindow()
         self.ui.setupUi(self)
@@ -655,7 +656,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
     def setup(self):
         graph._ctx = self.context
         self.context.speed(30.)
-        self.context.size(700, 700)
+        self.context.size(self.size[0], self.size[1])
         self._set_model(gm.GraphModel())
 
     def draw(self, properties_dict):
@@ -683,7 +684,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         rospy.signal_shutdown('User closed window.')
         self.app.quit()
 
-def run_rcommander(plugin_namespace, robot=None, tf_listener=None):
+def run_rcommander(plugin_namespace, robot=None, tf_listener=None, width=600, height=600):
     import plugins 
     import state_machine_tool as smt
     import sleep_tool as st
@@ -692,7 +693,7 @@ def run_rcommander(plugin_namespace, robot=None, tf_listener=None):
 
     app = qtg.QApplication(sys.argv)
     signal.signal(signal.SIGINT, signal.SIG_DFL)
-    rc = RCommander(app)
+    rc = RCommander(app, width, height)
     app.connect(app, qtc.SIGNAL('lastWindowClosed()'), app.quit)
     app.connect(rc.ui.action_quit, qtc.SIGNAL('clicked()'), app.quit)
     rc.set_robot(robot, tf_listener)
