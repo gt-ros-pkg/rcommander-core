@@ -502,8 +502,8 @@ class EmptyState(StateBase):
 #
 class EmbeddableState(StateBase):
 
-    def __init__(self, name, child_gm):
-        StateBase.__init__(self, name)
+    def __init__(self, name, child_gm, outputs={}):
+        StateBase.__init__(self, name, outputs)
         self.child_gm = child_gm
         self.child_document = None 
 
