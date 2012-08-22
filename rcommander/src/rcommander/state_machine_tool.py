@@ -116,7 +116,7 @@ class StateMachineNodeSmach(smach.State):
 
         preempted = False
         r = rospy.Rate(30)
-        while True:
+        while not rospy.is_shutdown():
             if rthread.exception != None:
                 raise rthread.exception
 

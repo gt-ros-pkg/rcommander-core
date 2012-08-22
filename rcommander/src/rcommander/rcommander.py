@@ -391,6 +391,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         tool_instance.reset()
         
     def save_cb(self):
+        print 'SAVED CALLED'
         tool_instance = self.tool_dict[self.selected_tool]['tool_obj']
         #old_smach_node = self.graph_model.get_smach_state()
         #print 'save cb called!!!'

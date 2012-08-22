@@ -5,6 +5,7 @@ import smach
 import smach_ros
 import ctypes
 import time
+import sys
 
 class UserStoppedException:
     def __init__(self):
@@ -43,6 +44,14 @@ class ThreadRunSM(threading.Thread):
             #self.intro_server.stop()
             self.exception = e
             rospy.loginfo('ThreadRunSM: execution stopped by user.')
+
+        except smach.InvalidUserCodeError, e:
+            self.exception = e
+            rospy.loginfo('ThreadRunSM: unknown exception.')
+
+        except:
+            self.exception = Exception(str(sys.exc_info()[0]))
+            rospy.loginfo('ThreadRunSM: unknown exception.')
 
         if self.termination_func != None:
             if self.outcome == None:
