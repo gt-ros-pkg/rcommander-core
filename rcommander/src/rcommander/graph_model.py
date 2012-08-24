@@ -209,12 +209,9 @@ class GraphModel:
         return temp_gm.create_state_machine(robot), temp_gm
         #return temp_gm.create_state_machine(sm.userdata)
 
-
+    ##
+    # @param
     def run(self, name="", state_machine=None, userdata=None):
-        #if state_machine == None:
-        #    sm = child_gm.create_state_machine(userdata=userdata)
-        #else:
-        #    sm = state_machine
 
         sm = state_machine
         sm.register_transition_cb(self._state_machine_transition_cb)
@@ -318,26 +315,13 @@ class GraphModel:
         return filtered_output_variables
 
     def create_state_machine(self, robot, userdata=None, ignore_start_state=False):
-        #print '>>>>>>>>>>>>>> create_state_machine', userdata
         sm = smach.StateMachine(outcomes = self.outcomes())
-        #print 'sm userdata', sm.userdata, self.outcomes()
-
-        #Deprecated, global nodes are being replaced by nodes with outputs
-        #for global_node_name in self.global_nodes(None):
-        #    global_node = self.states_dict[global_node_name]
-        #    global_variable_name = global_node.get_name()
-        #    value = global_node.get_info()
-        #    exec_str = "sm.userdata.%s = value" % global_variable_name
-        #    print 'executing', exec_str
-        #    exec exec_str
 
         # Copy over input userdata into current state machine so that nodes contained
-        # would have access
+        # would have access.
         if userdata != None:
-            #print 'userdata keys', userdata.keys()
             for key in userdata.keys():
                 exec ("sm.userdata.%s = userdata.%s" % (key, key))
-                #print 'copying key', key
                 exec ("print 'data in key is', sm.userdata.%s" % (key))
 
         with sm:
@@ -345,9 +329,7 @@ class GraphModel:
                 node = self.states_dict[node_name]
 
                 node_smach = node.get_smach_state()
-                #print 'got smach state', node_smach.__class__
                 if hasattr(node_smach, 'set_robot'): 
-                    #print 'setting its robot variable'
                     node_smach.set_robot(robot)
 
                 transitions = {}
