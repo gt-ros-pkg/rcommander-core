@@ -499,6 +499,9 @@ class GraphModel:
         else:
             return True
 
+    def has_node_name(self, name):
+        return self.states_dict.has_key(name)
+
     def add_node(self, node):
         if self.states_dict.has_key(node.get_name()):
             node.set_name(node.get_name() + '_dup')

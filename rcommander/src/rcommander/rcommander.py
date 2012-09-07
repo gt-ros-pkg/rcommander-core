@@ -340,6 +340,9 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
             self.run_state_machine(singleton_sm, graph_model)
         except RuntimeError, e:
             qtg.QMessageBox.information(self, str(self.objectName()), 'RuntimeError: ' + e.message)
+
+    def has_node_name(self, node_name):
+        return self.graph_model.has_node_name(node_name)
     
     def add_cb(self):
         if self.selected_tool == None:
