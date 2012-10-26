@@ -367,7 +367,8 @@ def edges(s, edges, alpha=1.0, weighted=False, directed=False):
         try:  s2 = self.styles[e.node1.style]
         except: s2 = s
         if s2.edge_label:
-            s2.edge_label(s2, e, alpha)
+            pass
+            #s2.edge_label(s2, e, alpha)
 
 #--- EDGE --------------------------------------------------------------------------------------------
 

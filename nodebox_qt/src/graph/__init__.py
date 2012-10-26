@@ -285,14 +285,14 @@ class graph(dict):
         except:
             pass
 
-        self.times = {}
-        self.times['other'] = 0.
-        self.times['edges'] = 0.
-        self.times['nodes'] = 0.
-        self.times['events'] = 0.
-        self.times['path'] = 0.
-        self.times['node_ids'] = 0.
-        self.times['iter'] = 0
+        #self.times = {}
+        #self.times['other'] = 0.
+        #self.times['edges'] = 0.
+        #self.times['nodes'] = 0.
+        #self.times['events'] = 0.
+        #self.times['path'] = 0.
+        #self.times['node_ids'] = 0.
+        #self.times['iter'] = 0
 
     def _get_distance(self):
         return self.d / (node(None).r * 2.5)
@@ -539,9 +539,9 @@ class graph(dict):
         """
        
 
-        START_TIME = time.time()
+        #START_TIME = time.time()
         self.update()
-        OTHER_TIME = time.time()
+        #OTHER_TIME = time.time()
 
         # Draw the graph background.
         s = self.styles.default
@@ -570,7 +570,7 @@ class graph(dict):
         if s.edges:
             s.edges(s, self.edges, self.alpha, weighted, directed)
         
-        EDGES_TIME = time.time()
+        #EDGES_TIME = time.time()
         # Draw each node in the graph.
         # Apply individual style to each node (or default).        
         for n in self.nodes:
@@ -578,7 +578,7 @@ class graph(dict):
             except: s = self.styles.default
             if s.node:
                 s.node(s, n, self.alpha)
-        NODES_TIME = time.time()
+        #NODES_TIME = time.time()
         
         # Highlight the given shortest path.
         #try: s = self.styles.highlight
@@ -586,7 +586,7 @@ class graph(dict):
         #if s.path:
         #    s.path(s, self, highlight)
 
-        PATHS_TIME = time.time()
+        #PATHS_TIME = time.time()
 
         # Draw node id's as labels on each node.
         for n in self.nodes:
@@ -594,7 +594,7 @@ class graph(dict):
             except: s = self.styles.default
             if s.node_label:
                 s.node_label(s, n, self.alpha)
-        EVENTS_TIME = time.time()
+        #EVENTS_TIME = time.time()
 
         if user_draw_final != None:
             user_draw_final()
@@ -603,15 +603,15 @@ class graph(dict):
         # Nodes will resist being dragged by attraction and repulsion,
         # put the event listener on top to get more direct feedback.
         self.events.update()
-        NODE_IDS_TIME = time.time()
+        #NODE_IDS_TIME = time.time()
 
-        self.times['node_ids'] += NODE_IDS_TIME - EVENTS_TIME
-        self.times['path']     += EVENTS_TIME - PATHS_TIME
-        self.times['events']   += PATHS_TIME - NODES_TIME
-        self.times['nodes']    += NODES_TIME - EDGES_TIME
-        self.times['edges']    += EDGES_TIME - OTHER_TIME
-        self.times['other']    += OTHER_TIME - START_TIME
-        self.times['iter']     += 1
+        #self.times['node_ids'] += NODE_IDS_TIME - EVENTS_TIME
+        #self.times['path']     += EVENTS_TIME - PATHS_TIME
+        #self.times['events']   += PATHS_TIME - NODES_TIME
+        #self.times['nodes']    += NODES_TIME - EDGES_TIME
+        #self.times['edges']    += EDGES_TIME - OTHER_TIME
+        #self.times['other']    += OTHER_TIME - START_TIME
+        #self.times['iter']     += 1
 
         #print 'node_ids',1000.0 * (self.times['node_ids'] / self.times['iter']),
         #print 'path',    1000.0 * (self.times['path']     / self.times['iter']),
