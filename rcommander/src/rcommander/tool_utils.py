@@ -340,6 +340,8 @@ class ToolBase:
     def create_node(self, unique=True):
         if unique:
             n = self.new_node(str(self.name_input.text()))
+            if n == None:
+                return None
             has_node_name = self.rcommander.has_node_name(n.get_name())
             while has_node_name:
                 self.counter = self.counter + 1
