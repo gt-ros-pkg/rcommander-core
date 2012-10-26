@@ -336,6 +336,9 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         try:
             tool_instance = self.tool_dict[self.selected_tool]['tool_obj']
             node = tool_instance.create_node(unique=False)
+            if node == None:
+                qtg.QMessageBox.information(self, str("Run Error"), 'Unable to create node to run.')
+                return
             singleton_sm, graph_model = self.graph_model.create_singleton_statemachine(node, self.robot)
             self.run_state_machine(singleton_sm, graph_model)
         except RuntimeError, e:
@@ -394,7 +397,6 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         tool_instance.reset()
         
     def save_cb(self):
-        print 'SAVED CALLED'
         tool_instance = self.tool_dict[self.selected_tool]['tool_obj']
         #old_smach_node = self.graph_model.get_smach_state()
         #print 'save cb called!!!'
@@ -402,6 +404,9 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         # create a node with new settings
         try:
             node = tool_instance.create_node(unique=False)
+            if node == None:
+                qtg.QMessageBox.information(self, str("Save Error"), 'Unable to create state for saving. Do you have enough keyframes?')
+                return
             self.graph_model.replace_node(node, old_node_name)
         except RuntimeError, e:
             qtg.QMessageBox.information(self, str(self.objectName()), 
