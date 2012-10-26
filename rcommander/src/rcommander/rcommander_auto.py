@@ -326,9 +326,9 @@ class Ui_RCommanderWindow(object):
         self.actionPaste.setText(QtGui.QApplication.translate("RCommanderWindow", "Paste", None, QtGui.QApplication.UnicodeUTF8))
         self.actionCopy.setText(QtGui.QApplication.translate("RCommanderWindow", "&Copy", None, QtGui.QApplication.UnicodeUTF8))
         self.actionPaste0.setText(QtGui.QApplication.translate("RCommanderWindow", "&Paste", None, QtGui.QApplication.UnicodeUTF8))
-        self.action_Run.setText(QtGui.QApplication.translate("RCommanderWindow", "&Run", None, QtGui.QApplication.UnicodeUTF8))
+        self.action_Run.setText(QtGui.QApplication.translate("RCommanderWindow", "&Run State Machine", None, QtGui.QApplication.UnicodeUTF8))
         self.action_Run.setShortcut(QtGui.QApplication.translate("RCommanderWindow", "Ctrl+R", None, QtGui.QApplication.UnicodeUTF8))
-        self.action_stop.setText(QtGui.QApplication.translate("RCommanderWindow", "&Stop", None, QtGui.QApplication.UnicodeUTF8))
+        self.action_stop.setText(QtGui.QApplication.translate("RCommanderWindow", "&Stop State Machine", None, QtGui.QApplication.UnicodeUTF8))
         self.action_stop.setShortcut(QtGui.QApplication.translate("RCommanderWindow", "Ctrl+X", None, QtGui.QApplication.UnicodeUTF8))
 
 import resources_rc
