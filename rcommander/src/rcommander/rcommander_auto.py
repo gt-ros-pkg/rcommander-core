@@ -304,7 +304,7 @@ class Ui_RCommanderWindow(object):
         self.comboBox.setItemText(1, QtGui.QApplication.translate("RCommanderWindow", "aborted", None, QtGui.QApplication.UnicodeUTF8))
         self.comboBox.setItemText(2, QtGui.QApplication.translate("RCommanderWindow", "succeeded", None, QtGui.QApplication.UnicodeUTF8))
         self.node_settings_tabs.setTabText(self.node_settings_tabs.indexOf(self.connections_tab), QtGui.QApplication.translate("RCommanderWindow", "Connections", None, QtGui.QApplication.UnicodeUTF8))
-        self.run_button.setText(QtGui.QApplication.translate("RCommanderWindow", "Run", None, QtGui.QApplication.UnicodeUTF8))
+        self.run_button.setText(QtGui.QApplication.translate("RCommanderWindow", "Try", None, QtGui.QApplication.UnicodeUTF8))
         self.save_button.setText(QtGui.QApplication.translate("RCommanderWindow", "Save", None, QtGui.QApplication.UnicodeUTF8))
         self.add_button.setText(QtGui.QApplication.translate("RCommanderWindow", "Add", None, QtGui.QApplication.UnicodeUTF8))
         self.reset_button.setText(QtGui.QApplication.translate("RCommanderWindow", "Reset", None, QtGui.QApplication.UnicodeUTF8))
@@ -326,9 +326,9 @@ class Ui_RCommanderWindow(object):
         self.actionPaste.setText(QtGui.QApplication.translate("RCommanderWindow", "Paste", None, QtGui.QApplication.UnicodeUTF8))
         self.actionCopy.setText(QtGui.QApplication.translate("RCommanderWindow", "&Copy", None, QtGui.QApplication.UnicodeUTF8))
         self.actionPaste0.setText(QtGui.QApplication.translate("RCommanderWindow", "&Paste", None, QtGui.QApplication.UnicodeUTF8))
-        self.action_Run.setText(QtGui.QApplication.translate("RCommanderWindow", "&Run State Machine", None, QtGui.QApplication.UnicodeUTF8))
+        self.action_Run.setText(QtGui.QApplication.translate("RCommanderWindow", "&Run Behavior", None, QtGui.QApplication.UnicodeUTF8))
         self.action_Run.setShortcut(QtGui.QApplication.translate("RCommanderWindow", "Ctrl+R", None, QtGui.QApplication.UnicodeUTF8))
-        self.action_stop.setText(QtGui.QApplication.translate("RCommanderWindow", "&Stop State Machine", None, QtGui.QApplication.UnicodeUTF8))
+        self.action_stop.setText(QtGui.QApplication.translate("RCommanderWindow", "&Stop Behavior", None, QtGui.QApplication.UnicodeUTF8))
         self.action_stop.setShortcut(QtGui.QApplication.translate("RCommanderWindow", "Ctrl+X", None, QtGui.QApplication.UnicodeUTF8))
 
 import resources_rc
