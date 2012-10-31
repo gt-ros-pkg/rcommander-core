@@ -492,6 +492,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
 
     def save_sm_cb(self):
         #print 'has real filename?', self.document.has_real_filename()
+        self.save_cb()
         if self.graph_model.document.has_real_filename():
             self.graph_model.save(self.graph_model.document.get_filename())
             return True
@@ -501,6 +502,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
     def save_as_sm_cb(self):
         #popup file dialog
         #print 'save_as_sm_cb:before', rospy.is_shutdown()
+        self.save_cb()
         self.stop_drawing()
         filename = str(qtg.QFileDialog.getSaveFileName(self, 'Save As', self.graph_model.document.get_filename()))
         self.start_drawing()
