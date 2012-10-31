@@ -22,6 +22,8 @@ import graph_model as gm
 import outcome_tool as ot
 import library_tool as lb
 import trigger_tool as tt
+import tool_utils as tu
+
 #import pr2_utils as pu
 
 def split(num, factor):
@@ -328,6 +330,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
     # All callbacks
     ####################################################################################################################
     def notify_activated(self):
+        self.save_cb()
         self.notify_deselected_button()
 
     def run_cb(self):
@@ -397,28 +400,34 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         tool_instance.reset()
         
     def save_cb(self):
+        if self.selected_tool == None:
+            rospy.loginfo('No selected tool. Not saving')
+            return
+
         tool_instance = self.tool_dict[self.selected_tool]['tool_obj']
-        #old_smach_node = self.graph_model.get_smach_state()
-        #print 'save cb called!!!'
         old_node_name = tool_instance.get_current_node_name()
+
         # create a node with new settings
         try:
+            if not self.graph_model.has_node_name(old_node_name):
+                rospy.loginfo('Does not have node named %s in the graph already. not saving.')
+                return
+
+            if self.graph_model.get_state(old_node_name).__class__ == tu.EmptyState:
+                rospy.loginfo('Not saving outcome state.')
+                return
+
             node = tool_instance.create_node(unique=False)
             if node == None:
-                qtg.QMessageBox.information(self, str("Save Error"), 'Unable to create state for saving. Do you have enough keyframes?')
+                qtg.QMessageBox.information(self, str("Save Error"), 
+                        'Unable to create state for saving. Do you have enough keyframes?')
                 return
             self.graph_model.replace_node(node, old_node_name)
         except RuntimeError, e:
             qtg.QMessageBox.information(self, str(self.objectName()), 
                     'RuntimeError: ' + e.message)
             return 
-        # 'delete' old smach node
-        #print 'TRANS!', smach_node.vels
-        #self.graph_model.set_smach_state(old_smach_node.get_name(), smach_node)
 
-        # connection changes are made instantly (so don't worry about them)
-        # only saving of internal node parameters must be implemented by client tools
-        #print 'save_cb: State machine modified!'
         self.graph_model.document.modified = True
 
     def start_state_cb(self):
@@ -564,6 +573,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
     ####################################################################################################################
 
     def nothing_cb(self, pt):
+        self.save_cb()
         self.deselect_tool_buttons()
         self.set_selected_tool(None)
         self.set_selected_node(None)
@@ -573,15 +583,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         self.disable_buttons()
 
     def node_cb(self, node):
-        # When called back here, let the currently selected tool know that
-        # it'll be *unselected*.
-
-        # That tool would then save its state as a node (?) then
-        # reload it when selected again.
-        #   Would this interfere with node creation?
-        #       only save nodes that have not been added to graph
-        #       new names only if no saved nodes exist
-        #       resetting *must* not create new names.
+        self.save_cb()
         self.deselect_tool_buttons()
 
         self.set_selected_node(node.id)
