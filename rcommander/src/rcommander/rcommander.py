@@ -402,7 +402,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         
     def save_cb(self):
         if self.selected_tool == None:
-            rospy.loginfo('No selected tool. Not saving')
+            rospy.logdebug('No selected tool. Not saving')
             return
 
         tool_instance = self.tool_dict[self.selected_tool]['tool_obj']
@@ -411,11 +411,11 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         # create a node with new settings
         try:
             if not self.graph_model.has_node_name(old_node_name):
-                rospy.loginfo('Does not have node named %s in the graph already. not saving.' % old_node_name)
+                rospy.logdebug('Does not have node named %s in the graph already. not saving.' % old_node_name)
                 return
 
             if self.graph_model.get_state(old_node_name).__class__ == tu.EmptyState:
-                rospy.loginfo('Not saving outcome state.')
+                rospy.logdebug('Not saving outcome state.')
                 return
 
             node = tool_instance.create_node(unique=False)
@@ -424,12 +424,16 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
                         'Unable to create state for saving. Do you have enough keyframes?')
                 return
             self.graph_model.replace_node(node, old_node_name)
+            self.graph_model.document.modified = True
+
+        except IOError, e:
+            return
+
         except RuntimeError, e:
             qtg.QMessageBox.information(self, str(self.objectName()), 
                     'RuntimeError: ' + e.message)
             return 
 
-        self.graph_model.document.modified = True
 
     def start_state_cb(self):
         if self.selected_node != None:

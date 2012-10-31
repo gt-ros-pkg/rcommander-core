@@ -41,15 +41,17 @@ class StateMachineTool(tu.ToolBase):
 
     def new_node(self, name=None):
         child_gm = self.child_gm
+        #print name, child_gm, str(self.filename_edit.text())
         self.child_gm = None
 
         if (child_gm == None) and (str(self.filename_edit.text()) != '...'):
             #nname = pt.split(str(self.filename_edit.text()))[1]
-            print 'state machine tool loading', self.filename_edit.text()
+            rospy.loginfo('State machine tool loading %s'% self.filename_edit.text())
             child_gm = gm.GraphModel.load(str(self.filename_edit.text()))
             #curr_document = gm.FSMDocument(child_gm.get_document().get_name(), modified=True, real_filename=False)
             curr_document = gm.FSMDocument(name, modified=True, real_filename=False)
             child_gm.set_document(curr_document)
+            #print 'loaded file name is', name
         else:
             if child_gm != None:
                 curr_document = gm.FSMDocument(name, modified=True, real_filename=False)
@@ -72,10 +74,15 @@ class StateMachineTool(tu.ToolBase):
             fname = self.child_gm.get_document().get_filename()
             if fname != None:
                 self.filename_edit.setText(fname)
+                self.filename_edit.setDisabled(True)
+                self.open_file_button.setDisabled(True)
 
     def reset(self):
-        self.filename_edit.setText("...")
-        self.child_gm = None
+        if self.child_gm == None:
+            self.filename_edit.setDisabled(False)
+            self.open_file_button.setDisabled(False)
+            self.filename_edit.setText("...")
+            self.child_gm = None
 
 
 class StateMachineNode(tu.EmbeddableState):
