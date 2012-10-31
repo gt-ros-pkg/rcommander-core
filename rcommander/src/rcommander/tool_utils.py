@@ -24,6 +24,21 @@ status_dict = {am.GoalStatus.PENDING   : 'PENDING',
                am.GoalStatus.RECALLED  : 'RECALLED', 
                am.GoalStatus.LOST      : 'LOST'}    
 
+class TaskFrameError(Exception):
+    def __init__(self, node_name, destination):
+        self.node_name = node_name
+
+    def __str__(self):
+        return repr('Error: Node %s needs a task frame to relate to frame %s' 
+                % (self.node_name, self.destination))
+
+class FrameError(Exception):
+    def __init__(self, node_name, source, destination):
+        self.node_name = node_name
+        self.source = source
+        self.destination = destination
+
+
 class ComboBox:
 
     def __init__(self):

@@ -347,6 +347,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         except RuntimeError, e:
             qtg.QMessageBox.information(self, str(self.objectName()), 'RuntimeError: ' + e.message)
 
+
     def has_node_name(self, node_name):
         return self.graph_model.has_node_name(node_name)
     
@@ -410,7 +411,7 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         # create a node with new settings
         try:
             if not self.graph_model.has_node_name(old_node_name):
-                rospy.loginfo('Does not have node named %s in the graph already. not saving.')
+                rospy.loginfo('Does not have node named %s in the graph already. not saving.' % old_node_name)
                 return
 
             if self.graph_model.get_state(old_node_name).__class__ == tu.EmptyState:
@@ -685,10 +686,21 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
 
         if self.status_bar_exception != None:
             e = self.status_bar_exception
-            if e.__class__ == smach.InvalidStateError or e.__class__ == smach.InvalidTransitionError:
-                qtg.QMessageBox.information(self, str(self.objectName()), '%s: %s' % (str(e.__class__), str(e.message)))
+            if e.__class__ == smach.InvalidStateError or\
+                e.__class__ == smach.InvalidTransitionError or\
+                e.__class__ == smach.InvalidUserCodeError:
+
+                if str(e.message).find('TaskFrameError') != -1:
+                    qtg.QMessageBox.information(self, str(self.objectName()), 
+                            'Unable to transform using task frame.'+
+                            ' Is your intended task frame unselected? Make sure the frame is selected (colored red) by clicking on it.')
+                elif str(e.message).find('FrameError') != -1:
+                    qtg.QMessageBox.information(self, str(self.objectName()), 'Frame Error: unable to relate frames.')
+                else:
+                    qtg.QMessageBox.information(self, str(self.objectName()), '%s: %s' % (str(e.__class__), str(e.message)))
             else:
                 qtg.QMessageBox.information(self, str(self.objectName()), '%s: %s' % (str(e.__class__), str(e)))
+
             self.status_bar_exception = None
 
     def quit_cb(self):
