@@ -61,7 +61,8 @@ class GraphModel:
     #Misc information about graph itself
     NODES_FILE = 'nodes.graph'
 
-    NODE_RADIUS = 14
+    NODE_RADIUS = 16
+    OUTCOME_NODE_RADIUS = 10
 
     EDGE_LENGTH = 2.
 
@@ -129,7 +130,10 @@ class GraphModel:
                     #print 'FIXME: load_and_recreate might not make sense anymore'
                     gm.states_dict[sname] = gm.states_dict[sname].load_and_recreate(name)
 
-                gm.gve.add_node(sname, GraphModel.NODE_RADIUS)
+                if gm.states_dict[sname].__class__ == tu.EmptyState:
+                    gm.gve.add_node(sname, GraphModel.OUTCOME_NODE_RADIUS)
+                else:
+                    gm.gve.add_node(sname, GraphModel.NODE_RADIUS)
 
             except Exception, e:
                 rospy.loginfo('Exception encountered while loading %s: %s. Omitting.' % (fname, str(e)))
@@ -517,7 +521,11 @@ class GraphModel:
                 smach_node.set_robot(None)
 
             #Link this node to all its outcomes
-            self.gve.add_node(node.get_name(), radius=self.NODE_RADIUS)
+            if smach_node.__class__ == tu.EmptyState:
+                self.gve.add_node(node.get_name(), radius=self.OUTCOME_NODE_RADIUS)
+            else:
+                self.gve.add_node(node.get_name(), radius=self.NODE_RADIUS)
+
             self.states_dict[node.get_name()] = node
 
             if smach_node.__class__ == tu.EmptyState:
@@ -528,7 +536,7 @@ class GraphModel:
                 #Create an empty state and add an edge to it
                 outcome_name = self._create_outcome_name(outcome)
                 self.states_dict[outcome_name] = tu.EmptyState(outcome_name, temporary=True)
-                self.gve.add_node(outcome_name, radius=self.NODE_RADIUS)
+                self.gve.add_node(outcome_name, radius=self.OUTCOME_NODE_RADIUS)
                 self._add_edge(node.get_name(), outcome_name, outcome)
 
         else:
@@ -574,7 +582,7 @@ class GraphModel:
     #    self.add_node2(node)
 
     def add_outcome(self, outcome_name):
-        self.gve.add_node(outcome_name, radius=self.NODE_RADIUS)
+        self.gve.add_node(outcome_name, radius=self.OUTCOME_NODE_RADIUS)
         self.states_dict[outcome_name] = tu.EmptyState(outcome_name, False)
 
     def delete_node(self, node_name):
@@ -700,7 +708,7 @@ class GraphModel:
 
     def _add_temporary_outcome(self, outcome):
         self.states_dict[outcome] = tu.EmptyState(outcome, temporary=True)
-        self.gve.add_node(outcome, self.NODE_RADIUS)
+        self.gve.add_node(outcome, self.OUTCOME_NODE_RADIUS)
 
     def is_modifiable(self, node_name):
         if (self.states_dict[node_name].__class__ == tu.EmptyState) and self.states_dict[node_name].temporary:
@@ -747,7 +755,7 @@ class GraphModel:
         #if the new node is not in our database, just create it as an outcome node
         if not self.states_dict.has_key(new_node):
             self.states_dict[new_node] = tu.EmptyState(new_node, temporary=True)
-            self.gve.add_node(new_node, radius=self.NODE_RADIUS)
+            self.gve.add_node(new_node, radius=self.OUTCOME_NODE_RADIUS)
             #raise RuntimeError('Doesn\'t have state: %s' % new_node)
 
         #self.get_state(node_name).outcome_choices[outcome_name] = new_node
@@ -783,7 +791,7 @@ class GraphModel:
         if self.gve.node(new_node) == None:
             #print 'recreated node', new_node
             self.states_dict[new_node] = tu.EmptyState(new_node, temporary=True)
-            self.gve.add_node(new_node, self.NODE_RADIUS)
+            self.gve.add_node(new_node, self.OUTCOME_NODE_RADIUS)
         #print 'calling add_edge with a', node_name, 'b', new_node, 'outcome', outcome_name
         self._add_edge(node_name, new_node, outcome_name)
 
