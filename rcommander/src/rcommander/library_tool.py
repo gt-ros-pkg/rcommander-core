@@ -15,11 +15,16 @@ import state_machine_tool as smt
 #
 class LibraryTool(tu.ToolBase):
 
+    ## Constructor
+    # @param button The button for the library tool.
+    # @param rcommander RCommander object.
     def __init__(self, button, rcommander):
         tu.ToolBase.__init__(self, rcommander, 'library', 'Library', 'library')
         self.button = button
-        self.rcommander.connect(self.button, SIGNAL('clicked()'), self.activate_cb)
+        self.rcommander.connect(self.button, SIGNAL('clicked()'), 
+                self.activate_cb)
 
+    ## Create the QT tree display model
     def _create_tree_model(self):
         tree_model = QStandardItemModel()
         tree_model.setHorizontalHeaderLabels(['Saved States'])
@@ -36,7 +41,8 @@ class LibraryTool(tu.ToolBase):
             class_name = loaded_state.__class__.__name__
             if not slist_dict.has_key(class_name):
                 slist_dict[class_name] = {}
-            slist_dict[class_name][loaded_state.get_name()] = {'file': sfilename, 'state': loaded_state}
+            slist_dict[class_name][loaded_state.get_name()] = \
+                    {'file': sfilename, 'state': loaded_state}
             #slist_dict[class_name].append([sfilename, loaded_state])
 
         all_classes = slist_dict.keys()
@@ -58,9 +64,7 @@ class LibraryTool(tu.ToolBase):
 
         return tree_model, root_node, slist_dict
 
-    def edit_cb(self, index):
-        print 'edit called', index.row()
-
+    ## Inherted
     def fill_property_box(self, pbox):
         #Remove everything from parent container
         container = self.rcommander.ui.properties_container
@@ -91,8 +95,6 @@ class LibraryTool(tu.ToolBase):
         self.tree_model, root_node, self.slist_dict = self._create_tree_model()
         self.tree_view.setModel(self.tree_model)
         self.tree_view.expandAll()
-        #self.tree_view.setEditTriggers(QAbstractItemView.AllEditTriggers)
-        #self.rcommander.connect(self.tree_view, SIGNAL('edit(QModelIndex)'), self.edit_cb)
 
         self.button_panel = QWidget(container)
         bpanel_layout = QHBoxLayout(self.button_panel)
@@ -101,18 +103,22 @@ class LibraryTool(tu.ToolBase):
         self.delete_button = QPushButton(self.button_panel)
         self.delete_button.setText('Delete')
         bpanel_layout.addWidget(self.delete_button)
-        self.rcommander.connect(self.delete_button, SIGNAL('clicked()'), self.delete_cb)
+        self.rcommander.connect(self.delete_button, SIGNAL('clicked()'), 
+                self.delete_cb)
 
         clayout.addWidget(self.tree_view)
         clayout.addWidget(self.button_panel)
 
-        pidx = self.rcommander.ui.node_settings_tabs.indexOf(self.rcommander.ui.properties_container)
+        pidx = self.rcommander.ui.node_settings_tabs.indexOf(\
+                self.rcommander.ui.properties_container)
         self.rcommander.ui.node_settings_tabs.setCurrentIndex(pidx)
 
+    ## Inherited
     def fill_connections_box(self, pbox):
         self.name_input = QLineEdit()
         return
 
+    ## Inherited
     def new_node(self, name = None):
         #Get the current selected state, make a clone of it
         index = self.tree_view.selectionModel().currentIndex()
@@ -123,30 +129,32 @@ class LibraryTool(tu.ToolBase):
         if name_of_state == '':
             return None
 
-        state_file = open(self.slist_dict[name_of_class][name_of_state]['file'], 'r')
+        state_file = open(self.slist_dict[name_of_class][name_of_state]['file'],\
+                            'r')
         state = pk.load(state_file)
         state_file.close()
         if gm.is_container(state):
             state = state.load_and_recreate(self._get_library_home())
             if isinstance(state, smt.StateMachineNode):
-                curr_document = gm.FSMDocument(state.get_name(), modified=True, real_filename=False)
+                curr_document = gm.FSMDocument(state.get_name(), 
+                        modified=True, real_filename=False)
                 state.get_child().set_document(curr_document)
 
         return state
 
+    ## Don't need to display nodes created by the library tool
     def set_node_properties(self, my_node):
         pass
 
+    ## Inherited
     def reset(self):
         pass
 
+    ## Calc. path to library
     def _get_library_home(self):
         #create the library if it does not exist
         rcommander_home = pt.join(os.getenv("HOME"), '.rcommander')
         library_home = pt.join(rcommander_home, 'library')
-
-        #if not pt.exists(rcommander_home):
-        #    os.mkdir(rcommander_home)
 
         if not pt.exists(library_home):
             os.makedirs(library_home)
@@ -158,10 +166,12 @@ class LibraryTool(tu.ToolBase):
         library_home = self._get_library_home()
 
         #if there's a node in the library of the same name.
-        state_fname = pt.join(library_home, "%s.state" % (state_node.get_name()))
+        state_fname = pt.join(library_home, 
+                "%s.state" % (state_node.get_name()))
         i = 0
         while pt.exists(state_fname):
-            state_fname = pt.join(library_home, "%s_%d.state" % (state_node.get_name(), i))
+            state_fname = pt.join(library_home, 
+                    "%s_%d.state" % (state_node.get_name(), i))
             i = i + 1
 
         #######################################
@@ -179,20 +189,7 @@ class LibraryTool(tu.ToolBase):
         #Recreate everything in the GUI!
         self.activate_cb()
 
-        #for state_name in self.states_dict.keys():
-        #    containerp = is_container(self.states_dict[state_name])
-        #    if containerp:
-        #        self.states_dict[state_name].save_child(name)
-        #        child = self.states_dict[state_name].abort_child()
-        #    state_fname = pt.join(name, state_name) + '.state'
-        #    pickle_file = open(state_fname, 'w')
-        #    #print 'SAVING STATE', state_name, self.states_dict[state_name]
-        #    pk.dump(self.states_dict[state_name], pickle_file)
-        #    pickle_file.close()
-        #    if containerp:
-        #        #print 'document\'s path was', self.states_dict[state_name].document.get_filename()
-        #        self.states_dict[state_name].set_child(child)
-
+    ## Callback for delete button
     def delete_cb(self):
         index = self.tree_view.selectionModel().currentIndex()
         name_of_state = str(index.data(Qt.DisplayRole).toString())
@@ -209,9 +206,10 @@ class LibraryTool(tu.ToolBase):
         su.move(file_name, pt.join(trash_home, pt.split(file_name)[1]))
         #Recreate everything in the GUI!
         if isinstance(state_node, tu.EmbeddableState):
-            child_folder_name = pt.join(self._get_library_home(), pt.split(state_node.get_child_document().get_filename())[1])
-            #child_folder_name = state_node.get_child().get_document().get_filename()
-            su.move(child_folder_name, pt.join(trash_home, pt.split(child_folder_name)[1]))
+            child_folder_name = pt.join(self._get_library_home(), 
+                    pt.split(state_node.get_child_document().get_filename())[1])
+            su.move(child_folder_name, pt.join(trash_home, 
+                pt.split(child_folder_name)[1]))
         self.activate_cb()
 
 
