@@ -1,7 +1,9 @@
+##
+# Classes that can be inherited from to create ROS Commander plugins         ## 
+# and convenient utility functions.
+
 import PyQt4.QtGui as qtg
 import PyQt4.QtCore as qtc
-#from PyQt4.QtGui import *
-#from PyQt4.QtCore import *
 import smach_ros
 import functools as ft
 import actionlib_msgs.msg as am
@@ -12,7 +14,7 @@ import actionlib
 import smach
 import numpy as np
 
-
+## Mappings from goal statuses to strings.
 status_dict = {am.GoalStatus.PENDING   : 'PENDING',
                am.GoalStatus.ACTIVE    : 'ACTIVE',   
                am.GoalStatus.PREEMPTED : 'PREEMPTED',
@@ -22,8 +24,15 @@ status_dict = {am.GoalStatus.PENDING   : 'PENDING',
                am.GoalStatus.PREEMPTING: 'PREEMPTING',
                am.GoalStatus.RECALLING : 'RECALLING',
                am.GoalStatus.RECALLED  : 'RECALLED', 
-               am.GoalStatus.LOST      : 'LOST'}    
+               am.GoalStatus.LOST      : 'LOST'}
 
+## Converts goal statuses to strings
+# @param status status code from status_dict above.
+def goal_status_to_string(status):
+    return status_dict[status]
+
+## ROS Commander exception thrown in cases where executing SMACH nodes
+# run into any type of error with TaskFrames.
 class TaskFrameError(Exception):
     def __init__(self, node_name, destination):
         self.node_name = node_name
@@ -32,23 +41,25 @@ class TaskFrameError(Exception):
         return repr('Error: Node %s needs a task frame to relate to frame %s' 
                 % (self.node_name, self.destination))
 
+## ROS Commander exception thrown in clases where executing SMACH noes
+# run into any kind of tf error.
 class FrameError(Exception):
     def __init__(self, node_name, source, destination):
         self.node_name = node_name
         self.source = source
         self.destination = destination
 
-
+## Creates and manage a QT combo box.
 class ComboBox:
 
     def __init__(self):
         pass
 
+    ## Creates the combo box
     def create_box(self, pbox):
         self.combobox = qtg.QComboBox(pbox)
 
-    ##
-    # Set selected item
+    ## Sets selected item
     #
     # @param item item to set (string)
     # @param create whether to create the item in this ComboBox if it isn't already there
@@ -57,17 +68,22 @@ class ComboBox:
         if idx != -1:
             self.combobox.setCurrentIndex(idx)
 
+    ## Gets currently selected text.
     def text(self):
         return str(self.combobox.currentText())
 
+## Creates and manage a ComboBox that stores TF frame names.
 class FrameBox(ComboBox):
 
+    ## Constructor
+    # @param frames_service A rospy.ServiceProxy object to GetTransforms.
     def __init__(self, frames_service=None):
         ComboBox.__init__(self)
         if frames_service == None:
             frames_service = rospy.ServiceProxy('get_transforms', GetTransforms, persistent=True)
         self.frames_service = frames_service
 
+    ## Creates the ComboBox
     def create_box(self, pbox):
         ComboBox.create_box(self, pbox)
         for f in self.frames_service().frames:
@@ -75,9 +91,7 @@ class FrameBox(ComboBox):
         self.setEnabled = self.combobox.setEnabled
         return self.combobox
 
-def goal_status_to_string(status):
-    return status_dict[status]
-
+## Creates a button in ROS Commander for the given tool (called by ToolBase)
 def create_tool_button(name, container):
     button = qtg.QToolButton(container)
     sizePolicy = qtg.QSizePolicy(qtg.QSizePolicy.Expanding, qtg.QSizePolicy.Fixed)
@@ -92,6 +106,10 @@ def create_tool_button(name, container):
     button.setText(qtg.QApplication.translate("RCommanderWindow", name, None, qtg.QApplication.UnicodeUTF8))
     return button
 
+## Makes a QT radio box.
+# @param parent Parent QT object.
+# @param options Options to display in radio box (list of strings).
+# @param name_preffix Prefix for names of containers created (string).
 def make_radio_box(parent, options, name_preffix):
     container_name = name_preffix + '_radio_box'
 
@@ -110,8 +128,7 @@ def make_radio_box(parent, options, name_preffix):
 
     return container, radio_buttons
 
-##
-# Finds index of item in QComboBox
+## Finds index of item in QComboBox
 #
 # @param combobox QComboBox object
 # @param name name of selection
@@ -129,7 +146,10 @@ def combobox_idx(combobox, name, create=True):
             return -1
     return idx
 
-
+## Creates a QT double spin box
+# @param minv Mininum value allowed in spin box (double).
+# @param maxv Maximum value allowed in spin box (double).
+# @param step Amount to increment at each click (double).
 def double_spin_box(parent, minv, maxv, step):
     box = qtg.QDoubleSpinBox(parent)
     box.setMinimum(minv)
@@ -137,6 +157,7 @@ def double_spin_box(parent, minv, maxv, step):
     box.setSingleStep(step)
     return box
 
+## Gets the value of the currently selected radio button.
 def selected_radio_button(buttons_list):
     selected = None
     for r in buttons_list:
@@ -144,9 +165,20 @@ def selected_radio_button(buttons_list):
             selected = str(r.text())
     return selected
 
+## Creates a QT Slider
 class SliderBox:
 
-    def __init__(self, parent, initial_value, max_value, min_value, ticks, name_preffix, units=''):
+    ## Constructor
+    #
+    # @param parent Parent widget (QtWidget)
+    # @param initial_value Initial value for slider (double).
+    # @param max_value Maximum value for slider (double).
+    # @param min_value Minimum value for slider (double).
+    # @param ticks Size of each tick (double).
+    # @param name_preffix Prefix for name of objects created.
+    # @param unit Unit of slider.
+    def __init__(self, parent, initial_value, max_value, min_value, ticks, 
+            name_preffix, unit=''):
         self.min_value = min_value
         self.max_value = max_value
 
@@ -163,7 +195,7 @@ class SliderBox:
         
         disp = qtg.QLabel(container)
         disp.setObjectName(disp_name)
-        disp.setText('%.2f %s' % (initial_value, units))
+        disp.setText('%.2f %s' % (initial_value, unit))
 
         slider = qtg.QSlider(container)
         slider.setSingleStep(1)
@@ -180,30 +212,37 @@ class SliderBox:
 
         def slider_moved_cb(disp, value):
             cv = self._slider_to_units(value)
-            disp.setText('%3.2f %s' % (cv, units))
+            disp.setText('%3.2f %s' % (cv, unit))
         parent.connect(slider, qtc.SIGNAL('sliderMoved(int)'), ft.partial(slider_moved_cb, disp))
 
         self.container = container
         self.slider = slider
         self.disp = disp
-        self.units = units
+        self.unit = unit
 
+    ## Converts from slider coordinates to values in units given.
     def _slider_to_units(self, value):
         return ((value / 100.) * (self.max_value - self.min_value)) + self.min_value
-        
+       
+    ## Converts from units given to slider position.
     def _units_to_slider(self, value):
         return int(round(((value - self.min_value) / (self.max_value - self.min_value)) * 100.0))
 
+    ## Gets the current value of this slider.
     def value(self):
         return self._slider_to_units(self.slider.value())
 
+    ## Sets the value of this slider.
     def set_value(self, value):
         self.slider.setValue(self._units_to_slider(value))
-        self.disp.setText('%3.2f %s' % (value, self.units))
+        self.disp.setText('%3.2f %s' % (value, self.unit))
 
-
+## Base class for tools (plugins in ROS Commander that displays as button in
+# tabs at the top)
 class ToolBase:
 
+    ## Constructor
+    # This method needs to be called by inherited tool
     def __init__(self, rcommander, name, button_name, smach_class):
         self.rcommander = rcommander
 
@@ -221,11 +260,14 @@ class ToolBase:
         self.node_exists = False
         self.saved_state = None
 
+    ## Creates the tool's Qt button (called by RCommander class)
     def create_button(self, container):
         self.button = create_tool_button(self.button_name, container)
-        self.rcommander.connect(self.button, qtc.SIGNAL('clicked()'), self.activate_cb)
+        self.rcommander.connect(self.button, qtc.SIGNAL('clicked()'), 
+                self.activate_cb)
         return self.button
 
+    ## Called when the tool's button has been clicked.
     def activate_cb(self, loaded_node_name=None):
         self.rcommander.notify_activated()
 
@@ -248,6 +290,8 @@ class ToolBase:
         if self.saved_state != None and loaded_node_name == None:
             self.set_node_properties(self.saved_state)
 
+    ## Clear the state currently saved in this tool (state are saved in the
+    # tool when they have not been added to the graph).
     def clear_saved_state(self):
         self.saved_state = None
 
@@ -268,6 +312,8 @@ class ToolBase:
             outcome_choices[outcome_name] = str(self.outcome_inputs[outcome_name].currentText())
         return outcome_choices
 
+    ## Repopulates the connections tab with information from the node being
+    # edited.
     def refresh_connections_box(self):
         if not self.button.isChecked():
             return
@@ -289,6 +335,7 @@ class ToolBase:
             widget = self.outcome_inputs[k]
             widget.setCurrentIndex(widget.findText(selected))
 
+    ## Fills the connections tab with information from the node being edited.
     def fill_connections_box(self, pbox):
         formlayout = pbox.layout()
 
@@ -329,10 +376,6 @@ class ToolBase:
 
             #add to view 
             formlayout.addRow(outcome, input_box)
-            #set outcome as default
-            #TODO abstract this line out
-            #input_box.setCurrentIndex(input_box.findText(outcome))
-            #store object
             self.outcome_inputs[outcome] = input_box
 
             #make callback
@@ -345,13 +388,16 @@ class ToolBase:
             if len(nodes) == 1:
                 self.rcommander.connection_changed(self.get_current_node_name(), outcome, nodes[0])
 
-
+    ## Sets the name of the node displayed by this tool.
+    # @param name string
     def set_loaded_node_name(self, name):
         self.loaded_node_name = name
 
+    ## Gets name of node currently displayed by this tool.
     def get_current_node_name(self):
         return self.loaded_node_name 
 
+    ## Called by ROS Commander to create a new node.
     def create_node(self, unique=True):
         if unique:
             n = self.new_node(str(self.name_input.text()))
@@ -371,6 +417,7 @@ class ToolBase:
 
         return n
 
+    ## Called by ROS Commander when a node is selected in the GUI.
     def node_selected(self, node):
         self.node_exists = True
         outcome_list = self.rcommander.current_children_of(node.get_name())
@@ -385,6 +432,7 @@ class ToolBase:
         self.loaded_node_name = node.get_name()
         self.set_node_properties(node)
 
+    ## Returns the class of SMACH states created by this tool's nodes.
     def get_smach_class(self):
         return self.smach_class
 
@@ -428,6 +476,7 @@ class ToolBase:
         pass
 
 
+## Base class for a ROS Commander state.
 class StateBase:
 
     ##
@@ -509,10 +558,15 @@ class StateBase:
         raise RuntimeError('Unimplemented method: get_smach_state')
 
 
+## EmptyStates are used to represent outcomes.
 class EmptyState(StateBase):
 
     TOOL_NAME = 'outcome'
 
+    ## Constructor
+    # @param name Name of this outcome.
+    # @param temporary
+    # @param tool_name Name of tool in this outcome.
     def __init__(self, name, temporary, tool_name=TOOL_NAME):
         StateBase.__init__(self, name)
         self.set_runnable(False)
@@ -522,11 +576,14 @@ class EmptyState(StateBase):
     def get_smach_state(self):
         return self
 
-##
-# State that can be embedded as a child in other states.
-#
+## Inherit from this base class to create states that can have other states
+# embedded in it.
 class EmbeddableState(StateBase):
 
+    ## Constructor
+    # @param name Name of this state (string)
+    # @param child_gm Child state machine (a GraphModel object).
+    # @param outputs Possible outputs of this state.
     def __init__(self, name, child_gm, outputs={}):
         StateBase.__init__(self, name, outputs)
         self.child_gm = child_gm
@@ -535,22 +592,25 @@ class EmbeddableState(StateBase):
         #Look inside state machine and look for things with remaps
         self._init_child(child_gm)
 
+    ## Gets the document object in the child state machine.
     def get_child_document(self):
         return self.child_document
 
+    ## Takes the child state machine out of this state.
     def abort_child(self):
         fetus = self.child_gm 
         self.child_gm = None
         return fetus
 
+    ## Getter for child state machine (but this state still has a pointer).
     def get_child(self):
         return self.child_gm
 
+    ## Setter for child state machine.
     def set_child(self, child):
         self.child_gm = child
 
-    ##
-    # Look for remappings in child state machine.
+    ## Look for remappings in child state machine.
     #
     # @param child_gm GraphModel object
     def _init_child(self, child_gm):
@@ -568,15 +628,9 @@ class EmbeddableState(StateBase):
     #
     def save_child(self, base_path=""):
         child_gm = self.get_child()
-        #if child_gm.document.has_real_filename():
-        #    #print 'saving child to', child_gm.get_document().get_filename() 
-        #    child_gm.save(child_gm.get_document().get_filename())
-        #else:
         fname = pt.join(base_path, child_gm.get_document().get_name())
-        #If child does not exists
         if not pt.exists(fname):
             child_gm.save(fname)
-            #print 'saving child to', fname
         else:
             raise RuntimeError('FILE EXISTS. CAN\'T OVERWRITE')
 
@@ -585,23 +639,24 @@ class EmbeddableState(StateBase):
     ##
     # Loads the child state machine and calls recreate on it.
     #
+    # @param base_path Base path of parent state machine (children state
+    #   machines are stored as subfolders).
     def load_and_recreate(self, base_path):
         import graph_model as gm
 
         fname = pt.join(base_path, pt.split(self.child_document.get_filename())[1])
-        #print 'load_and_recreate:', fname
         child_gm = gm.GraphModel.load(fname)
         return self.recreate(child_gm)
 
-    ##
-    # Returns the name of the child state machine.
-    #
+    ## Returns the name of the child state machine.
     def get_child_name(self):
         return self.child_gm.get_start_state()
 
-    ##
-    # After being loaded from disk, recreates/clones the object
+    ## After being loaded from disk, recreates/clones the object to 
+    # reestablish things that can't be stored on disk (like network
+    # connections, file handlers, etc).
     #
+    # @param graph_model A GraphModel object.
     def recreate(self, graph_model):
         raise RuntimeError('Unimplemented!!')
 
@@ -626,18 +681,22 @@ class SimpleStateCB:
         return []
 
 ##
-# Implements a simple StateBase that calls an actionlib action
+# Inherit from this base state class if all that's needed is a call to 
+# an actionlib action.
 #
 class SimpleStateBase(StateBase):
 
     ##
     #
-    # @param name
-    # @param action_name
-    # @param action_type
-    # @param goal_cb_str
-    # @param input_keys
-    # @param output_keys
+    # @param name Name of state
+    # @param action_name Actionlib action name to connect to.
+    # @param action_type Type of actionlib action to connect to.
+    # @param goal_cb_str String with name of goal callback function in
+    #                       inherited class.
+    # @param input_keys Input keys of this state (in SMACH sense, a list of
+    #               strings).
+    # @param output_keys Ouput keys of this state (in SMACH sense, a list of
+    #               strings).
     def __init__(self, name, action_name, action_type, goal_cb_str, input_keys=[], output_keys=[]):
         StateBase.__init__(self, name)
         self.action_name = action_name
@@ -650,21 +709,31 @@ class SimpleStateBase(StateBase):
         return SimpleStateBaseSmach(self.action_name, self.action_type, self, self.goal_cb_str,
                 self.input_keys, self.output_keys)
 
-
+## SMACH state to go with classes that inherits from SimpleStateBase.
 class SimpleStateBaseSmach(smach_ros.SimpleActionState):
 
+    ## Constructor
+    # Params used here are the same as the ones used by SimpleState
     def __init__(self, action_name, action_type, goal_obj, goal_cb_str, input_keys, output_keys):
         smach_ros.SimpleActionState.__init__(self, action_name, action_type, 
                 goal_cb = SimpleStateCB(eval('goal_obj.%s' % goal_cb_str), input_keys, output_keys))
         self.goal_obj = goal_obj
 
+    ## Executes this state
     def __call__(self, userdata, default_goal): 
         f = eval('self.goal_obj.%s' % self.goal_cb_str)
         return f(userdata, default_goal)
 
 
+## Smach state for executing actions that needs to TIME OUT (like navigation
+# with nav stack).
 class ActionWithTimeoutSmach(smach.State):
 
+    ## Constructor
+    #
+    # @param time_out How long before we should time out
+    # @param action_name Name of action.
+    # @param action_class Class of action.
     def __init__(self, time_out, action_name, action_class):
         smach.State.__init__(self, 
                 outcomes = ['succeeded', 'preempted', 'timed_out'], 
@@ -673,12 +742,16 @@ class ActionWithTimeoutSmach(smach.State):
         self.action_name = action_name
         self.time_out = time_out
 
+    ##
+    # Returns the goal to execute by the action client.
     def get_goal(self):
         pass
 
+    ## Called back to process the action's results.
     def process_result(self):
-        pass
+        pass 
 
+    ## Execute the node (SMACH function)
     def execute(self, userdata):
         self.action_client.send_goal(self.get_goal())
         result = monitor_goals(self, [self.action_client], self.action_name, self.time_out)
@@ -686,47 +759,8 @@ class ActionWithTimeoutSmach(smach.State):
             self.process_result(self.action_client.get_result())
         return result
 
-        #state = self.action_client.get_state()
-        #succeeded = False
-        #preempted = False
-        #r = rospy.Rate(30)
-        #start_time = rospy.get_time()
-        #while True:
-        #    #we have been preempted
-        #    if self.preempt_requested():
-        #        rospy.loginfo('%s: preempt requested' % self.action_name)
-        #        self.action_client.cancel_goal()
-        #        self.service_preempt()
-        #        preempted = True
-        #        break
-
-        #    if (rospy.get_time() - start_time) > self.time_out:
-        #        self.action_client.cancel_goal()
-        #        rospy.loginfo('%s: timed out!' % self.action_name)
-        #        succeeded = False
-        #        break
-
-        #    #print tu.goal_status_to_string(state)
-        #    if (state not in [am.GoalStatus.ACTIVE, am.GoalStatus.PENDING]):
-        #        if state == am.GoalStatus.SUCCEEDED:
-        #            rospy.loginfo('%s: Succeeded!' % self.action_name)
-        #            succeeded = True
-        #        break
-
-        #    state = self.action_client.get_state()
-        #    r.sleep()
-
-        #if preempted:
-        #    return 'preempted'
-
-        #if succeeded:
-        #    self.process_result(self.action_client.get_result())
-        #    return 'succeeded'
-
-        #return 'timed_out'
-
-
-# returns one of failed, preempted, timed_out, or succeeded
+## Monitors an executing goal on given client, cancels the goal after
+# timeout period. Returns one of failed, preempted, timed_out, or succeeded.
 def monitor_goals(self, clients, name, timeout):
     r = rospy.Rate(30)
     status = 'failed'
@@ -771,4 +805,4 @@ def monitor_goals(self, clients, name, timeout):
 
 
 
-
+c
