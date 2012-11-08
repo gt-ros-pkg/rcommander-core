@@ -6,7 +6,7 @@ from rcommander_auto import Ui_RCommanderWindow
 
 import rospy
 
-import sy
+import sys
 import os.path as pt
 import time
 import signal
@@ -23,25 +23,7 @@ import library_tool as lb
 import trigger_tool as tt
 import tool_utils as tu
 
-## Take all widgets out of a container
-# @param pbox A QT container.
-def empty_container(pbox): 
-    layout = pbox.layout()
 
-    for i in range(layout.count()):
-        item = layout.itemAt(0)
-        layout.removeItem(item)
-    children = pbox.children()
-
-    for c in children[1:]:
-        try:
-            layout.removeWidget(c)
-            c.setParent(None)
-        except TypeError, e:
-            pass
-
-    layout.invalidate()
-    pbox.update()
 
 ## Given a number x and percentage y, 
 # returns a list of two numbers: [x*y, x-x*y]
@@ -51,8 +33,7 @@ def split(num, factor):
     return [num1, num2]
 
 ## Represents element of a finite state machine stack.
-class FSMStackElement:a
-
+class FSMStackElement: 
     def __init__(self, model, view, node):
         self.model = model
         self.view = view
@@ -106,8 +87,8 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
                 qtc.SIGNAL('triggered(bool)'), self.quit_cb)
         self.ui.splitter.setSizes(split(self.width(), .83))
 
-        empty_container(self.ui.properties_tab)
-        empty_container(self.ui.connections_tab)
+        tu.empty_container(self.ui.properties_tab)
+        tu.empty_container(self.ui.connections_tab)
         self.add_mode()
         self.disable_buttons()
 
@@ -168,12 +149,12 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
         #Outcome tool is a specialized built in tool, add it here.
         self.button_group_tab.addButton(self.ui.add_outcome_button)
         outcome_tool = ot.OutcomeTool(self.ui.add_outcome_button, self)
-        self.tool_dict[outcome_tool.get_smach_class()] = 
+        self.tool_dict[outcome_tool.get_smach_class()] = \
                     {'tool_obj': outcome_tool}
 
         self.button_group_tab.addButton(self.ui.library_button)
         library_tool = lb.LibraryTool(self.ui.library_button, self)
-        self.tool_dict[library_tool.get_smach_class()] = 
+        self.tool_dict[library_tool.get_smach_class()] = \
                     {'tool_obj': library_tool}
 
 
@@ -269,9 +250,9 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
     ## Remove everything from properties box.  
     # Used when transitioning between tools.
     def empty_properties_box(self):
-        empty_container(self.ui.properties_tab)
-        empty_container(self.ui.connections_tab)
-        empty_container(self.ui.properties_container)
+        tu.empty_container(self.ui.properties_tab)
+        tu.empty_container(self.ui.connections_tab)
+        tu.empty_container(self.ui.properties_container)
 
         # Restore property tab's vbox
         container = self.ui.properties_container
@@ -772,4 +753,4 @@ def run_rcommander(plugin_namespace, robot=None, tf_listener=None,
     rc.add_tools(tools_list)
 
     rc.show()
-    sys.exit(app.#exec_())
+    sys.exit(app.exec_())

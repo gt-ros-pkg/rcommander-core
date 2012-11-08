@@ -8,44 +8,24 @@ import time
 import rospy
 import threading
 
-class AnimationRunner(threading.Thread):
-
-    def __init__(self, f):
-        threading.Thread.__init__(self)    
-        self.f = f
-        self.should_stop = False
-
-    def run(self):
-        time.sleep(2.)
-        r = rospy.Rate(30)
-        while not rospy.is_shutdown() and not self.should_stop:
-            self.f()
-            r.sleep()
-
-
+## Sets up the NodeBox graphics widget.
 class NodeBoxGUI:
 
+    ## Constructor
+    # @param graphics_view a QGraphicsView to turn into a Nodebox viewport.
     def __init__(self, graphics_view):
 
-        #print 'GUI IS SHUTDOWN??1', rospy.is_shutdown()
         #add scene to QGraphicsView
         scene = qtg.QGraphicsScene()
         graphics_view.setViewport(qtl.QGLWidget())
-        #print 'GUI IS SHUTDOWN??11', rospy.is_shutdown()
         self.drawing_widget = NodeBoxGUIHelper(graphics_view.viewport(), scene)
-        #print 'GUI IS SHUTDOWN??111', rospy.is_shutdown()
         graphics_view.setScene(scene)
-        # TODO: graphics_view._scene = scene
-        #print 'GUI IS SHUTDOWN??112', rospy.is_shutdown()
         scene.setItemIndexMethod(qtg.QGraphicsScene.NoIndex)
-        #print 'GUI IS SHUTDOWN??113', rospy.is_shutdown()
         scene.addItem(self.drawing_widget)
-        #print 'GUI IS SHUTDOWN??2', rospy.is_shutdown()
 
         #Add NB to scene
         self.namespace = {}
         self.canvas = graphics.Canvas()
-        #print 'text scale', QPixmap(1, 1).logicalDpiX() / 72.0
         self.canvas._setTextScaleFactor(qtg.QPixmap(1, 1).logicalDpiX() / 72.0)
         self.context = graphics.Context(self.canvas, self.namespace)
 
@@ -54,17 +34,16 @@ class NodeBoxGUI:
         self.animationTimer = qtc.QTimer(self)
         self.connect(self.animationTimer, qtc.SIGNAL("timeout()"), self._draw)
         self.start_drawing()
-        #print 'GUI IS SHUTDOWN??3', rospy.is_shutdown()
 
-        #self.animation_runner = AnimationRunner(self._draw)
-        #self.animation_runner.start()
-
+    ## Starts animation timer callbacks
     def start_drawing(self):
         self.animationTimer.start(1000.0 / self.canvas.speed)
 
+    ## Stops animation timer callbacks
     def stop_drawing(self):
         self.animationTimer.stop()
 
+    ## Create the magic variables used by NodeBox libraries
     def properties(self):
         properties = self.namespace
 
@@ -81,20 +60,28 @@ class NodeBoxGUI:
         properties["wheeldelta"]  = self.drawing_widget.wheeldelta
         return properties
 
+    ## Setup and tear down stuff needed before calling client drawing functions
     def _draw(self):
         self.canvas.clear()
         self.draw(self.properties())
         self.drawing_widget.set_canvas(self.canvas)
         self.context._resetContext()
 
+    ## Inherit from this class and implement this method to draw on the Nodebox canvas
     def draw(self, properties):
         pass
 
+    ## Setup function (called before drawing the first time) for inherited from this class
     def setup(self):
         pass
 
+## Helper class that setups all the user events and deal with QT drawing
 class NodeBoxGUIHelper(qtg.QGraphicsWidget):
 
+    ## Constructor
+    # @param viewport QT viewport
+    # @param scene QT scene
+    # @param parent parent QT object
     def __init__(self, viewport, scene, parent=None):
         qtg.QGraphicsWidget.__init__(self, parent)
         self.setFlag(qtg.QGraphicsItem.ItemClipsToShape, True)
@@ -118,6 +105,7 @@ class NodeBoxGUIHelper(qtg.QGraphicsWidget):
         self._shape = qtg.QPainterPath()
         self._shape.addRect(self._rect)
 
+    ## Mouse pressed QT callback 
     def mousePressEvent(self, event):
         self.mousePosition = event.scenePos()
 
@@ -129,14 +117,17 @@ class NodeBoxGUIHelper(qtg.QGraphicsWidget):
 
         self.setFocus()
 
+    ## Mouse double clicked QT callback 
     def mouseDoubleClickEvent(self, event):
         if event.button() == qtc.Qt.LeftButton:
             self.mousedoubleclick = True
             self.setFocus()
 
+    ## Mouse move QT callback 
     def mouseMoveEvent(self, event):
         self.mousePosition = event.scenePos()
 
+    ## Mouse released QT callback 
     def mouseReleaseEvent(self, event): 
         self.mousePosition = event.scenePos()
         if event.button() == qtc.Qt.LeftButton: 
@@ -144,16 +135,19 @@ class NodeBoxGUIHelper(qtg.QGraphicsWidget):
         if event.button() == qtc.Qt.RightButton: 
             self.rightdown = False
 
+    ## Key pressed QT callback
     def keyPressEvent(self, event): 
         self.keydown = True 
         self.key = event.text() 
         self.keycode = event.key() 
 
+    ## Key release QT callback
     def keyReleaseEvent(self, event): 
         self.keydown = False 
         self.key = event.text() 
         self.keycode = event.key() 
 
+    ## Mouse wheele QT callback
     def wheelEvent(self, event): 
         self.scrollwheel = True 
         self.wheeldelta = event.delta() / 120.
@@ -162,9 +156,11 @@ class NodeBoxGUIHelper(qtg.QGraphicsWidget):
     # Magical drawing functions
     ######################################################################
 
+    ## Getter for canvas object
     def get_canvas(self):
         return self._canvas
 
+    ## Setter for canvas object
     def set_canvas(self, canvas):
         self._canvas = canvas
         if canvas is not None:
@@ -177,16 +173,14 @@ class NodeBoxGUIHelper(qtg.QGraphicsWidget):
                 scene.setSceneRect(rect)
                 self._shape = shape = qtg.QPainterPath()
                 shape.addRect(rect)
-        #self._check_cache()
         self._dirty = True      #signal that we want to be redrawn to paint
         self._viewPort.update() #tell QT that we want to be redrawn
 
-    ##########################################################################################
-    # Must be implemented for mouse events
-    ##########################################################################################
+    ## Gets the bounding rect of canvas
     def boundingRect(self):
         return self._rect
 
+    ## Getter for shape (QPainterPath object)
     def shape(self):
         return self._shape
 
@@ -197,27 +191,4 @@ class NodeBoxGUIHelper(qtg.QGraphicsWidget):
             painter.save()
             self.get_canvas().draw(painter)
             painter.restore()
-
-    #def _check_cache(self):
-    #    cacheMode = self.cacheMode()
-    #    DeviceCoordinateCache = QGraphicsItem.DeviceCoordinateCache
-    #    NoCache = QGraphicsItem.NoCache
-    #    if self.get_canvas() is not None:
-    #        #if self.document.animationTimer is not None:
-    #        #    cache = False
-    #        #elif len(self.get_canvas()) > 400:
-    #        if len(self.get_canvas()) > 400:
-    #            x, y, width, height = self._rect.getRect()
-    #            cache = True
-    #            if width > 1000 or height > 1000: #or \
-    #                #not (width * self.zoom <= 1200 and height * self.zoom <= 1200):
-    #                cache = False
-    #        else:
-    #            cache = False
-    #        if cache and cacheMode != DeviceCoordinateCache:
-    #            self.setCacheMode(DeviceCoordinateCache)
-    #        elif not cache and cacheMode != NoCache:
-    #            self.setCacheMode(NoCache)
-    #    elif cacheMode != NoCache:
-    #        self.setCacheMode(QNoCache)
 

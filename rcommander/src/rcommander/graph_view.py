@@ -11,6 +11,9 @@ import numpy as np
 import time
 import copy
 
+## Copies a NodeBox.graph style
+# @param astyle Style to copy from.
+# @param bstyle Style to copy to.
 def copy_style(astyle, bstyle):
     bstyle.background  = astyle.background  
     bstyle.fill        = astyle.fill       
@@ -23,8 +26,12 @@ def copy_style(astyle, bstyle):
     bstyle.align       = astyle.align      
     bstyle.depth       = astyle.depth      
 
+## View (in MVC) class for GraphModel objects
 class GraphView:
 
+    ## Constructor
+    # @param context Nodebox drawing context.
+    # @param graph_model a GraphModel object to draw.
     def __init__(self, context, graph_model):
         self.graph_model = graph_model
         g = self.graph_model.gve
@@ -51,14 +58,6 @@ class GraphView:
         g.styles.marked.text = text_color
         g.styles.marked.stroke = node_outlines
         #g.styles.default.fontsize = 12
-        #g.styles.light.fontsize = 12
-        #g.styles.back.fontsize = 12
-        #g.styles.marked.fontsize = 12
-
-        #g.styles.dark.fontsize = 12
-        #g.styles.highlight.fontsize = 12
-        #g.styles.root.fontsize = 12
-
 
         self.refresh = self.gve.layout.refresh
 
@@ -118,28 +117,21 @@ class GraphView:
         self.dy = 0.
         self.tx = 0.
         self.ty = 0.
-        #g.node('start').style = 'marked'
 
+    ## Set the drawing style for given Nodebox node.
+    # @param node_name Name of node.
+    # @param style Nodebox graph style name (has to be known in nodebox graph
+    #               object beforehand)
     def set_node_style(self, node_name, style):
         self.gve.node(node_name).style = style
         self.gve.layout.refresh()
 
+    ## Get style currently used
+    # @param node_name Name of node
     def get_node_style(self, node_name):
         return self.gve.node(node_name).style
-    
-    #def drag_background_cb(self, s, e):
-    #    #print start_click.x, start_click.y
-    #    #print curr_pos.x, curr_pos.y
 
-    #    #transform.scale(self.zoom, self.zoom)
-    #    self.dx = e.x - s.x
-    #    self.dy = e.y - s.y
-    #    #print dx, dy
-    #    #transform = QTransform()
-    #    ##transform.scale(abs(dx), abs(dy))
-    #    #transform.translate(dx, dy)
-    #    #self.graphicsView.superView.setTransform(transform)
-
+    ## Moves the view if the background have been dragged
     def _background_drag(self, properties_dict):
         mouse_pose = properties_dict['MOUSEX'], properties_dict['MOUSEY']
 
@@ -157,32 +149,12 @@ class GraphView:
             self.ty = 0.
             self.tx = 0.
 
-        #if self._ctx._ns["rightdown"]:
-        #    #Make sure we're not in any nodes
-        #    in_nodes = False
-        #    for n in self.graph.nodes:
-        #        if self.mouse in n:
-        #            in_nodes = True
-        #            break
-
-        #    #Set pose first time
-        #    if not in_nodes and not self.right_clicked:
-        #        self.right_clicked = self.mouse
-        #    else:
-        #        self.right_drag(self.right_clicked, self.mouse)
-
-        #else:
-        #    self.right_clicked = None
-
+    ## Setup method for NodeBox drawing env
     def setup(self):
-        self.times = {}
-        self.times['draw'] = 0.
-        self.times['check'] = 0.
-        self.times['iter'] = 0
+        pass
 
-
+    ## Draw graph (called n times per second)
     def draw(self, properties_dict):
-        START_TIME = time.time()
         self.context.size(properties_dict['width'], properties_dict['height'])
         cx = self.context
         g  = self.gve
@@ -219,17 +191,15 @@ class GraphView:
                     if time.time() - t < 10.:
                         self.set_node_style(n.id, 'old_outcome')
 
-        #self.set_node_style(tu.InfoStateBase.GLOBAL_NAME, 'root')
 
         draw_func = None
-        #if properties_dict['selected_edge'] != None:
 
+        ## Draw selected element
         def draw_selected():
             if properties_dict['selected_edge'] == None:
                 return
             cx = self.context
             g  = self.gve
-            #edge = self.selected_edge 
             edge = properties_dict['selected_edge']
             x0, y0 = edge.node1.x, edge.node1.y
             x1, y1 = edge.node2.x, edge.node2.y
@@ -275,8 +245,6 @@ class GraphView:
             ##
             #Draw fsm_stack
             stack = copy.copy(properties_dict['fsm_stack'])
-            #stack.reverse()
-            #smallest_radii = radius
             largest_radii = radius + len(stack) * self.radii_increment
             color = self.fsm_start_color
             if len(stack) > 0:
@@ -284,7 +252,6 @@ class GraphView:
 
             #draw stack
             for el in stack:
-                #smallest_radii = smallest_radii + self.radii_increment
                 name = el.model.document.get_name()#el.document.get_name()
 
                 #Draw node
@@ -319,6 +286,7 @@ class GraphView:
             node_label_node.x, node_label_node.y = centroid[0,0], centroid[1,0] - radius
             gs.node_label(container_style, node_label_node, g.alpha)
 
+        ## Detects if a nested state machine has been selected.
         def detect_fsm_click():
             def in_node(x, y, n):
                 return (abs(x - n.x) < n.r) and (abs(y - n.y) < n.r)
@@ -332,7 +300,6 @@ class GraphView:
                     selected_el = None
                     for el in stack:
                         if in_node(mousex_g, mousey_g, el.graph_node):
-                        #if p in el.graph_node:
                             selected_el = el
                             break
 
@@ -340,21 +307,13 @@ class GraphView:
                     if selected_el != None and self.fsm_dclick_cb != None:
                         self.fsm_dclick_cb(selected_el)
 
+        ## Function inserted into NodeBox.graph's drawing library to run GraphView code.
         def final_func():
             draw_selected()
             detect_fsm_click()
 
-        CHECK_TIME = time.time()
         self._background_drag(properties_dict)
         properties_dict['MOUSEX'] -= self.dx+self.tx
         properties_dict['MOUSEY'] -= self.dy+self.ty
         g.draw(dx=self.dx+self.tx, dy=self.dy+self.ty, directed=True, traffic=False, user_draw_start=draw_fsm_circles, user_draw_final=final_func)
 
-        DRAW_TIME = time.time()
-
-        total_draw = DRAW_TIME - CHECK_TIME
-        total_check = CHECK_TIME - START_TIME
-        self.times['draw'] += total_draw
-        self.times['check'] +- total_check
-        self.times['iter'] += 1
-        #print 'draw', (1000.* self.times['draw'] / self.times['iter']), 'check', (1000.* self.times['check'] / self.times['iter'])

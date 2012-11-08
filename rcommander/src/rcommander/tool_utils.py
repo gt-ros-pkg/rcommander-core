@@ -14,6 +14,26 @@ import actionlib
 import smach
 import numpy as np
 
+## Take all widgets out of a container
+# @param pbox A QT container.
+def empty_container(pbox): 
+    layout = pbox.layout()
+
+    for i in range(layout.count()):
+        item = layout.itemAt(0)
+        layout.removeItem(item)
+    children = pbox.children()
+
+    for c in children[1:]:
+        try:
+            layout.removeWidget(c)
+            c.setParent(None)
+        except TypeError, e:
+            pass
+
+    layout.invalidate()
+    pbox.update()
+
 ## Mappings from goal statuses to strings.
 status_dict = {am.GoalStatus.PENDING   : 'PENDING',
                am.GoalStatus.ACTIVE    : 'ACTIVE',   
@@ -323,7 +343,7 @@ class ToolBase:
         node_name = str(self.name_input.text())
 
         #empty box
-        self.rcommander.empty_container(self.rcommander.ui.connections_tab)
+        empty_container(self.rcommander.ui.connections_tab)
 
         #fill it back up
         self.fill_connections_box(self.rcommander.ui.connections_tab)
@@ -805,4 +825,4 @@ def monitor_goals(self, clients, name, timeout):
 
 
 
-c
+
