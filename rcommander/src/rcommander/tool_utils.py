@@ -495,6 +495,10 @@ class ToolBase:
     def reset(self):
         pass
 
+    ## Gives this tool a pointer to the currently selected state in the state
+    # machine if user click add (optional function to define in inherited
+    # classes). TODO: The implementation is a little ugly, fix this later...
+    # def set_child_node(self, node):
 
 ## Base class for a ROS Commander state.
 class StateBase:

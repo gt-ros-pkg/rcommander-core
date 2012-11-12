@@ -356,8 +356,9 @@ class RCommander(qtg.QMainWindow, nbg.NodeBoxGUI):
             qtg.QMessageBox.information(self, str(self.objectName()),\
                     'RuntimeError: ' + e.message)
 
-    ## Callback for the add button.
-    # Adds state machine being edited to GUI.
+    ## Callback for the add button. Adds state machine node being edited to graph.
+    # If tool as a 'set_child_node' method, takes the currently selected state
+    # and give a pointer of it to the current selected tool (using 'set_child_node')
     def add_cb(self):
         if self.selected_tool == None:
             return
