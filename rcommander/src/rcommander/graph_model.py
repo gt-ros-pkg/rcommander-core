@@ -11,6 +11,8 @@ import sm_thread_runner as smtr
 import time
 import shutil
 
+##
+# Checks to see if a node can contain other nodes
 def is_container(node):
     return hasattr(node, 'get_child_name') 
 

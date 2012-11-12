@@ -1,4 +1,3 @@
-#import roslib; roslib.load_manifest('rcommander_core')
 import threading
 import rospy
 import smach
@@ -8,43 +7,38 @@ import time
 import sys
 import tool_utils as tu
 
-class UserStoppedException:
-    def __init__(self):
-        self.msg = "Stopped"
 
-    def __str__(self):
-        return repr(self.msg)
-
+## Runs given state machine in a separate thread.  Clients register a callback
+# to be notified when execution completes.  The outcome and exceptions can be
+# checked in self.outcome and self.exception.
 class ThreadRunSM(threading.Thread):
 
+    ## Constructor
+    # @param sm_name Name of state machine being run.
+    # @param sm SMACH state machine to run.
     def __init__(self, sm_name, sm):
         threading.Thread.__init__(self)    
         self.sm = sm
         self.sm_name = sm_name
         self.outcome = None
-        #self.intro_server = None
         self.exception = None
         self.termination_func = None
 
+    ## Registers a callback to call once execution finishes.
     def register_termination_cb(self, func):
         self.termination_func = func
 
+    ## Inherited from Thread
     def run(self):
         rospy.loginfo('ThreadRunSM started %s' % self.sm_name)
         try:
-            #self.intro_server = smach_ros.IntrospectionServer(self.sm_name, self.sm, '/' + self.sm_name)
-            #self.intro_server.start()
             self.outcome = self.sm.execute()
-            rospy.loginfo('ThreadRunSM.run: execution finished outcome %s' % self.outcome)
+            rospy.loginfo('ThreadRunSM.run: execution ' + \
+                    'finished outcome %s' % self.outcome)
 
         except smach.InvalidTransitionError, e:
             rospy.loginfo('ThreadRunSM: got InvalidTransitionError %s' % str(e))
             self.exception = e
-
-        except UserStoppedException, e:
-            #self.intro_server.stop()
-            self.exception = e
-            rospy.loginfo('ThreadRunSM: execution stopped by user.')
 
         except smach.InvalidUserCodeError, e:
             self.exception = e
@@ -52,7 +46,8 @@ class ThreadRunSM(threading.Thread):
 
         except:
             self.exception = Exception(str(sys.exc_info()[0]))
-            rospy.loginfo('ThreadRunSM: unknown exception %s sdf.' % (str(self.exception)))
+            rospy.loginfo('ThreadRunSM: unknown ' + \
+                    'exception %s sdf.' % (str(self.exception)))
 
         if self.termination_func != None:
             if self.outcome == None:
@@ -67,10 +62,13 @@ class ThreadRunSM(threading.Thread):
         #self.intro_server.stop()
         rospy.loginfo('ThreadRunSM.run: exiting')
 
+    ## Preempt execution of state machine to stop it.
     def preempt(self):
         if self.isAlive():
             self.sm.request_preempt()
 
+    ## Last resort way to get state machine to stop.  
+    # Raises an exception in the executing thread to stop it.
     def except_preempt(self):
         while self.isAlive():
             self._raise_exception()
@@ -78,9 +76,10 @@ class ThreadRunSM(threading.Thread):
             if self.isAlive():
                 threading.Thread._Thread__stop(self)
 
+    ## Raises an exception in executing thread
     def _raise_exception(self):
-        #res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(self.ident), ctypes.py_object(UserStoppedException))
-        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(self.ident), ctypes.py_object(SystemExit))
+        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(
+                ctypes.c_long(self.ident), ctypes.py_object(SystemExit))
         print 'raised exception returned', res
         if res == 0:
             raise ValueError("Invalid thread ID")

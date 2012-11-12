@@ -1,3 +1,6 @@
+##
+# Takes a current frame and makes a copy of it, effectively freezing it in time.
+#
 import tool_utils as tu
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *

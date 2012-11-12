@@ -4,8 +4,13 @@ import geometry_msgs.msg as geo
 import rospy
 import tf
 
-#Copied (gasp!) from object_manipulator.convert_functions
-#(first premultiply by transform if given)
+## Converts a 4x4 transformation matrix to a pose.
+# (Copied from object_manipulator.convert_functions, first premultiply by
+# another 4x4 transform if given)
+#
+# @param mat
+# @param transform
+# transform if given)
 def mat_to_pose(mat, transform = None):
     if transform != None:
         mat = transform * mat
@@ -20,19 +25,19 @@ def mat_to_pose(mat, transform = None):
     pose.orientation.w = quat[3]
     return pose
 
-##stamp a message by giving it a header with a timestamp of now
+## Stamp a message by giving it a header with a timestamp of now.
 def stamp_msg(msg, frame_id):
     msg.header.frame_id = frame_id
     msg.header.stamp = rospy.Time.now()
 
-##make a PoseStamped out of a Pose
+## Make a PoseStamped out of a Pose
 def stamp_pose(pose, frame_id):
     pose_stamped = geo.PoseStamped()
     stamp_msg(pose_stamped, frame_id)
     pose_stamped.pose = pose
     return pose_stamped
 
-##change the frame of a PoseStamped
+## Change the frame of a PoseStamped
 def change_pose_stamped_frame(tf_listener, pose, frame):
 
     #convert the PoseStamped to the desired frame, if necessary
@@ -51,50 +56,51 @@ def change_pose_stamped_frame(tf_listener, pose, frame):
 
     return trans_pose
 
-
+## Creates a 4x4 matrix from tf tuple.
 def tf_as_matrix(tup):
     return np.matrix(tr.translation_matrix(tup[0])) * np.matrix(tr.quaternion_matrix(tup[1])) 
 
+## 
+# Gets a 4x4 transform matrix 
+# @param to_frame frarame to transform to
+# @param from_frame frame to transform from
 def transform(to_frame, from_frame, tflistener, t=0):
     return tf_as_matrix(tflistener.lookupTransform(to_frame, from_frame, rospy.Time(t)))
 
+## Creates a 4x4 transform matrix from a tf tuple
+# @param tup A tf tuple
 def tf_as_matrix(tup):
     return np.matrix(tr.translation_matrix(tup[0])) * np.matrix(tr.quaternion_matrix(tup[1])) 
 
+## Creates a tf tuple from a 4x4 transform matrix
+# @param mat 4x4 matrix
 def matrix_as_tf(mat):
     return (tr.translation_from_matrix(mat), tr.quaternion_from_matrix(mat))
 
+## Create a new frame using a point stamped message and the orientation of an
+# existing frame.
+# @param origin A PointStamped to use as origin for new frame.
+# @param supplement_frame A frame whose orientation will be used for new frame.
+# @param tf_listener TFListener
+# @param command_frame Frame to define new frame with respect to.
 def origin_to_frame(origin, supplement_frame, tf_listener, command_frame):
     m = origin
     if isinstance(m, geo.PointStamped):
         #point in some frame, needs orientation...
-        #print 'command_frame', command_frame, 'supplement_frame', supplement_frame, 'header_frame', m.header.frame_id
         command_frame_T_supplement_frame = tf_as_matrix(tf_listener.lookupTransform(command_frame, supplement_frame, rospy.Time(0)))
-        #print 'command_frame_T_supplement_frame\n', command_frame_T_supplement_frame
         command_frame_T_header_frame = tf_as_matrix(tf_listener.lookupTransform(command_frame, m.header.frame_id, rospy.Time(0)))
-        #print 'command_frame_T_header_frame\n', command_frame_T_header_frame
         point_header = np.matrix([m.point.x, m.point.y, m.point.z, 1.]).T
         point_command_frame = command_frame_T_header_frame * point_header
-        #print 'point header\n', point_header.T
-        #print 'point_command_frame\n', point_command_frame.T
 
         command_frame_T_point_frame = command_frame_T_supplement_frame.copy()
         command_frame_T_point_frame[0:3,3] = point_command_frame[0:3,0]
         CMD_T_frame = command_frame_T_point_frame
-        #print 'command_frame_T_point_frame\n', command_frame_T_point_frame
 
     #If it's a pose stamped then we turn the pose stamped into a frame?
     elif isinstance(m, geo.PoseStamped):
         fid_T_p = pose_to_mat(m.pose)
-        print 'fid_T_p\n', fid_T_p
-        print fid_T_p[0:3,3].T
         CMD_T_fid = tf_as_matrix(tf_listener.lookupTransform(command_frame, m.header.frame_id, rospy.Time(0)))
-        print 'FRAMES', command_frame, m.header.frame_id
-        print 'CMD_T_fid\n', CMD_T_fid
-        print CMD_T_fid[0:3,3].T
         CMD_T_frame = CMD_T_fid * fid_T_p
-        print 'CMD_T_frame\n', CMD_T_frame
-        print CMD_T_frame[0:3,3].T
     else:
         raise RuntimeError('Got origin that is an instance of ' + str(m.__class__))
 

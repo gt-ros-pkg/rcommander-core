@@ -1,12 +1,14 @@
-#import roslib; roslib.load_manifest('rcommander_core')
 import sys
-#import pdb
-#pdb.set_trace()
 import tool_utils as tu
 import roslib.rospack
 import inspect
 import os
 
+##
+# Searches over all packages that depend on rcommander to find tools declared
+# in the export section of package manifest.xml's. 
+#
+# @param robot_namespaces Name groups of plugins to load (a list of strings).
 def load_plugins(robot_namespaces):
     """
     @return: list of static roswtf plugins, list of online

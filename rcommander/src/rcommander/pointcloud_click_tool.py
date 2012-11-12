@@ -7,12 +7,14 @@ import smach
 import rospy
 import tf.transformations as tr
 from tf_broadcast_server.srv import BroadcastTransform, GetTransforms, ClearTransforms
-#from object_manipulator.convert_functions import mat_to_pose, stamp_pose, change_pose_stamped_frame
 import tf_utils as tfu
 
-
+##
+# Allow users to click on a point in point clouds and use it to define the
+# translation part of 3D frames.
 class PointCloudClickTool(tu.ToolBase):
 
+    ## Inherited
     def __init__(self, rcommander):
         tu.ToolBase.__init__(self, rcommander, 'create_origin', 'Create Origin', Point3DState)
         self.default_frame = '/base_link'
@@ -20,6 +22,7 @@ class PointCloudClickTool(tu.ToolBase):
         self.frames_service = rospy.ServiceProxy('get_transforms', GetTransforms, persistent=True)
         self.clear_frames_service = rospy.ServiceProxy('clear_all_transforms', ClearTransforms, persistent=True)
 
+    ## Inherited
     def fill_property_box(self, pbox):
         formlayout = pbox.layout()
 
@@ -33,13 +36,7 @@ class PointCloudClickTool(tu.ToolBase):
         self.time_out_box.setSingleStep(1.)
 
         self.frame_box = tu.FrameBox(self.frames_service)
-        #self.frame_box = QComboBox(pbox)
-        #self.orientation_frame_box = QComboBox(pbox)
         self.orientation_frame_box = tu.FrameBox(self.frames_service)
-        #for f in self.tf_listener.getFrameStrings():
-        #for f in self.frames_service().frames:
-            #self.frame_box.addItem(f)
-            #self.orientation_frame_box.addItem(f)
 
         self.pose_button = QPushButton(pbox)
         self.pose_button.setText('Get Point')
@@ -76,14 +73,14 @@ class PointCloudClickTool(tu.ToolBase):
         self.reset()
         pbox.update()
 
+    ## Inherited
     def clear_frames_button_cb(self):
         self.clear_frames_service()
 
+    ## Inherited
     def new_node(self, name=None):
         point = [float(str(self.xline.text())), float(str(self.yline.text())), float(str(self.zline.text()))]
-        #point_frame = str(self.frame_box.currentText())
         point_frame = self.frame_box.text()
-        #orientation_frame = str(self.orientation_frame_box.currentText())
         orientation_frame = self.orientation_frame_box.text()
         if name == None:
             nname = self.name + str(self.counter)
@@ -96,6 +93,7 @@ class PointCloudClickTool(tu.ToolBase):
                             point_frame, orientation_frame, 
                             wait_for_msg=wait_for_msg, time_out=time_out)
 
+    ## Change GUI to respond to wait for point being checked.
     def box_checked(self, state):
         if state == 0:
             self.xline.setEnabled(True)
@@ -113,6 +111,7 @@ class PointCloudClickTool(tu.ToolBase):
             self.frame_box.setEnabled(False)
             self.pose_button.setEnabled(False)
 
+    ## Inhertied
     def set_node_properties(self, node):
         self.xline.setText(str(node.point[0]))
         self.yline.setText(str(node.point[1]))
@@ -122,8 +121,8 @@ class PointCloudClickTool(tu.ToolBase):
         self.time_out_box.setValue(node.time_out)
         if node.wait_for_msg:
             self.wait_check.setCheckState(2)
-        #self.frame_box.setCurrentIndex(self.frame_box.findText(str(node.point_frame)))
 
+    ## Inhertied
     def reset(self):
         self.xline.setText(str(0.))
         self.yline.setText(str(0.))
@@ -133,8 +132,9 @@ class PointCloudClickTool(tu.ToolBase):
         self.wait_check.setCheckState(False)
         self.frame_box.set_text(self.default_frame, create=False)
         self.orientation_frame_box.set_text(self.default_frame, create=False)
-        #self.frame_box.setCurrentIndex(self.frame_box.findText(self.default_frame))
 
+
+    #Get the current pose from clicked point cloud, displays it in SE3 boxes
     def get_current_pose(self):
         pose_stamped = rospy.wait_for_message('/cloud_click_point', geo.PoseStamped, 5.)
         self.xline.setText('%.3f' % pose_stamped.pose.position.x)
@@ -148,27 +148,44 @@ class PointCloudClickTool(tu.ToolBase):
         self.psi_line.setText('%.3f' % psi)
         self.frame_box.set_text(pose_stamped.header.frame_id)
         self.orientation_frame_box.set_text(pose_stamped.header.frame_id)
-        #idx = tu.combobox_idx(self.frame_box, pose_stamped.header.frame_id)
-        #self.frame_box.setCurrentIndex(idx)
 
+## Waits for a message to arrive in given topic.
 class WaitForMessage:
 
+    ## Constructor
+    # @param topic Topic to listen on for message.
+    # @param message_type Data type of topic.
     def __init__(self, topic, message_type):
         self.subscriber = rospy.Subscriber(topic, message_type, self.message_cb)
         self.msg = None
 
+    ##
+    # Callback for when there's a message
     def message_cb(self, message):
         self.msg = message
 
+    ## Return the message received (none if nothing received so far)
     def get_message(self):
         return self.msg
 
+    ##
+    # Unregister after this object disappear.
     def __del__(self):
         self.subscriber.unregister()
 
-
+## StateBase for Point3DState
 class Point3DState(tu.StateBase):
 
+    ## Constructor
+    # @param name Name of state (used as frame name).
+    # @param point Point used for the center of the frame.
+    # @param point_frame Frame that the point is in.
+    # @param orientation_frame Since one point doesn't define a frame, we copy
+    #                           the orientation from a related frame on the robot.
+    # @param wait_for_msg Whether to wait for a point message to come on the
+    #                     'cloud_click_point' topic (boolean).  If true,
+    #                     ignores the value for point parameter.
+    # @param time_out
     def __init__(self, name, point, #angle, 
                 point_frame, orientation_frame, wait_for_msg, time_out):
         tu.StateBase.__init__(self, name)
@@ -194,9 +211,11 @@ class Point3DState(tu.StateBase):
 
 class Point3DStateSmach(smach.State):
 
-    ##
-    #@param message if self.message is None we will wait for a message, else use provided message
-    #@param time_out if we have to wait for a message specify how long to wait before timing out
+    ## Constructor
+    # @param frame_name Name of frame to create.
+    # @param orientation_frame Name of frame to copy orientation information from.
+    # @param message If self.message is None we will wait for a message, else use provided message.
+    # @param time_out If we have to wait for a message specify how long to wait before timing out
     def __init__(self, frame_name, orientation_frame, message = None, time_out = None):
         smach.State.__init__(self, 
                 outcomes = ['succeeded', 'preempted', 'timed_out'], 
@@ -208,6 +227,7 @@ class Point3DStateSmach(smach.State):
         self.message = message
         self.broadcast_transform_srv = rospy.ServiceProxy('broadcast_transform', BroadcastTransform)
 
+    ## Inherited
     def set_robot(self, robot):
         self.robot = robot
 
@@ -243,11 +263,7 @@ class Point3DStateSmach(smach.State):
         frame_id_T_frame_name = tfu.origin_to_frame(point_stamped, self.orientation_frame, 
                 self.robot.tf_listener, point_stamped.header.frame_id)
         pose = tfu.stamp_pose(tfu.mat_to_pose(frame_id_T_frame_name), point_stamped.header.frame_id)
-        #self.broadcast_transform_srv(self.frame_name, pose)
-        #print 'using new version'
-        #pose_stamped = change_pose_stamped_frame(self.robot.tf_listener, pose_stamped, '/base_link')
         self.broadcast_transform_srv(self.frame_name, pose)
-
 
         return 'succeeded'
 
