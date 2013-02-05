@@ -78,6 +78,7 @@ class ComboBox:
     ## Creates the combo box
     def create_box(self, pbox):
         self.combobox = qtg.QComboBox(pbox)
+        return self.combobox
 
     ## Sets selected item
     #
@@ -91,6 +92,17 @@ class ComboBox:
     ## Gets currently selected text.
     def text(self):
         return str(self.combobox.currentText())
+
+    ## Gets the index of given text
+    # @param item Item to search for
+    # @param create whether to create the item if it's not in the list
+    def index_of(self, item, create=True):
+        return combobox_idx(self.combobox, item, create)
+
+    ## Sets the index of this combo box.
+    def set_index(self, idx):
+        self.combobox.setCurrentIndex(idx)
+
 
 ## Creates and manage a ComboBox that stores TF frame names.
 class FrameBox(ComboBox):
@@ -363,16 +375,19 @@ class ToolBase:
             if self.rcommander.selected_node == None:
                 return
             else:
-                state = self.rcommander.graph_model.get_state(self.rcommander.selected_node)
+                state = self.rcommander.graph_model.get_state(\
+                        self.rcommander.selected_node)
                 self.set_child_node(state)
 
-        self.name_input = qtg.QLineEdit() #Needs to occur before new_node as it can fail
+        #Needs to occur before new_node as it can fail
+        self.name_input = qtg.QLineEdit() 
         formlayout.addRow('Name', self.name_input)
 
         if self.get_current_node_name() == None:
             current_node = self.new_node()
         else:
-            current_node = self.rcommander.graph_model.get_state(self.get_current_node_name())
+            current_node = self.rcommander.graph_model.get_state(\
+                    self.get_current_node_name())
 
         current_node_smach = current_node.get_smach_state()
         self.rcommander.connect_node(current_node_smach)
@@ -383,12 +398,14 @@ class ToolBase:
         if issubclass(current_node.__class__, EmptyState):
             return 
 
-        registered_outcomes = list(current_node_smach.get_registered_outcomes())
+        registered_outcomes = \
+                list(current_node_smach.get_registered_outcomes())
         registered_outcomes.sort()
         for outcome in registered_outcomes:
             #Make a new combobox and add available choices to it
             input_box = qtg.QComboBox(pbox)
-            nodes = self.rcommander.connectable_nodes(self.get_current_node_name(), outcome)
+            nodes = self.rcommander.connectable_nodes(
+                    self.get_current_node_name(), outcome)
 
             nodes.sort()
             for n in nodes:
@@ -401,12 +418,15 @@ class ToolBase:
             #make callback
             def cb(outcome, new_index):
                 new_outcome = str(self.outcome_inputs[outcome].currentText())
-                self.rcommander.connection_changed(self.get_current_node_name(), outcome, new_outcome)
+                self.rcommander.connection_changed(\
+                        self.get_current_node_name(), outcome, new_outcome)
 
             outcome_cb = ft.partial(cb, outcome)
-            self.rcommander.connect(input_box, qtc.SIGNAL('currentIndexChanged(int)'), outcome_cb)
+            self.rcommander.connect(input_box, 
+                    qtc.SIGNAL('currentIndexChanged(int)'), outcome_cb)
             if len(nodes) == 1:
-                self.rcommander.connection_changed(self.get_current_node_name(), outcome, nodes[0])
+                self.rcommander.connection_changed(\
+                        self.get_current_node_name(), outcome, nodes[0])
 
     ## Sets the name of the node displayed by this tool.
     # @param name string
